@@ -1,0 +1,336 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// User Model
+// User Model (Updated)
+model User {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  email          String          @unique
+  password       String
+  role           String
+  name           String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  otp            String?
+  otpExpires     DateTime?
+  isVerified     Boolean         @default(false)
+  refreshToken   String?
+  membershipId   String?         @db.ObjectId // Current active membership
+  fitnessProfile FitnessProfile?
+  workoutPlanId  String?         @db.ObjectId
+  progress       Progress[]
+  weeklySummary  WeeklySummary[]
+  profilePic     String?
+  memberships    Membership[]    @relation
+  Bookings       Booking[]       @relation
+  payments       Payment[]       @relation
+}
+
+type FitnessProfile {
+  goals       String[]
+  weight      Float?
+  height      Float?
+  level       String?
+  calorieGoal Float?
+  updatedAt   DateTime?
+}
+
+type Progress {
+  workoutDate         DateTime
+  planId              String              @db.ObjectId
+  exercisesCompleted  ExerciseCompleted[]
+  totalDuration       Float?
+  totalCaloriesBurned Float?
+  dailyDifficulty     String?
+}
+
+type ExerciseCompleted {
+  exerciseId     String  @db.ObjectId
+  name           String
+  sets           Int?
+  reps           Int?
+  weight         Float?
+  duration       Float?
+  difficulty     String?
+  caloriesBurned Float?
+}
+
+type WeeklySummary {
+  weekStart           DateTime
+  weekEnd             DateTime
+  totalCaloriesBurned Float?
+  weeklyDifficulty    String?
+}
+
+// Trainer Model (Updated)
+model Trainer {
+  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  email           String          @unique
+  password        String
+  role            String
+  profilePic      String?
+  isVerified      Boolean         @default(false) // OTP verification
+  verifiedByAdmin Boolean         @default(false) // Admin approval
+  otp             String?
+  otpExpires      DateTime?
+  refreshToken    String?
+  personalDetails Json?
+  certifications  Certification[]
+  bio             String?
+  specialties     String[]
+  experienceLevel String?
+  clients         Client[]
+  paymentDetails  PaymentDetails?
+  availability    Availability[]
+  gyms            String[]        @db.ObjectId
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  bookings        Booking[]       @relation
+  payments        Payment[]       @relation
+  phone           String?
+  ratings         Ratings?
+}
+
+type Certification {
+  name          String // e.g., "Certified Personal Trainer"
+  issuer        String // e.g., "NASM"
+  dateEarned    DateTime
+  filePath      String // e.g., "/uploads/123456789-cert1.jpg"
+}
+
+type Client {
+  userId       String   @db.ObjectId
+  membershipId String?  @db.ObjectId
+  startDate    DateTime
+  active       Boolean
+}
+
+type PaymentDetails {
+  method         String?
+  rate           Float?
+  currency       String?
+  paymentHistory PaymentHistory[]
+  upiId          String?
+  bankAccount    String?
+  ifscCode       String?
+}
+
+type PaymentHistory {
+  paymentId   String    @db.ObjectId
+  amount      Float
+  date        DateTime
+  periodStart DateTime?
+  periodEnd   DateTime?
+  clientCount Int?
+  hoursWorked Float?
+}
+
+type Availability {
+  day       String
+  startTime String
+  endTime   String
+}
+// WorkoutPlan Model
+model WorkoutPlan {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  createdBy     String?        @db.ObjectId
+  assignedTo    String         @db.ObjectId
+  goal          String
+  level         String
+  duration      Int
+  startDate     DateTime
+  endDate       DateTime
+  dailyWorkouts DailyWorkout[]
+  status        String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+type DailyWorkout {
+  day                    Int
+  exercises              Exercise[]
+  totalDuration          Float?
+  totalEstimatedCalories Float?
+}
+
+type Exercise {
+  id                String @db.ObjectId
+  name              String
+  sets              Int?
+  reps              Int?
+  weight            Float?
+  duration          Float?
+  estimatedCalories Float?
+}
+
+model Gym {
+  id                      String        @id @default(auto()) @map("_id") @db.ObjectId
+  name                    String        @unique
+  type                    String    // e.g., "Basic", "Premium", "Diamond"
+  description             String?
+  address                 GymAddress?
+  location    Json?
+  contact                 Contact?
+  equipment               Equipment[]
+  schedule                GymSchedule[]
+  trainers                GymTrainer[]
+  suggestedPlan           String?       @db.ObjectId
+  facilities              Facilities?
+  maxCapacity             Int
+  membershipCompatibility String[]   // e.g., ["Basic", "Premium", "Diamond"]
+  images                  GymImage[]
+  ratings                 Ratings?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  bookings                Booking[]     @relation
+}
+
+type GymAddress {
+  street     String?
+  city       String?
+  state      String?
+  country    String?
+  postalCode String?
+  lat        Float?
+  lng        Float?
+}
+
+type Contact {
+  phone   String?
+  email   String?
+  website String?
+}
+
+type Equipment {
+  type      String
+  category  String
+  quantity  Int
+  condition String
+}
+
+type GymSchedule {
+  dayOfWeek    String
+  startTime    String
+  endTime      String
+  isClosed     Boolean
+  slotDuration Int
+  slotCapacity Int
+}
+
+type GymTrainer {
+  trainerId String  @db.ObjectId
+  active    Boolean
+}
+
+type Facilities {
+  hasPool        Boolean?
+  hasSauna       Boolean?
+  hasParking     Boolean?
+  hasLockerRooms Boolean?
+  hasWifi        Boolean?
+  hasShowers     Boolean?
+}
+
+type GymImage {
+  url         String
+  description String?
+  uploadedAt  DateTime
+}
+
+type Ratings {
+  average Float?   @default(0.0)
+  count   Int?     @default(0)
+  reviews Review[]
+}
+
+type Review {
+  userId  String   @db.ObjectId
+  rating  Int
+  comment String?
+  date    DateTime @default(now())
+}
+
+// Membership Model (Updated)
+model Membership {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String    @db.ObjectId
+  planId        String    @db.ObjectId
+  status        String // e.g., "Active", "Expired", "Pending"
+  startDate     DateTime
+  endDate       DateTime
+  paymentId     String?   @db.ObjectId // Unique for one-to-one relation
+  price         Float? // Price paid
+  currency      String?   @default("USD")
+  paymentStatus String? // e.g., "Paid", "Pending"
+  paymentDate   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user     User           @relation(fields: [userId], references: [id])
+  plan     MembershipPlan @relation(fields: [planId], references: [id])
+  payments Payment[]
+}
+
+model MembershipPlan {
+  id                     String       @id @default(auto()) @map("_id") @db.ObjectId
+  name                   String       // e.g., "Basic", "Premium"
+  description            String?      // e.g., "Access to basic gyms"
+  price                  Float        // e.g., 49.00 (in dollars or your currency)
+  duration               Int          // Duration in months (1, 3, 6, 12)
+  features               String[]     // e.g., ["24/7-access", "group-classes"]
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  memberships            Membership[] // Link to user memberships
+}
+
+//----Booking
+
+model Booking {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  gymId     String   @db.ObjectId
+  trainerId String?  @db.ObjectId
+  slot      Slot
+  status    String // "pending", "confirmed", "cancelled", "completed"
+  qrCode    String // Unique QR code or pass identifier
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User?    @relation(fields: [userId], references: [id])
+  gym       Gym?     @relation(fields: [gymId], references: [id])
+  trainer   Trainer? @relation(fields: [trainerId], references: [id])
+}
+
+type Slot {
+  date      DateTime // e.g., "2025-04-01"
+  startTime String // e.g., "10:00"
+  endTime   String // e.g., "11:00"
+  duration  Int // 60 (minutes)
+}
+
+model Payment {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  type           String
+  userId         String?  @db.ObjectId
+  trainerId      String?  @db.ObjectId
+  membershipId   String?  @db.ObjectId // Unique for one-to-one relation
+  amount         Float
+  currency       String
+  paymentGateway String?
+  paymentId      String?
+  status         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user       User?       @relation(fields: [userId], references: [id])
+  trainer    Trainer?    @relation(fields: [trainerId], references: [id])
+  membership Membership? @relation(fields: [membershipId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+}
+

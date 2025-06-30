@@ -1,0 +1,46 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+
+# Backend
+backend/dist/
+backend/.env
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+
+# Frontend
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Logs
+logs/
+*.log
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+
+
+# Ignore node_modules folders everywhere
+**/node_modules/
+
+# Ignore .env files everywhere
+**/.env
+
+# Optional: Ignore logs
+**/logs
+*.log
+
+# Optional: Ignore build and dist folders
+**/dist/
+**/build/
+
+# Optional: Mac and VSCode junk
+.DS_Store
+.vscode/

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2020", // Modern Node.js target
+    "module": "CommonJS", // Match your package.json module type
+    "outDir": "./dist", // Output directory for compiled JavaScript files
+    "rootDir": "./src", // Source directory for TypeScript files
+    "strict": true, // Enable strict type-checking
+    "esModuleInterop": true, // Enable interoperability with CommonJS modules
+    "skipLibCheck": true, // Skip type checking of declaration files
+    "forceConsistentCasingInFileNames": true, // Enforce consistent file naming
+    "moduleResolution": "node", // Use Node.js module resolution strategy
+    "resolveJsonModule": true, // Allow importing JSON files
+    "baseUrl": ".", // Base directory for resolving non-relative module names
+    "paths": {
+      "@/*": ["src/*"] // Optional: Alias for easier imports (e.g., import from '@/app')
+    },
+    "sourceMap": true // Generate source maps for debugging
+  },
+  "include": ["src/**/*"], // Include all TypeScript files in src/
+  "exclude": ["node_modules", "dist"] // Exclude node_modules and output directory
+}
