@@ -32,4 +32,6 @@ export interface IGymDetailsDTO {
     };
     images: { url: string; uploadedAt: string }[];
     ratings?: { average?: number; count?: number };
+    createdAt: string | undefined;
+    updatedAt: string | undefined;
   }

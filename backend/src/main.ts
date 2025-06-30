@@ -36,6 +36,7 @@ import { ResendOtpUseCase } from '@/app/useCases/resendOtp.useCase';
 import { ResetPasswordUseCase } from '@/app/useCases/resetPassword.useCase';
 import { VerifyForgotPasswordOtpUseCase } from '@/app/useCases/verifyForgotPasswordOtp.useCase';
 import { VerifyUserOtpUseCase } from '@/app/useCases/verifyUserOtp.useCase';
+import { GetGymDetailsUseCase } from '@/app/useCases/getGymDetails.useCase';
 
 // Application Use Cases - Trainer
 import { CreateTrainerUseCase } from '@/app/useCases/createTrainer.useCase';
@@ -116,7 +117,7 @@ const resetPasswordUseCase = new ResetPasswordUseCase(usersRepository, passwordH
 const verifyUserOtpUseCase = new VerifyUserOtpUseCase(usersRepository);
 const getUserUseCase = new GetUserUseCase(usersRepository);
 const getGymsUseCase = new GetGymsUseCase(gymsRepository);
-
+const getGymDetailsUseCase = new GetGymDetailsUseCase(gymsRepository);
 // Trainer Use Cases
 const createTrainerUseCase = new CreateTrainerUseCase(trainersRepository, passwordHasher, emailService);
 const loginTrainerUseCase = new LoginTrainerUseCase(trainersRepository, passwordHasher, tokenService);
@@ -140,7 +141,7 @@ const userAuthController = new UserAuthController(
   resetPasswordUseCase,
   verifyUserOtpUseCase
 );
-const userController = new UserController(getUserUseCase,getGymsUseCase);
+const userController = new UserController(getUserUseCase,getGymsUseCase,getGymDetailsUseCase);
 const trainerAuthController = new TrainerAuthController(
   createTrainerUseCase,
   loginTrainerUseCase,

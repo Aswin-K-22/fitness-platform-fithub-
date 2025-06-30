@@ -49,7 +49,8 @@ const GymDetailsPage: React.FC = () => {
   useEffect(() => {
     const fetchGymDetail = async () => {
       try {
-        const response = await  fetchGymDetails(gymId!); // We'll define this API call
+        const response = await  fetchGymDetails(gymId!); 
+        console.log('fetched gym details :-' ,response)
         setGym(response);
         setError(null);
       } catch (err) {
@@ -72,7 +73,7 @@ const GymDetailsPage: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16">
         {/* Image Slider */}
         <div className="h-[480px] mb-8 rounded-lg overflow-hidden relative">
-          {gym.images.length > 0 ? (
+          {gym.images?.length > 0 ? (
             gym.images.map((img, index) => (
               <img
                 key={index}

@@ -6,6 +6,51 @@ import { IGymsRepository } from '@/app/repositories/gym.repository.';
 
 export class GymsRepository implements IGymsRepository {
   constructor(private prisma: PrismaClient) {}
+  async findById(id: string): Promise<Gym | null> {
+    const gym = await this.prisma.gym.findUnique({
+      where: { id },
+    });
+
+    if (!gym) {
+      return null;
+    }
+
+    const location = gym.location
+      ? typeof gym.location === 'object' &&
+        gym.location !== null &&
+        'type' in gym.location &&
+        'coordinates' in gym.location &&
+        Array.isArray(gym.location.coordinates) &&
+        gym.location.coordinates.length === 2 &&
+        typeof gym.location.coordinates[0] === 'number' &&
+        typeof gym.location.coordinates[1] === 'number'
+        ? { type: gym.location.type as string, coordinates: gym.location.coordinates as [number, number] }
+        : null
+      : null;
+    return new Gym({
+      id: gym.id,
+      name: gym.name,
+      type: gym.type || null,
+      description: gym.description || null,
+      maxCapacity: gym.maxCapacity,
+      membershipCompatibility: gym.membershipCompatibility || [],
+      address: gym.address || null,
+      contact: gym.contact || null,
+      equipment: gym.equipment || [],
+      schedule: gym.schedule || [],
+      trainers: gym.trainers || [],
+      facilities: gym.facilities || null,
+      location,
+      images: (gym.images || []).map((img: any) => ({
+        url: img.url,
+        description: img.description || null,
+        uploadedAt: img.uploadedAt instanceof Date ? img.uploadedAt : new Date(img.uploadedAt),
+      })),
+      ratings: gym.ratings || null,
+      createdAt: gym.createdAt,
+      updatedAt: gym.updatedAt,
+    });
+  }
 
   async findAllForUsers(
     skip: number,

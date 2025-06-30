@@ -31,6 +31,7 @@ export class UserRoutes {
 
 
     this.router.get('/gyms', this.userController.getGyms.bind(this.userController));
+    this.router.get('/gyms/:gymId', this.userController.getGymDetails.bind(this.userController));
     // Protected routes
     this.router.post('/logout', this.authMiddleware.auth.bind(this.authMiddleware), validateMiddleware('logout'), this.userAuthController.logout.bind(this.userAuthController));
     this.router.post('/auth/refresh-token',  refreshTokenMiddleware,validateMiddleware('refreshToken'), this.userAuthController.refreshToken.bind(this.userAuthController));

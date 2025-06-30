@@ -23,4 +23,5 @@ export interface IGymsRepository {
     gymType?: string;
     rating?: string;
   }): Promise<number>;
+  findById(id: string): Promise<Gym | null>;
 }

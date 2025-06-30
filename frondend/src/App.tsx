@@ -124,7 +124,7 @@ const App: React.FC = () => {
               <Route element={<UserLayout />}>
                 <Route path="/" element={<ProtectedRoute element={<HomePage />} allowedRole="user" isPublic={true} />} />
                 <Route path="/user/gyms" element={<ProtectedRoute element={<GymSearchPage />} allowedRole="user" isPublic={true} />} />
-                <Route path="/user/gyms/:gymId" element={<ProtectedRoute element={<GymDetailsPage />} allowedRole="user" isPublic={true} />} />
+                <Route path="/user/gym/:gymId" element={<ProtectedRoute element={<GymDetailsPage />} allowedRole="user" isPublic={true} />} />
                 <Route path="/user/membership" element={<ProtectedRoute element={<MembershipPage />} allowedRole="user" isPublic={true} />} />
                 <Route path="/user/profile" element={<ProtectedRoute element={<UserProfile />} allowedRole="user" />} />
                 <Route path="/auth" element={<LoginSignup />} />

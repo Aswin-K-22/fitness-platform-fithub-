@@ -183,7 +183,7 @@ export const verifyPayment = async (data: {
 };
 
 export const fetchGymDetails = async (gymId: string): Promise<IGymDetailsDTO> => {
-  const response = await apiClient.get(`/user/gyms/${gymId}`);
+  const response = await apiClient.get(`/gyms/${gymId}`);
   return response.data.data;
 };
 

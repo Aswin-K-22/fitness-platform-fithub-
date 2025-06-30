@@ -2,11 +2,14 @@ import { Request, Response } from 'express';
 import { GetUserUseCase } from '@/app/useCases/getUser.useCase';
 import { GetGymsRequestDTO } from '@/domain/dtos/getGymsRequest.dto';
 import { GetGymsUseCase } from '@/app/useCases/getGyms.useCase';
+import { GetGymDetailsUseCase } from '@/app/useCases/getGymDetails.useCase';
+import { GetGymDetailsRequestDTO } from '@/domain/dtos/getGymDetailsRequest.dto';
 
 export class UserController {
  constructor(
     private getUserUseCase: GetUserUseCase,
-    private getGymsUseCase: GetGymsUseCase
+    private getGymsUseCase: GetGymsUseCase,
+    private getGymDetailsUseCase: GetGymDetailsUseCase
   ) {}
 
   async getUser(req: Request, res: Response): Promise<void> {
@@ -42,6 +45,22 @@ export class UserController {
       res.status(200).json(response);
     } catch (error: any) {
       console.error('Error fetching gyms:', error);
+      res.status(500).json({ success: false, message: error.message || 'Internal server error' });
+    }
+  }
+  async getGymDetails(req: Request, res: Response): Promise<void> {
+    try {
+      const { gymId } = req.params;
+      const requestDTO: GetGymDetailsRequestDTO = { gymId };
+
+      const response = await this.getGymDetailsUseCase.execute(requestDTO);
+      if (!response.success || !response.data) {
+        res.status(404).json({ success: false, message: 'Gym not found' });
+        return;
+      }
+      res.status(200).json(response);
+    } catch (error: any) {
+      console.error('Error fetching gym details:', error);
       res.status(500).json({ success: false, message: error.message || 'Internal server error' });
     }
   }
