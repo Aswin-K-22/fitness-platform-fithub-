@@ -129,9 +129,9 @@ const App: React.FC = () => {
                 <Route path="/user/profile" element={<ProtectedRoute element={<UserProfile />} allowedRole="user" />} />
                 <Route path="/auth" element={<LoginSignup />} />
                 <Route path="/auth/google/callback" element={<GoogleCallback />} />
-                <Route path="/user/auth/verify-otp" element={<VerifyOtp />} />
-                <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-                <Route path="/auth/reset-password" element={<ResetPassword />} />
+                <Route path="/user/verify-otp" element={<VerifyOtp />} />
+                <Route path="/user/forgot-password" element={<ForgotPassword />} />
+                <Route path="/user/reset-password" element={<ResetPassword />} />
                 <Route path="/user/payment-success" element={<ProtectedRoute element={<PaymentSuccess />} allowedRole="user" />} />
                 <Route path="/user/payment-failed" element={<ProtectedRoute element={<PaymentFailed />} allowedRole="user" />} />
                 <Route path="/forbidden" element={<ForbiddenPage />} />

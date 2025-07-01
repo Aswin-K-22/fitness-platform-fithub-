@@ -25,9 +25,9 @@ export class UserRoutes {
     this.router.post('/auth/login', validateMiddleware('login'), this.userAuthController.login.bind(this.userAuthController));
     this.router.post('/auth/google', validateMiddleware('googleAuth'), this.userAuthController.googleAuth.bind(this.userAuthController));
     this.router.post('/auth/resend-otp', validateMiddleware('resendOtp'), this.userAuthController.resendOtp.bind(this.userAuthController));
-    this.router.post('/auth/forgot-password', validateMiddleware('forgotPassword'), this.userAuthController.forgotPassword.bind(this.userAuthController));
+    this.router.post('/forgot-password', validateMiddleware('forgotPassword'), this.userAuthController.forgotPassword.bind(this.userAuthController));
     this.router.post('/auth/verify-forgot-password-otp', validateMiddleware('verifyOtp'), this.userAuthController.verifyForgotPasswordOtp.bind(this.userAuthController));
-    this.router.post('/auth/reset-password', validateMiddleware('resetPassword'), this.userAuthController.resetPassword.bind(this.userAuthController));
+    this.router.post('/reset-password', validateMiddleware('resetPassword'), this.userAuthController.resetPassword.bind(this.userAuthController));
     this.router.post('/auth/verify-otp', validateMiddleware('verifyOtp'), this.userAuthController.verifyOtp.bind(this.userAuthController));
 
 

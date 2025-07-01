@@ -6,11 +6,11 @@ import { AuthErrorType } from '../enums/authErrorType.enum';
 // Interface for FitnessProfile as per Prisma schema
 interface FitnessProfile {
   goals: string[];
-  weight?: number | null; // Changed from number | undefined
-  height?: number | null; // Changed from number | undefined
-  level?: string | null; // Changed from string | undefined
-  calorieGoal?: number | null; // Changed from number | undefined
-  updatedAt?: Date | null; // Changed from Date | undefined
+  weight?: number | null; 
+  height?: number | null; 
+  level?: string | null; 
+  calorieGoal?: number | null; 
+  updatedAt?: Date | null; 
 }
 
 // Interface for Progress as per Prisma schema

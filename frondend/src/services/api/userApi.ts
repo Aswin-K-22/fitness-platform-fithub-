@@ -151,11 +151,11 @@ export const fetchGyms = async (
 };
 
 export const forgotPassword = async (email: string): Promise<void> => {
-  await apiClient.post("/auth/forgot-password", { email });
+  await apiClient.post("/forgot-password", { email });
 };
 
 export const resetPassword = async (email: string, otp: string, newPassword: string): Promise<void> => {
-  await apiClient.post("/auth/reset-password", { email, otp, newPassword });
+  await apiClient.post("/reset-password", { email, otp, newPassword });
 };
 
 export const verifyForgotPasswordOtp = async (data: IVerifyOtpRequestDTO): Promise<void> => {

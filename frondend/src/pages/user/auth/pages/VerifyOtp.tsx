@@ -61,7 +61,7 @@ const VerifyOtp: React.FC = () => {
       } else if (purpose === "forgot-password") {
         await verifyForgotPasswordOtp({ email, otp });
         toast.success("OTP verified! Please reset your password.");
-        navigate("/reset-password", { state: { email, otp } });
+        navigate("/user/reset-password", { state: { email, otp } });
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || "OTP verification failed");

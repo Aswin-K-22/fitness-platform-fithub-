@@ -279,7 +279,7 @@ const { isAuthenticated, user, } = useSelector((state: RootState) => state.userA
                   <div className="text-sm text-right">
                     <button
                       type="button"
-                      onClick={() => navigate("/forgot-password")}
+                      onClick={() => navigate("/user/forgot-password")}
                       className="text-blue-600 hover:text-blue-700"
                     >
                       Forgot Password?

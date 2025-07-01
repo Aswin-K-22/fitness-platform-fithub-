@@ -32,7 +32,7 @@ export class UserAuthController {
     private forgotPasswordUseCase: ForgotPasswordUseCase,
     private verifyForgotPasswordOtpUseCase: VerifyForgotPasswordOtpUseCase,
     private resetPasswordUseCase: ResetPasswordUseCase,
-    private  verifyUserOtpUseCase :  VerifyUserOtpUseCase
+    private  verifyUserOtpUseCase :  VerifyUserOtpUseCase,
   ) {}
 
   async signup(req: Request, res: Response): Promise<void> {
@@ -106,7 +106,7 @@ export class UserAuthController {
     res.status(200).json({ message: 'OTP resent successfully' });
   }
 
-  async forgotPassword(req: Request, res: Response): Promise<void> {
+ async forgotPassword(req: Request, res: Response): Promise<void> {
     const data: IForgotPasswordRequestDTO = req.body;
     const result = await this.forgotPasswordUseCase.execute(data);
     if (!result.success) {
@@ -135,6 +135,8 @@ export class UserAuthController {
     }
     res.status(200).json({ message: 'Password reset successfully' });
   }
+
+  
   async verifyOtp(req: Request, res: Response): Promise<void> {
   const data: IVerifyOtpRequestDTO = req.body;
   const result = await this.verifyUserOtpUseCase.execute(data);
