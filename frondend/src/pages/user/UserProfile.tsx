@@ -1,4 +1,4 @@
-// src/presentation/features/user/pages/UserProfile.tsx
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux"; 
 import * as echarts from "echarts";
@@ -11,9 +11,7 @@ import { logoutThunk, setAuth } from "../../store/slices/userAuthSlice";
 import Navbar from "../../components/common/user/Navbar";
 import type { UserAuth } from "../../types/auth.types";
 
-
-const backendUrl = import.meta.env.VITE_API_BASE_URL ;
-console.log("back end usrl :",backendUrl)
+const backendUrl = import.meta.env.VITE_API_BASE_URL;
 
 const UserProfile: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>(); 
@@ -46,7 +44,7 @@ const UserProfile: React.FC = () => {
   useEffect(() => {
     if (!profileData) return;
     const chart = echarts.init(document.getElementById("weeklyChart") as HTMLDivElement);
-    const weeklyCalories = profileData.weeklySummary.length
+    const weeklyCalories = profileData.weeklySummary?.length
       ? profileData.weeklySummary.map((summary) => summary.totalCaloriesBurned || 0).slice(-7)
       : Array(7).fill(0);
     const option = {
@@ -145,14 +143,16 @@ const UserProfile: React.FC = () => {
       if (profilePicFile) updateData.profilePic = profilePicFile;
 
       if (Object.keys(updateData).length > 0) {
-       const response = await updateUserProfile(updateData); 
+        const response = await updateUserProfile(updateData); 
+        console.log('update data response', response);
         setProfileData(response.user);
-   const authUser: UserAuth = {
+        const authUser: UserAuth = {
           id: response.user.id,
           email: response.user.email,
           name: response.user.name,
           role: response.user.role,
           profilePic: response.user?.profilePic || null,
+          isVerified: response.user?.isVerified || true,
         };
         dispatch(setAuth({ user: authUser, isAuthenticated: true }));
         toast.success("Profile updated successfully");
@@ -173,7 +173,6 @@ const UserProfile: React.FC = () => {
         toast.success("Logged out successfully!");
         navigate("/auth");
       }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       toast.error("Logout failed—try again!");
     }
@@ -241,7 +240,7 @@ const UserProfile: React.FC = () => {
                     })}
                   </p>
                 </div>
-                <div className="flex space-x-4"> {/* [Change 10 - Line 208]: Add button group */}
+                <div className="flex space-x-4">
                   <button
                     onClick={() => setIsEditing(!isEditing)}
                     className="rounded-md bg-gray-100 hover:bg-gray-200 px-4 py-2 text-gray-700"
@@ -265,33 +264,35 @@ const UserProfile: React.FC = () => {
             <div className="bg-white rounded-lg shadow">
               <div className="p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-6">Fitness Profile</h2>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Goals</label>
-                    <p className="text-gray-900">
-                      {profileData.fitnessProfile.goals?.join(", ") || "N/A"}
-                    </p>
+                {profileData.fitnessProfile ? (
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Goals</label>
+                      <p className="text-gray-900">{profileData.fitnessProfile.goals?.join(", ") || "N/A"}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Fitness Level</label>
+                      <p className="text-gray-900">{profileData.fitnessProfile.level || "N/A"}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
+                      <p className="text-gray-900">{profileData.fitnessProfile.weight || "N/A"}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Height (cm)</label>
+                      <p className="text-gray-900">{profileData.fitnessProfile.height || "N/A"}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Daily Calorie Goal</label>
+                      <p className="text-gray-900">{profileData.fitnessProfile.calorieGoal || "N/A"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Fitness Level</label>
-                    <p className="text-gray-900">{profileData.fitnessProfile.level || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
-                    <p className="text-gray-900">{profileData.fitnessProfile.weight || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Height (cm)</label>
-                    <p className="text-gray-900">{profileData.fitnessProfile.height || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Daily Calorie Goal</label>
-                    <p className="text-gray-900">{profileData.fitnessProfile.calorieGoal || "N/A"}</p>
-                  </div>
-                </div>
+                ) : (
+                  <p className="text-gray-500">No fitness profile data available.</p>
+                )}
                 <p className="text-sm text-gray-500 mt-4">
                   Last updated:{" "}
-                  {profileData.fitnessProfile.updatedAt
+                  {profileData.fitnessProfile?.updatedAt
                     ? new Date(profileData.fitnessProfile.updatedAt).toLocaleDateString()
                     : "N/A"}
                 </p>
@@ -307,7 +308,7 @@ const UserProfile: React.FC = () => {
                   </button>
                 </div>
                 <div className="space-y-4">
-                  {profileData.progress.length ? (
+                  {profileData.progress?.length ? (
                     profileData.progress.slice(0, 1).map((entry, index) => (
                       <div key={index} className="border rounded-lg p-4">
                         <div className="flex justify-between items-start mb-4">
@@ -355,7 +356,7 @@ const UserProfile: React.FC = () => {
                 <h2 className="text-lg font-semibold text-gray-900 mb-6">Weekly Summary</h2>
                 <div id="weeklyChart" className="h-64"></div>
                 <div className="mt-6 space-y-4">
-                  {profileData.weeklySummary.length ? (
+                  {profileData.weeklySummary?.length ? (
                     profileData.weeklySummary.slice(0, 2).map((summary, index) => (
                       <div
                         key={index}

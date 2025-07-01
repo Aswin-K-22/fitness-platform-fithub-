@@ -27,6 +27,7 @@ export class CreateUserUseCase {
 
       const hashedPassword = await this.passwordHasher.hashPassword(data.password);
       const user = User.create({ ...data, password: hashedPassword });
+      
 
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const createdUser = await this.userRepository.createWithOtp(user, otp);
@@ -37,7 +38,7 @@ export class CreateUserUseCase {
         subject: 'FitHub OTP Verification',
         text: `Your OTP is ${otp}. It expires in 30 seconds.`,
       });
-
+        console.log(` OTP is ${otp}. It expires in 30 seconds.`);
       return { success: true, data: { user: createdUser } };
     } catch (error) {
       return { success: false, error: (error as Error).message };

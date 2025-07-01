@@ -9,8 +9,8 @@ import type { IGymDetailsDTO } from "../../types/dtos/IGymDetailsDTO";
 import type { IVerifyOtpRequestDTO } from "../../types/dtos/VerifyOtpRequestDTO";
 import type { IResendOtpRequestDTO } from "../../types/dtos/IResendOtpRequestDTO";
 import type { IVerifyOtpResponseDTO } from "../../types/dtos/IVerifyOtpResponseDTO";
-import type { MembershipPlan } from "../../types/membership.types";
 import type { Gym } from "../../types/gym.types";
+import type { IMembershipPlansResponseDTO } from "../../types/dtos/IMembershipPlansResponseDTO";
 
 
 
@@ -98,7 +98,6 @@ export const login = async (email: string, password: string): Promise<{ user: Us
 };
 
 export const signup = async (name: string, email: string, password: string): Promise<void> => {
-  // [Change 1 - Line 83]: Updated to Promise<void> to match backend
   await apiClient.post("/auth/signup", { name, email, password });
 };
 
@@ -128,7 +127,7 @@ export const getUser = async (): Promise<{ user: UserAuth }> => {
 };
 
 export const getUserProfile = async (): Promise<IUserProfileResponseDTO> => {
-  const response = await apiClient.get("/auth/user/profile");
+  const response = await apiClient.get("/profile");
   return response.data;
 };
 
@@ -136,7 +135,7 @@ export const updateUserProfile = async (data: { name?: string; profilePic?: File
   const formData = new FormData();
   if (data.name) formData.append("name", data.name);
   if (data.profilePic) formData.append("profilePic", data.profilePic);
-  const response = await apiClient.put("/auth/user/profile", formData, {
+  const response = await apiClient.put("/profile", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return response.data;
@@ -163,13 +162,18 @@ export const verifyForgotPasswordOtp = async (data: IVerifyOtpRequestDTO): Promi
   await apiClient.post("/auth/verify-forgot-password-otp", data);
 };
 
-export const getMembershipPlansUser = async (page: number = 1, limit: number = 3): Promise<{ plans: MembershipPlan[]; total: number }> => {
-  const response = await apiClient.get("/user/membership-plans", { params: { page, limit } });
+export const getMembershipPlansUser = async (
+  page: number = 1, 
+  limit: number = 3
+): Promise<IMembershipPlansResponseDTO> => {
+  const response = await apiClient.get("/membership-plans", { 
+    params: { page, limit } 
+  });
   return response.data;
 };
 
 export const subscribeToPlan = async (planId: string): Promise<{ orderId: string; amount: number; currency: string }> => {
-  const response = await apiClient.post("/membership/subscribe", { planId });
+  const response = await apiClient.post("/membership/payment", { planId });
   return response.data;
 };
 

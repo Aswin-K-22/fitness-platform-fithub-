@@ -31,7 +31,7 @@ export class ResendOtpUseCase {
         subject: 'FitHub OTP Verification',
         text: `Your new OTP is ${otp}. It expires in 30 seconds.`,
       });
-
+      console.log(`Resend new OTP is ${otp}. It expires in 30 seconds.`)
       return { success: true };
     } catch (error) {
       return { success: false, error: AuthErrorType.EmailSendFailed };

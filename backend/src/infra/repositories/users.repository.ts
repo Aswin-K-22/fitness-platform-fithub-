@@ -1,3 +1,4 @@
+import { IUpdateUserProfileRequestDTO } from '@/domain/dtos/updateUserProfileRequest.dto';
 import { IUsersRepository } from '../../app/repositories/users.repository';
 import { User } from '../../domain/entities/User.entity';
 import { Email } from '../../domain/valueObjects/email.valueObject';
@@ -81,7 +82,7 @@ export class UsersRepository implements IUsersRepository {
         data: {
           name: user.name,
           email: user.email.address,
-          password: user.password,
+          password : user.password,
           role: user.role,
           profilePic: user.profilePic,
           isVerified: user.isVerified,
@@ -138,4 +139,49 @@ export class UsersRepository implements IUsersRepository {
       data: { password: newPassword },
     });
   }
+
+  async updateMembership(userId: string, membershipId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { membershipId },
+    });
+  }
+
+async updateProfile(email: string, data: IUpdateUserProfileRequestDTO): Promise<User> {
+  const updatedUser = await this.prisma.user.update({
+    where: { email },
+    data: {
+      name: data.name,
+      profilePic: data.profilePic,
+      updatedAt: new Date(),
+    },
+    include: {
+     memberships: true,
+        Bookings: true,
+        payments: true,
+    },
+  });
+
+ return new User({
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: new Email({ address: updatedUser.email }),
+      password: updatedUser.password,
+      role: updatedUser.role,
+      profilePic: updatedUser.profilePic,
+      isVerified: updatedUser.isVerified,
+      otp: updatedUser.otp,
+      otpExpires: updatedUser.otpExpires,
+      refreshToken: updatedUser.refreshToken,
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt,
+      fitnessProfile: updatedUser.fitnessProfile ?? null,
+      progress: updatedUser.progress ?? null,
+      weeklySummary: updatedUser.weeklySummary ?? null,
+      memberships: updatedUser.memberships ?? null,
+      Bookings: updatedUser.Bookings ?? null,
+      payments: updatedUser.payments ?? null,
+    });
+  }
+
 }

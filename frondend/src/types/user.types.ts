@@ -56,39 +56,41 @@ export interface UserProfileData {
   id: string;
   email: string;
   name: string;
-  role: "user" | "admin" | "trainer";
+  role: 'user' | 'admin' | 'trainer';
   createdAt: string;
+  isVerified :boolean ;
+  updatedAt: string; // Added to match backend response
+  profilePic?: string | null;
   fitnessProfile: {
-    goals?: string[];
-    weight?: number;
-    height?: number;
-    level?: string;
-    calorieGoal?: number;
-    updatedAt?: string;
-  };
+    goals?: string[] | null;
+    weight?: number | null;
+    height?: number | null;
+    level?: string | null;
+    calorieGoal?: number | null;
+    updatedAt?: string | null;
+  } | null; // Allow null to match backend
+  workoutPlanId?: string | null;
   progress: {
     workoutDate: string;
     planId: string;
     exercisesCompleted: {
       exerciseId: string;
       name: string;
-      sets?: number;
-      reps?: number;
-      weight?: number;
-      duration?: number;
-      difficulty?: string;
-      caloriesBurned?: number;
+      sets?: number | null;
+      reps?: number | null;
+      weight?: number | null;
+      duration?: number | null;
+      difficulty?: string | null;
+      caloriesBurned?: number | null;
     }[];
-    totalDuration?: number;
-    totalCaloriesBurned?: number;
-    dailyDifficulty?: string;
-  }[];
+    totalDuration?: number | null;
+    totalCaloriesBurned?: number | null;
+    dailyDifficulty?: string | null;
+  }[] | null; // Allow null to match backend
   weeklySummary: {
     weekStart: string;
     weekEnd: string;
-    totalCaloriesBurned?: number;
-    weeklyDifficulty?: string;
-  }[];
-  profilePic?: string;
-  workoutPlanId?: string;
+    totalCaloriesBurned?: number | null;
+    weeklyDifficulty?: string | null;
+  }[] | null; // Allow null to match backend
 }

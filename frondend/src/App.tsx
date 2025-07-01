@@ -129,7 +129,7 @@ const App: React.FC = () => {
                 <Route path="/user/profile" element={<ProtectedRoute element={<UserProfile />} allowedRole="user" />} />
                 <Route path="/auth" element={<LoginSignup />} />
                 <Route path="/auth/google/callback" element={<GoogleCallback />} />
-                <Route path="/auth/verify-otp" element={<VerifyOtp />} />
+                <Route path="/user/auth/verify-otp" element={<VerifyOtp />} />
                 <Route path="/auth/forgot-password" element={<ForgotPassword />} />
                 <Route path="/auth/reset-password" element={<ResetPassword />} />
                 <Route path="/user/payment-success" element={<ProtectedRoute element={<PaymentSuccess />} allowedRole="user" />} />

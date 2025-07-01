@@ -7,108 +7,35 @@ interface MembershipProps {
   status: string;
   startDate: Date;
   endDate: Date;
-  paymentId?: string;
-  price?: number;
-  currency?: string;
-  paymentStatus?: string;
-  paymentDate?: Date;
+  paymentId:string | null;
+  price: number | null;
+  currency: string | null;
+  paymentStatus: string | null;
+  paymentDate: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export class Membership {
-  private _id: string;
+  private _id?: string;
   private _userId: string;
   private _planId: string;
   private _status: string;
   private _startDate: Date;
   private _endDate: Date;
-  private _paymentId?: string;
-  private _price?: number;
-  private _currency?: string;
-  private _paymentStatus?: string;
-  private _paymentDate?: Date;
+  private _paymentId: string | null;
+  private _price: number | null;
+  private _currency: string | null;
+  private _paymentStatus : string | null;
+  private _paymentDate: Date | null;
   private _createdAt: Date;
   private _updatedAt: Date;
 
-  static create(props: MembershipProps): Membership {
+  constructor(props: MembershipProps) {
     if (!props.userId || !props.planId || !props.status || !props.startDate || !props.endDate) {
       throw new Error(MembershipErrorType.MissingRequiredFields);
     }
-    if (!['Active', 'Expired', 'Pending'].includes(props.status)) {
-      throw new Error(MembershipErrorType.InvalidStatus);
-    }
-    if (props.startDate >= props.endDate) {
-      throw new Error(MembershipErrorType.InvalidDateRange);
-    }
-    return new Membership(props);
-  }
-
-  get id(): string {
-    return this._id;
-  }
-
-  get userId(): string {
-    return this._userId;
-  }
-
-  get planId(): string {
-    return this._planId;
-  }
-
-  get status(): string {
-    return this._status;
-  }
-
-  get startDate(): Date {
-    return this._startDate;
-  }
-
-  get endDate(): Date {
-    return this._endDate;
-  }
-
-  get paymentId(): string | undefined {
-    return this._paymentId;
-  }
-
-  get price(): number | undefined {
-    return this._price;
-  }
-
-  get currency(): string | undefined {
-    return this._currency;
-  }
-
-  get paymentStatus(): string | undefined {
-    return this._paymentStatus;
-  }
-
-  get paymentDate(): Date | undefined {
-    return this._paymentDate;
-  }
-
-  get createdAt(): Date {
-    return this._createdAt;
-  }
-
-  get updatedAt(): Date {
-    return this._updatedAt;
-  }
-
-  activate(paymentId: string, paymentStatus: string, paymentDate: Date): void {
-    if (this._status === 'Active') {
-      throw new Error(MembershipErrorType.AlreadyActive);
-    }
-    this._paymentId = paymentId;
-    this._paymentStatus = paymentStatus;
-    this._paymentDate = paymentDate;
-    this._status = 'Active';
-    this._updatedAt = new Date();
-  }
-
-  private constructor(props: MembershipProps) {
-    this._id = props.id || crypto.randomUUID();
+    this._id = props.id;
     this._userId = props.userId;
     this._planId = props.planId;
     this._status = props.status;
@@ -122,4 +49,19 @@ export class Membership {
     this._createdAt = props.createdAt || new Date();
     this._updatedAt = props.updatedAt || new Date();
   }
+
+  // Getters
+  get id(): string | undefined { return this._id; }
+  get userId(): string { return this._userId; }
+  get planId(): string { return this._planId; }
+  get status(): string { return this._status; }
+  get startDate(): Date { return this._startDate; }
+  get endDate(): Date { return this._endDate; }
+  get paymentId(): string | null { return this._paymentId; }
+  get price(): number | null { return this._price; }
+  get currency(): string | null  { return this._currency; }
+  get paymentStatus(): string | null { return this._paymentStatus; }
+  get paymentDate(): Date | null { return this._paymentDate; }
+  get createdAt(): Date { return this._createdAt; }
+  get updatedAt(): Date { return this._updatedAt; }
 }

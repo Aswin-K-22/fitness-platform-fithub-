@@ -1,3 +1,4 @@
+import { IUpdateUserProfileRequestDTO } from '@/domain/dtos/updateUserProfileRequest.dto';
 import { User } from '../../domain/entities/User.entity';
 
 export interface IUsersRepository {
@@ -9,4 +10,6 @@ export interface IUsersRepository {
   verifyUser(email: string): Promise<void>;
   updatePassword(email: string, newPassword: string): Promise<void>;
   createWithOtp(user: User,otp: string): Promise<User>;
+  updateMembership(userId: string, membershipId: string): Promise<void> 
+  updateProfile(email: string, data: IUpdateUserProfileRequestDTO): Promise<User>;
 }

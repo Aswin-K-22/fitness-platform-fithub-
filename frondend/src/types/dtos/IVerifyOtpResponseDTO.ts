@@ -1,4 +1,4 @@
-import { UserAuth } from "../../entities/common/UserAuth";
+import type { UserAuth } from "../auth.types";
 
 export interface IVerifyOtpResponseDTO {
   user: UserAuth;

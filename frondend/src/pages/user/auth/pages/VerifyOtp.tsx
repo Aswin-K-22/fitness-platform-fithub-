@@ -55,7 +55,7 @@ const VerifyOtp: React.FC = () => {
     try {
       if (purpose === "signup") {
         const { user } = await verifyOtp({ email, otp });
-        dispatch(setAuth({ user, isAuthenticated: true })); // [Change 6 - Line 57]: Use setAuth
+        dispatch(setAuth({ user, isAuthenticated: true })); 
         toast.success("Verification successful!");
         navigate("/");
       } else if (purpose === "forgot-password") {

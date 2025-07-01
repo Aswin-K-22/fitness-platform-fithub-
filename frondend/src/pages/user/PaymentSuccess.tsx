@@ -46,7 +46,7 @@ const PaymentSuccess: React.FC = () => {
         {paymentData && (
           <div className="text-left mb-6 bg-gray-50 p-4 rounded-lg">
             <p><strong>Payment ID:</strong> {paymentData.paymentId}</p>
-            <p><strong>Order ID:</strong> {paymentData.orderId}</p>
+          
             <p><strong>Plan:</strong> {paymentData.planName}</p>
             <p><strong>Amount:</strong> ₹{paymentData.amount}</p>
           </div>

@@ -4,4 +4,9 @@ export enum UserErrorType {
   UserNotFound = 'User not found',
   UserAlreadyVerified = 'User already verified',
   InvalidCredentials = 'Invalid email or password',
+  InvalidOTP = 'Invalid OTP',
+  InvalidName = 'INVALID_NAME',  
+  InvalidNameFormat = 'INVALID_NAME_FORMAT',  
+  NoValidFieldsProvided = 'NO_VALID_FIELDS_PROVIDED',  
+  UpdateProfileFailed = 'UPDATE_PROFILE_FAILED',  
 }

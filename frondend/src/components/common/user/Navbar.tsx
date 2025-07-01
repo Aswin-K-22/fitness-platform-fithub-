@@ -45,7 +45,7 @@ const Navbar: React.FC = () => {
   };
 
   const handleProfileClick = () => {
-    navigate("/profile");
+    navigate("/user/profile");
     setIsOpen(false);
   };
 

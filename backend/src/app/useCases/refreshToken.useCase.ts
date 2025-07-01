@@ -25,11 +25,11 @@ export class RefreshTokenUseCase {
       }
 
       const decoded = await this.tokenService.verifyRefreshToken(data.refreshToken);
-      if (!decoded.email) {
-        console.log("invalid refresh token-with mail",decoded.email)
+      if (!decoded.email || !decoded.id) {
+        console.log("invalid refresh token-with mail =",decoded.email , 'ID=',decoded.id)
         return { success: false, error: AuthErrorType.InvalidRefreshTokenStructure };
       }
-
+      console.log('ID ',decoded.id)
       const user = await this.userRepository.findById(decoded.id);
       if (!user || user.refreshToken !== data.refreshToken) {
 
@@ -44,6 +44,7 @@ export class RefreshTokenUseCase {
 
       return { success: true, data: { user, accessToken, refreshToken } };
     } catch (error) {
+      console.log('Error from refresh token Use case file =',error)
       return { success: false, error: AuthErrorType.InvalidRefreshToken };
     }
   }

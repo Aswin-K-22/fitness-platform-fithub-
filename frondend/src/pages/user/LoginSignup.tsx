@@ -184,7 +184,7 @@ const { isAuthenticated, user, } = useSelector((state: RootState) => state.userA
     try {
       await signup(signupData.name, signupData.email, signupData.password);
       toast.success("OTP sent to your email!");
-      navigate("/verify-otp", { state: { email: signupData.email } });
+      navigate("/user/auth/verify-otp", { state: { email: signupData.email } });
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to send OTP");
     }

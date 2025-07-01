@@ -1,7 +1,11 @@
 // src/domain/dtos/IMembershipPlansResponseDTO.ts
-import { MembershipPlan } from "../../entities/common/MembershipPlan";
+
+import type { MembershipPlan } from "../membership.types";
 
 export interface IMembershipPlansResponseDTO {
+  success: boolean;
   plans: MembershipPlan[];
-  total: number;
+  page: number;
+  totalPages: number;
+  totalPlans: number;
 }

@@ -142,6 +142,8 @@ export class UserAuthController {
     res.status(400).json({ message: result.error });
     return;
   }
-  res.status(200).json({ message: 'OTP verified successfully' });
+  res.cookie('userAccessToken', result.data?.accessToken, { httpOnly: true, secure: true });
+  res.cookie('userRefreshToken', result.data?.refreshToken, { httpOnly: true, secure: true });
+  res.status(200).json({ message: 'OTP verified successfully', user: result.data?.user });
 }
 }

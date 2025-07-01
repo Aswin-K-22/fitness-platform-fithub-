@@ -23,7 +23,7 @@ import { BcryptPasswordHasher } from '@/infra/providers/bcryptPasswordHasher';
 import { GoogleAuthService } from '@/infra/providers/googleAuthService';
 import { JwtTokenService } from '@/infra/providers/jwtTokenService';
 import { NodemailerEmailService } from '@/infra/providers/nodemailerEmailService';
-
+import { MembershipsPlanRepository } from '@/infra/repositories/membershipsPlan.repository';
 // Application Use Cases - User
 import { CreateUserUseCase } from '@/app/useCases/createUser.useCase';
 import { ForgotPasswordUseCase } from '@/app/useCases/forgotPassword.useCase';
@@ -37,6 +37,9 @@ import { ResetPasswordUseCase } from '@/app/useCases/resetPassword.useCase';
 import { VerifyForgotPasswordOtpUseCase } from '@/app/useCases/verifyForgotPasswordOtp.useCase';
 import { VerifyUserOtpUseCase } from '@/app/useCases/verifyUserOtp.useCase';
 import { GetGymDetailsUseCase } from '@/app/useCases/getGymDetails.useCase';
+import { GetMembershipPlansUseCase } from '@/app/useCases/getMembershipPlans.useCase';
+import { UpdateUserProfileUseCase } from './app/useCases/updateUserProfile.useCase';
+
 
 // Application Use Cases - Trainer
 import { CreateTrainerUseCase } from '@/app/useCases/createTrainer.useCase';
@@ -60,6 +63,11 @@ import { TrainerAuthMiddleware } from '@/presentation/middlewares/trainerAuth.mi
 import { TrainerRoutes } from '@/presentation/routes/trainer.routes';
 import { UserRoutes } from '@/presentation/routes/user.routes';
 import { GetGymsUseCase } from './app/useCases/getGyms.useCase';
+import { MembershipsRepository } from './infra/repositories/memberships.repository';
+import { PaymentsRepository } from './infra/repositories/payments.repository';
+import { InitiateMembershipPaymentUseCase } from './app/useCases/initiateMembershipPayment.useCase';
+import { VerifyMembershipPaymentUseCase } from './app/useCases/verifyMembershipPayment.useCase';
+import { GetUserProfileUseCase } from './app/useCases/getUserProfile.useCase';
 
 
 const app = express();
@@ -99,6 +107,9 @@ app.use('/api/user/auth/signup', rateLimit({
 const usersRepository = new UsersRepository(prisma);
 const trainersRepository = new TrainersRepository(prisma);
 const gymsRepository = new GymsRepository(prisma);
+const membershipsPlanRepository = new MembershipsPlanRepository(prisma);
+const membershipsRepository = new MembershipsRepository(prisma);
+const paymentsRepository = new PaymentsRepository(prisma);
 const passwordHasher = new BcryptPasswordHasher();
 const emailService = new NodemailerEmailService();
 const tokenService = new JwtTokenService();
@@ -114,10 +125,19 @@ const resendOtpUseCase = new ResendOtpUseCase(usersRepository, emailService);
 const forgotPasswordUseCase = new ForgotPasswordUseCase(usersRepository, emailService);
 const verifyForgotPasswordOtpUseCase = new VerifyForgotPasswordOtpUseCase(usersRepository);
 const resetPasswordUseCase = new ResetPasswordUseCase(usersRepository, passwordHasher);
-const verifyUserOtpUseCase = new VerifyUserOtpUseCase(usersRepository);
+const verifyUserOtpUseCase = new VerifyUserOtpUseCase(usersRepository,tokenService);
 const getUserUseCase = new GetUserUseCase(usersRepository);
+const getUserProfileUseCase = new GetUserProfileUseCase(usersRepository)
 const getGymsUseCase = new GetGymsUseCase(gymsRepository);
 const getGymDetailsUseCase = new GetGymDetailsUseCase(gymsRepository);
+const getMembershipPlansUseCase = new GetMembershipPlansUseCase(membershipsPlanRepository);
+const initiateMembershipPaymentUseCase = new InitiateMembershipPaymentUseCase(membershipsRepository,paymentsRepository,usersRepository,membershipsPlanRepository)
+const verifyMembershipPaymentUseCase = new VerifyMembershipPaymentUseCase(membershipsRepository,paymentsRepository,usersRepository,membershipsPlanRepository);
+const updateUserProfileUseCase = new UpdateUserProfileUseCase(usersRepository);
+
+
+
+
 // Trainer Use Cases
 const createTrainerUseCase = new CreateTrainerUseCase(trainersRepository, passwordHasher, emailService);
 const loginTrainerUseCase = new LoginTrainerUseCase(trainersRepository, passwordHasher, tokenService);
@@ -141,7 +161,18 @@ const userAuthController = new UserAuthController(
   resetPasswordUseCase,
   verifyUserOtpUseCase
 );
-const userController = new UserController(getUserUseCase,getGymsUseCase,getGymDetailsUseCase);
+
+
+const userController = new UserController(
+  getUserUseCase,
+  getGymsUseCase,
+  getGymDetailsUseCase,
+  getMembershipPlansUseCase,
+  initiateMembershipPaymentUseCase,
+  verifyMembershipPaymentUseCase,
+  getUserProfileUseCase,
+  updateUserProfileUseCase 
+);
 const trainerAuthController = new TrainerAuthController(
   createTrainerUseCase,
   loginTrainerUseCase,

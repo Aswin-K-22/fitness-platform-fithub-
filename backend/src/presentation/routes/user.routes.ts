@@ -5,6 +5,7 @@ import { AuthMiddleware } from '../middlewares/userAuth.middleware';
 import { validateMiddleware } from '../middlewares/validate.middleware';
 import { JwtTokenService } from '@/infra/providers/jwtTokenService';
 import { refreshTokenMiddleware } from '../middlewares/refreshToken.middleware';
+import { upload } from '@/infra/config/multer';
 export class UserRoutes {
   public router: Router;
 
@@ -32,11 +33,20 @@ export class UserRoutes {
 
     this.router.get('/gyms', this.userController.getGyms.bind(this.userController));
     this.router.get('/gyms/:gymId', this.userController.getGymDetails.bind(this.userController));
+    this.router.get('/membership-plans', this.userController.getMembershipPlans.bind(this.userController));
+    
+    this.router.post('/membership/payment', this.authMiddleware.auth.bind(this.authMiddleware), this.userController.initiateMembershipPayment.bind(this.userController));
+    this.router.post('/membership/verify-payment', this.authMiddleware.auth.bind(this.authMiddleware),this.userController.verifyMembershipPayment.bind(this.userController));
     // Protected routes
     this.router.post('/logout', this.authMiddleware.auth.bind(this.authMiddleware), validateMiddleware('logout'), this.userAuthController.logout.bind(this.userAuthController));
     this.router.post('/auth/refresh-token',  refreshTokenMiddleware,validateMiddleware('refreshToken'), this.userAuthController.refreshToken.bind(this.userAuthController));
     this.router.get('/auth/get', this.authMiddleware.auth.bind(this.authMiddleware), this.userController.getUser.bind(this.userController));
-  
-  
+   this.router.get('/profile', this.authMiddleware.auth.bind(this.authMiddleware), this.userController.getUserProfile.bind(this.userController));
+  this.router.put(
+  '/profile',
+  this.authMiddleware.auth.bind(this.authMiddleware),
+  upload.single('profilePic'),
+  this.userController.updateUserProfile.bind(this.userController)
+);
   }
 }
