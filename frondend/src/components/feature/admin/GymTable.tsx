@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { Gym } from "../../../../domain/entities/common/Gym";
+import type { Gym } from "../../../types/gym.types";
 
 interface GymTableProps {
   gyms: Gym[];

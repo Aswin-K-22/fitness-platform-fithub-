@@ -24,7 +24,9 @@ export class AdminRoutes {
   private setupRoutes(): void {
     console.log('Setting up admin routes');
     this.router.post('/auth/login', validateMiddleware('adminLogin'), this.adminAuthController.login.bind(this.adminAuthController));
-    this.router.post('/auth/refresh-token', (req, res, next) => adminRefreshTokenMiddleware(req, res, next, this.usersRepository, this.tokenService), validateMiddleware('adminRefreshToken'), this.adminAuthController.refreshToken.bind(this.adminAuthController));
+    this.router.post('/auth/logout', this.adminAuthMiddleware.auth.bind(this.adminAuthMiddleware),  this.adminAuthController.logout.bind(this.adminAuthController));
+
+    this.router.post('/auth/refresh-token', this.adminAuthController.refreshToken.bind(this.adminAuthController));
     this.router.get('/auth/get', this.adminAuthMiddleware.auth.bind(this.adminAuthMiddleware), this.adminController.getAdmin.bind(this.adminController));
   }
 }

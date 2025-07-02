@@ -112,6 +112,7 @@ import { PaymentsRepository } from './infra/repositories/payments.repository';
 import { InitiateMembershipPaymentUseCase } from './app/useCases/initiateMembershipPayment.useCase';
 import { VerifyMembershipPaymentUseCase } from './app/useCases/verifyMembershipPayment.useCase';
 import { GetUserProfileUseCase } from './app/useCases/getUserProfile.useCase';
+import { LogoutAdminUseCase } from './app/useCases/logoutAdmin.useCase';
 
 
 const app = express();
@@ -178,6 +179,7 @@ const getMembershipPlansUseCase = new GetMembershipPlansUseCase(membershipsPlanR
 const initiateMembershipPaymentUseCase = new InitiateMembershipPaymentUseCase(membershipsRepository,paymentsRepository,usersRepository,membershipsPlanRepository)
 const verifyMembershipPaymentUseCase = new VerifyMembershipPaymentUseCase(membershipsRepository,paymentsRepository,usersRepository,membershipsPlanRepository);
 const updateUserProfileUseCase = new UpdateUserProfileUseCase(usersRepository);
+const logoutAdminUseCase = new LogoutAdminUseCase(usersRepository);
 
 
 
@@ -243,7 +245,7 @@ const trainerAuthController = new TrainerAuthController(
 const trainerController = new TrainerController(getTrainerUseCase);
 
 
-const adminAuthController = new AdminAuthController(loginAdminUseCase, adminRefreshTokenUseCase);
+const adminAuthController = new AdminAuthController(loginAdminUseCase, adminRefreshTokenUseCase,logoutAdminUseCase );
 const adminController = new AdminController(getAdminUseCase);
 
 

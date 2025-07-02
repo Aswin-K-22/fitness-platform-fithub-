@@ -107,7 +107,7 @@ export const adminLogin = async (email: string, password: string) => {
 };
 
 export const adminLogout = async (email: string): Promise<void> => {
-  await apiClient.post("/admin/logout", { email });
+  await apiClient.post("/auth/logout", { email });
 };
 
 export const getAdmin = async () => {

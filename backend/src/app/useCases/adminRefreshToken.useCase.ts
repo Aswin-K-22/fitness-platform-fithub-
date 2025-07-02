@@ -19,7 +19,9 @@ export class AdminRefreshTokenUseCase {
 
   async execute(data: IAdminRefreshTokenRequestDTO): Promise<IResponse> {
     try {
+        console.log('admin referesh toke verifaction failed')
       const decoded = await this.tokenService.verifyRefreshToken(data.refreshToken);
+      console.log('admin referesh toke verifaction failed ,decode=',decoded)
       const admin = await this.usersRepository.findById(decoded.id);
       if (!admin) {
         return { success: false, error: UserErrorType.UserNotFound };
@@ -51,6 +53,7 @@ export class AdminRefreshTokenUseCase {
         },
       };
     } catch (error) {
+
       return { success: false, error: AuthErrorType.InvalidRefreshToken };
     }
   }
