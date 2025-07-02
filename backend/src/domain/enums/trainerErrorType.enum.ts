@@ -19,5 +19,15 @@ export enum TrainerErrorType {
   NotApproved = 'Pending admin approval',
   NOT_AUTHENTICATED = 'Trainer not authenticated',
   FIND_BY_EMAIL_FAILED = 'Failed to find trainer by email',
+  
+  EmailNotVerified = 'EMAIL_NOT_VERIFIED',
+  NotApprovedByAdmin = 'NOT_APPROVED_BY_ADMIN',
+  InvalidOtp = 'INVALID_OTP',
+  InvalidRefreshToken = "Invalid Refresh Token",
+  NoRefreshTokenProvided = "NoRefreshTokenProvided",
+  InvalidAccessToken = "InvalidAccessToken",
+  NoAccessTokenProvided = "NoAccessTokenProvided",
+  InvalidRequest = "InvalidRequest",
+  
 
 }

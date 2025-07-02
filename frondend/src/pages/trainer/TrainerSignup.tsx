@@ -100,9 +100,13 @@ const TrainerSignup: React.FC = () => {
     }
   };
 
-  const removeSpecialty = (specialty: string) => {
-    setFormData((prev) => ({ ...prev, specialties: prev.specialties.filter((s) => s !== specialty) }));
-  };
+const removeSpecialty = (specialty: string) => {
+  setFormData((prev) => {
+    const updatedSpecialties = prev.specialties.filter((s) => s !== specialty);
+    console.log('Updated Specialties:', updatedSpecialties);
+    return { ...prev, specialties: updatedSpecialties };
+  });
+};
 
   const handleCertificationChange = (
     index: number,
@@ -138,10 +142,12 @@ const TrainerSignup: React.FC = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    console.log('Form Data Before Submission:', formData);
     if (!validateForm()) return;
 
     setLoading(true);
     try {
+
       await signupTrainer(formData);
       toast.success("Signup successful! Please verify your email.");
       navigate("/trainer/verify-otp", { state: { email: formData.email, purpose: "trainer-signup" } });

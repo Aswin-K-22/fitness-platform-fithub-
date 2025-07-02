@@ -46,7 +46,7 @@ const Navbar: React.FC = () => {
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <a
-                href="/dashboard"
+                href="/trainer/dashboard"
                 className="border-indigo-600 text-indigo-600 border-b-2 inline-flex items-center px-1 pt-1 text-sm font-medium"
               >
                 Dashboard

@@ -65,7 +65,7 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshResponse = await refreshClient.post("/auth/trainer/refresh-token");
+        const refreshResponse = await refreshClient.post("/refresh-token");
         console.log("Trainer token refreshed successfully:", refreshResponse.data);
         localStorage.setItem("TrainerData", JSON.stringify(refreshResponse.data.trainer));
         isRefreshing = false;
@@ -75,8 +75,8 @@ apiClient.interceptors.response.use(
         console.error("Trainer token refresh failed:", refreshError);
         isRefreshing = false;
         processQueue(refreshError as AxiosError);
-        document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
-        document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
+        document.cookie = "trainerAccessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
+        document.cookie = "trainerRefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
         return Promise.reject(refreshError);
       }
     }
@@ -92,7 +92,7 @@ export { apiClient, refreshClient };
 
 
 export const trainerLogin = async (email: string, password: string): Promise<ILoginResponseDTO> => {
-  const response = await apiClient.post("/auth/trainer/login", { email, password });
+  const response = await apiClient.post("/auth/login", { email, password });
   return response.data;
 };
 
@@ -110,15 +110,17 @@ export const signupTrainer = async (data: ITrainerSignupRequestDTO) => {
     formData.append(`certifications[${index}][dateEarned]`, cert.dateEarned);
     formData.append(`certifications[${index}][file]`, cert.file);
   });
-
-  const response = await apiClient.post("/auth/trainer/signup", formData, {
+for (const [key, value] of formData.entries()) {
+    console.log(`FormData Entry: ${key} = ${value}`);
+  }
+  const response = await apiClient.post("/auth/signup", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return response.data;
 };
 
 export const verifyTrainerOtp = async (data: IVerifyOtpRequestDTO): Promise<void> => {
-  const response = await apiClient.post("/auth/trainer/verify-otp", data);
+  const response = await apiClient.post("/verify-otp", data);
   return response.data;
 };
 export const getTrainer = async () => {
@@ -127,16 +129,16 @@ export const getTrainer = async () => {
 };
 
 export const resendTrainerOtp = async (data: IResendOtpRequestDTO): Promise<void> => {
-  await apiClient.post("/auth/trainer/resend-otp", data);
+  await apiClient.post("/auth/resend-otp", data);
 };
 
 export const trainerLogout = async (email: string) => {
-  const response = await apiClient.post("/trainer/logout", { email });
+  const response = await apiClient.post("/auth/logout", { email });
   return response.data;
 };
 
 export const getTrainerProfile = async (): Promise<{ trainer: TrainerProfileData }> => {
-  const response = await apiClient.get("/trainer/profile");
+  const response = await apiClient.get("/profile");
   return response.data;
 };
 

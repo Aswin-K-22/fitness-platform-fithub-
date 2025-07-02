@@ -9,7 +9,7 @@ import type { ITrainerProfileResponseDTO } from "../../types/dtos/ITrainerProfil
 import { getTrainerProfile, updateTrainerProfile } from "../../services/api/trainerApi";
 import type { IUpdateTrainerProfileRequestDTO } from "../../types/dtos/IUpdateTrainerProfileRequestDTO";
 import { setAuth } from "../../store/slices/trainerAuthSlice";
-import Navbar from "../../components/common/user/Navbar";
+import Navbar from "../../components/common/trainer/Navbar";
 
 // Initialize repository and use cases
 

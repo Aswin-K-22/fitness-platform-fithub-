@@ -159,10 +159,15 @@ export class TrainersRepository implements ITrainersRepository {
     });
   }
 
-  async updateRefreshToken(email: string, refreshToken: string | null): Promise<void> {
-    await this.prisma.trainer.update({
-      where: { email },
-      data: { refreshToken },
-    });
+ async updateRefreshToken(email: string, refreshToken: string | null): Promise<void> {
+    try {
+      await this.prisma.trainer.update({
+        where: { email },
+        data: { refreshToken },
+      });
+    } catch (error) {
+      console.error(`[ERROR] Failed to update refresh token for email: ${email}`, error);
+      throw new Error('Database error while updating refresh token');
+    }
   }
 }

@@ -1,40 +1,46 @@
 import { ITrainersRepository } from '../repositories/trainers.repository';
-import { IResendOtpRequestDTO } from '../../domain/dtos/resendOtpRequest.dto';
-import { UserErrorType } from '../../domain/enums/userErrorType.enum';
-import { AuthErrorType } from '../../domain/enums/authErrorType.enum';
 import { IEmailService } from '../providers/email.service';
+import { IResendOtpRequestDTO, ResendOtpRequestDTO } from '../../domain/dtos/resendOtpRequest.dto';
+import { TrainerErrorType } from '../../domain/enums/trainerErrorType.enum';
+import { generateOtp } from '../../infra/utils/otp';
 
-interface ResendOtpResponseDTO {
+interface ResendTrainerOtpResult {
   success: boolean;
   error?: string;
 }
 
 export class ResendTrainerOtpUseCase {
   constructor(
-    private trainerRepository: ITrainersRepository,
-    private emailService: IEmailService,
+    private trainersRepository: ITrainersRepository,
+    private emailService: IEmailService
   ) {}
 
-  async execute(data: IResendOtpRequestDTO): Promise<ResendOtpResponseDTO> {
+  async execute(data: IResendOtpRequestDTO): Promise<ResendTrainerOtpResult> {
     try {
-      const user = await this.trainerRepository.findByEmail(data.email);
-      if (!user) {
-        return { success: false, error: UserErrorType.UserNotFound };
+      const dto = new ResendOtpRequestDTO(data);
+
+      const trainer = await this.trainersRepository.findByEmail(dto.email);
+      if (!trainer) {
+        return { success: false, error: TrainerErrorType.TrainerNotFound };
       }
 
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      await this.trainerRepository.updateOtp(data.email, otp);
+      if (trainer.isVerified) {
+        return { success: false, error: TrainerErrorType.AlreadyVerified };
+      }
+
+      const otp = generateOtp();
+      await this.trainersRepository.updateOtp(dto.email, otp);
 
       await this.emailService.sendMail({
         from: process.env.EMAIL_USER || 'no-reply@fithub.com',
-        to: data.email,
-        subject: 'FitHub OTP Verification',
+        to: dto.email,
+        subject: 'FitHub Trainer Signup - OTP Verification',
         text: `Your new OTP is ${otp}. It expires in 30 seconds.`,
       });
-
+      console.log( `Trainer Resend  new OTP is ${otp}. It expires in 30 seconds.`)
       return { success: true };
-    } catch (error) {
-      return { success: false, error: AuthErrorType.EmailSendFailed };
+    } catch (error: any) {
+      return { success: false, error: error.message || 'Internal server error' };
     }
   }
 }

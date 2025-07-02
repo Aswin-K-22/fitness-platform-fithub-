@@ -1,39 +1,31 @@
-// backend/src/app/useCases/getTrainer.useCase.ts
 import { ITrainersRepository } from '../repositories/trainers.repository';
+import { IGetTrainerResponseDTO, TrainerAuth } from '../../domain/dtos/getTrainerResponse.dto';
 import { TrainerErrorType } from '../../domain/enums/trainerErrorType.enum';
-import { ITrainerOutRequestDTO, Result } from '../../domain/dtos/trainerOutRequest.dto';
-import { Trainer } from '../../domain/entities/Trainer.entity';
 
 export class GetTrainerUseCase {
-  constructor(private trainerRepository: ITrainersRepository) {}
+  constructor(private trainersRepository: ITrainersRepository) {}
 
-  async execute(email: string): Promise<Result<ITrainerOutRequestDTO>> {
-    if (!email) {
-      return {
-        success: false,
-        error: TrainerErrorType.NOT_AUTHENTICATED,
-      };
-    }
+  async execute(email: string): Promise<IGetTrainerResponseDTO> {
+    try {
+      const trainer = await this.trainersRepository.findByEmail(email);
+      if (!trainer) {
+        throw new Error(TrainerErrorType.TrainerNotFound);
+      }
 
-    const trainer = await this.trainerRepository.findByEmail(email);
-    if (!trainer) {
-      return {
-        success: false,
-        error: TrainerErrorType.TrainerNotFound,
-      };
-    }
-
-    return {
-      success: true,
-      data: {
-        id: trainer.id,
-        email: trainer.email,
+      const trainerResponse: TrainerAuth = {
+        id: trainer.id!,
+        email: trainer.email.address,
         name: trainer.name,
         role: trainer.role,
+        profilePic: trainer.profilePic || null,
         isVerified: trainer.isVerified,
         verifiedByAdmin: trainer.verifiedByAdmin,
-        profilePic: trainer.profilePic,
-      },
-    };
+      };
+
+      return { trainer: trainerResponse };
+    } catch (error: any) {
+      console.error('[ERROR] Get trainer error:', error);
+      throw new Error(TrainerErrorType.TrainerNotFound);
+    }
   }
 }

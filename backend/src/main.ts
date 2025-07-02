@@ -24,6 +24,9 @@ import { GoogleAuthService } from '@/infra/providers/googleAuthService';
 import { JwtTokenService } from '@/infra/providers/jwtTokenService';
 import { NodemailerEmailService } from '@/infra/providers/nodemailerEmailService';
 import { MembershipsPlanRepository } from '@/infra/repositories/membershipsPlan.repository';
+
+
+
 // Application Use Cases - User
 import { CreateUserUseCase } from '@/app/useCases/createUser.useCase';
 import { ForgotPasswordUseCase } from '@/app/useCases/forgotPassword.useCase';
@@ -48,6 +51,7 @@ import { LoginTrainerUseCase } from '@/app/useCases/loginTrainer.useCase';
 import { LogoutTrainerUseCase } from '@/app/useCases/logoutTrainer.useCase';
 import { ResendTrainerOtpUseCase } from '@/app/useCases/resendOtpTrainer.useCase';
 import { VerifyTrainerOtpUseCase } from '@/app/useCases/verifyTrainerOtp.useCase';
+import { TrainerRefreshTokenUseCase } from '@/app/useCases/trainerRefreshToken.useCase';
 
 // Presentation - Controllers
 import { TrainerAuthController } from '@/presentation/controllers/trainer/auth.controller';
@@ -145,10 +149,12 @@ const logoutTrainerUseCase = new LogoutTrainerUseCase(trainersRepository);
 const verifyTrainerOtpUseCase = new VerifyTrainerOtpUseCase(trainersRepository);
 const resendTrainerOtpUseCase = new ResendTrainerOtpUseCase(trainersRepository, emailService);
 const getTrainerUseCase = new GetTrainerUseCase(trainersRepository);
+const trainerRefreshTokenUseCase = new TrainerRefreshTokenUseCase(trainersRepository, tokenService);
+
 
 // Presentation
 const authMiddleware = new AuthMiddleware(usersRepository, tokenService);
-const trainerAuthMiddleware = new TrainerAuthMiddleware(trainersRepository);
+const trainerAuthMiddleware = new TrainerAuthMiddleware(trainersRepository,tokenService);
 const userAuthController = new UserAuthController(
   createUserUseCase,
   loginUserUseCase,
@@ -178,7 +184,8 @@ const trainerAuthController = new TrainerAuthController(
   loginTrainerUseCase,
   logoutTrainerUseCase,
   verifyTrainerOtpUseCase,
-  resendTrainerOtpUseCase
+  resendTrainerOtpUseCase,
+    trainerRefreshTokenUseCase
 );
 const trainerController = new TrainerController(getTrainerUseCase);
 

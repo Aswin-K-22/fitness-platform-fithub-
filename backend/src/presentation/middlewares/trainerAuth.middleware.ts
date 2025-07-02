@@ -1,51 +1,49 @@
 import { Request, Response, NextFunction } from 'express';
-import * as jwt from 'jsonwebtoken';
-import { ITrainersRepository } from '../../app/repositories/trainers.repository';
+import { ITrainersRepository } from '@/app/repositories/trainers.repository';
+import { ITokenService } from '@/app/providers/token.service';
+import { TrainerErrorType } from '@/domain/enums/trainerErrorType.enum';
 
-// Extend Express Request interface to include trainer
 declare module 'express' {
   interface Request {
-    trainer?: { id: string | null; email: string }; // Allow id to be string | null
+    trainer?: { id: string; email: string };
   }
 }
 
 export class TrainerAuthMiddleware {
-  constructor(private trainersRepository: ITrainersRepository) {}
+  constructor(
+    private trainersRepository: ITrainersRepository,
+    private tokenService: ITokenService
+  ) {}
 
   async auth(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const accessToken = req.cookies?.trainerAccessToken;
       if (!accessToken) {
-        res.status(401).json({ success: false, error: 'No access token provided' });
+        console.log('[DEBUG] No access token provided');
+        res.status(401).json({ success: false, error: TrainerErrorType.NoAccessTokenProvided });
         return;
       }
 
-      // Validate JWT_SECRET environment variable
-      const jwtSecret = process.env.JWT_ACCESS_SECRET;
-      if (!jwtSecret) {
-        throw new Error('JWT_ACCESS_SECRET is not defined');
+      const decoded = await this.tokenService.verifyAccessToken(accessToken);
+      if (!decoded.id) {
+        console.log('[DEBUG] Invalid access token structure');
+        res.status(401).json({ success: false, error: TrainerErrorType.InvalidAccessToken });
+        return;
       }
 
-      // Verify JWT token
-      const decoded = jwt.verify(accessToken, jwtSecret) as {
-        email: string;
-        id: string;
-      };
-
-      // Fetch trainer from repository
       const trainer = await this.trainersRepository.findById(decoded.id);
       if (!trainer) {
-        res.status(401).json({ success: false, error: 'Trainer not found' });
+        console.log(`[DEBUG] Trainer not found for id: ${decoded.id}`);
+        res.status(401).json({ success: false, error: TrainerErrorType.TrainerNotFound });
         return;
       }
 
-      // Attach trainer info to request
-      req.trainer = { id: trainer.id, email: trainer.email.address };
+      req.trainer = { id: trainer.id!, email: trainer.email.address };
+      console.log(`[DEBUG] Trainer authenticated: ${trainer.email.address}`);
       next();
     } catch (error) {
-      // Log error for monitoring (use a logger like Winston in production)
-      console.error('Trainer auth middleware error:', error);
-      res.status(401).json({ success: false, error: 'Invalid or expired access token' });
+      console.error('[ERROR] Trainer auth middleware error:', error);
+      res.status(401).json({ success: false, error: TrainerErrorType.InvalidAccessToken });
     }
   }
 }
