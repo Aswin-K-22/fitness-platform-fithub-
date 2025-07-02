@@ -17,5 +17,7 @@ export enum AuthErrorType {
   InvalidCredentials = 'Invalid email or password',
   EmailNotVerified = 'Email not verified. Please verify your email with OTP',
   TrainerNotFound = 'Trainer not found',
+  InvalidRole = "InvalidRole",
+  InvalidAccessToken = "InvalidAccessToken",
   
 }

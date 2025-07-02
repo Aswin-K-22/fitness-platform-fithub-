@@ -66,7 +66,7 @@ const AdminLogin: React.FC = () => {
       console.log("AdminLogin: loginThunk result:", result);
       if (result) {
         toast.success("Login successful!");
-        navigate("/admin/dashboard");
+        //navigate("/admin/dashboard");
       }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {

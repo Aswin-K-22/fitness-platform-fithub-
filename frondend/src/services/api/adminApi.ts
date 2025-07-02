@@ -62,7 +62,7 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshResponse = await refreshClient.post("/auth/admin/refresh-token");
+        const refreshResponse = await refreshClient.post("/auth/refresh-token");
         console.log("Admin token refreshed successfully:", refreshResponse.data);
         localStorage.setItem("adminData", JSON.stringify(refreshResponse.data.admin));
         isRefreshing = false;
@@ -72,8 +72,8 @@ apiClient.interceptors.response.use(
         console.error("Admin token refresh failed:", refreshError);
         isRefreshing = false;
         processQueue(refreshError as AxiosError);
-        document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
-        document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
+        document.cookie = "adminAccessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
+        document.cookie = "adminRefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
         return Promise.reject(refreshError);
       }
     }
@@ -88,13 +88,13 @@ export { apiClient, refreshClient };
 export const adminLogin = async (email: string, password: string) => {
   try {
     console.log("adminApi: Sending login request with email:", email, "payload:", { email, password });
-    const response = await apiClient.post("/auth/admin/login", { email, password });
+    const response = await apiClient.post("/auth/login", { email, password });
     console.log("adminApi: Login response:", {
       status: response.status,
       data: response.data,
       admin: response.data.admin,
     });
-    return { admin: response.data.admin };
+    return { admin: response.data.user };
   } catch (error: any) {
     console.error("adminApi: Login error:", {
       message: error.message,
@@ -111,8 +111,8 @@ export const adminLogout = async (email: string): Promise<void> => {
 };
 
 export const getAdmin = async () => {
-  const response = await apiClient.get("/auth/admin");
-  return { admin: response.data.admin };
+  const response = await apiClient.get("/auth/get");
+  return { admin: response.data.user };
 };
 
 export const getUsers = async (
@@ -122,7 +122,7 @@ export const getUsers = async (
   membership?: string,
   isVerified?: string
 ): Promise<GetUsersResponse> => {
-  const response = await apiClient.get("/admin/users", {
+  const response = await apiClient.get("/users", {
     params: {
       page,
       limit,

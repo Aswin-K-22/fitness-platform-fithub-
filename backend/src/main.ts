@@ -14,6 +14,31 @@ dotenv.config();
 import env from '@/infra/utils/env';
 console.log(env.DATABASE_URL);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Infrastructure - Repositories & Providers
 import prisma from '@/infra/databases/prismaClient';
 import { UsersRepository } from '@/infra/repositories/users.repository';
@@ -53,11 +78,26 @@ import { ResendTrainerOtpUseCase } from '@/app/useCases/resendOtpTrainer.useCase
 import { VerifyTrainerOtpUseCase } from '@/app/useCases/verifyTrainerOtp.useCase';
 import { TrainerRefreshTokenUseCase } from '@/app/useCases/trainerRefreshToken.useCase';
 
+
+
+// Application Use Cases - Admin
+import { LoginAdminUseCase } from '@/app/useCases/loginAdmin.useCase';
+import { GetAdminUseCase } from '@/app/useCases/getAdmin.useCase';
+import { AdminRefreshTokenUseCase } from '@/app/useCases/adminRefreshToken.useCase';
+
 // Presentation - Controllers
 import { TrainerAuthController } from '@/presentation/controllers/trainer/auth.controller';
 import { TrainerController } from '@/presentation/controllers/trainer/trainer.controller';
 import { UserAuthController } from '@/presentation/controllers/user/auth.controller';
 import { UserController } from '@/presentation/controllers/user/user.controller';
+
+
+// Presentation - Admin 
+import { AdminAuthController } from '@/presentation/controllers/admin/adminAuth.controller';
+import { AdminController } from '@/presentation/controllers/admin/admin.controller';
+import { AdminAuthMiddleware } from '@/presentation/middlewares/adminAuth.middleware';
+import { AdminRoutes } from '@/presentation/routes/admin.routes';
+
 
 // Presentation - Middlewares
 import { AuthMiddleware } from '@/presentation/middlewares/userAuth.middleware';
@@ -152,9 +192,22 @@ const getTrainerUseCase = new GetTrainerUseCase(trainersRepository);
 const trainerRefreshTokenUseCase = new TrainerRefreshTokenUseCase(trainersRepository, tokenService);
 
 
+const loginAdminUseCase = new LoginAdminUseCase(usersRepository, passwordHasher, tokenService);
+const getAdminUseCase = new GetAdminUseCase(usersRepository);
+const adminRefreshTokenUseCase = new AdminRefreshTokenUseCase(usersRepository, tokenService);
+
+
+
+
+
+
+
 // Presentation
 const authMiddleware = new AuthMiddleware(usersRepository, tokenService);
 const trainerAuthMiddleware = new TrainerAuthMiddleware(trainersRepository,tokenService);
+const adminAuthMiddleware = new AdminAuthMiddleware(usersRepository, tokenService);
+
+
 const userAuthController = new UserAuthController(
   createUserUseCase,
   loginUserUseCase,
@@ -189,13 +242,21 @@ const trainerAuthController = new TrainerAuthController(
 );
 const trainerController = new TrainerController(getTrainerUseCase);
 
+
+const adminAuthController = new AdminAuthController(loginAdminUseCase, adminRefreshTokenUseCase);
+const adminController = new AdminController(getAdminUseCase);
+
+
 // Routes
 const userRoutes = new UserRoutes(userAuthController, userController, authMiddleware);
 const trainerRoutes = new TrainerRoutes(trainerAuthController, trainerController, trainerAuthMiddleware);
 
+const adminRoutes = new AdminRoutes(adminAuthController, adminController, adminAuthMiddleware, usersRepository, tokenService);
+
 // Mount routes
 app.use('/api/user', userRoutes.router);
 app.use('/api/trainer', trainerRoutes.router);
+app.use('/api/admin', adminRoutes.router);
 
 // Error handling
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

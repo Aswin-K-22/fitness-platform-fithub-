@@ -1,13 +1,13 @@
 
 // src/presentation/features/admin/components/UserTable.tsx
 import React from "react";
-import { User } from "../../../../domain/entities/admin/User";
-import { AdminRepository } from "../../../../infra/api/adminApi";
-import { ToggleUserVerificationUseCase } from "../../../../app/useCases/admin/toggleUserVerification";
-import { toast } from "react-toastify";
 
-const adminRepository = new AdminRepository();
-const toggleUserVerificationUseCase = new ToggleUserVerificationUseCase(adminRepository);
+
+import { toast } from "react-toastify";
+import type { User } from "../../../types/user.types";
+import { toggleUserVerification } from "../../../services/api/adminApi";
+
+
 
 interface UserTableProps {
   users: User[];
@@ -39,7 +39,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onUserUpdate }) => {
 
   const handleToggleVerification = async (id: string) => {
     try {
-      const updatedUser = await toggleUserVerificationUseCase.execute(id);
+      const updatedUser = await toggleUserVerification(id);
       console.log("Updated user from backend:", updatedUser);
       onUserUpdate(updatedUser);
       toast.success(updatedUser.isVerified ? "User verified" : "User unverified");

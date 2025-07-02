@@ -10,5 +10,8 @@ export enum UserErrorType {
   NoValidFieldsProvided = 'NO_VALID_FIELDS_PROVIDED',  
   UpdateProfileFailed = 'UPDATE_PROFILE_FAILED',  
   UserNotVerified = 'User Not Verified',
-  InvalidPassword  ='Invalid Password '
+  InvalidPassword  ='Invalid Password ',
+  InvalidRole = "InvalidRole",
+  NoAccessToken = "NoAccessToken",
+  NoRefreshToken = "NoRefreshToken"
 }
