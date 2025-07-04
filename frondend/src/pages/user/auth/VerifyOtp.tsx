@@ -5,10 +5,10 @@ import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import OtpInput from "react-otp-input";
-import { setAuth } from "../../../../store/slices/userAuthSlice";
-import type { AppDispatch } from "../../../../store/store";
-import { resendOtp, verifyForgotPasswordOtp, verifyOtp } from "../../../../services/api/userApi";
-import Footer from "../../../../components/common/Footer";
+import { setAuth } from "../../../store/slices/userAuthSlice";
+import type { AppDispatch } from "../../../store/store";
+import { resendOtp, verifyForgotPasswordOtp, verifyOtp } from "../../../services/api/userApi";
+import Footer from "../../../components/common/Footer";
 
 const VerifyOtp: React.FC = () => {
   const navigate = useNavigate();

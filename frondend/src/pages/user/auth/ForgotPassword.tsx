@@ -3,9 +3,9 @@
 import React, { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import Navbar from "../../../../components/common/user/Navbar";
-import Footer from "../../../../components/common/Footer";
-import { forgotPassword } from "../../../../services/api/userApi";
+import Navbar from "../../../components/common/user/Navbar";
+import Footer from "../../../components/common/Footer";
+import { forgotPassword } from "../../../services/api/userApi";
 
 
 const ForgotPassword: React.FC = () => {
