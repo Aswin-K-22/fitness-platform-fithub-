@@ -1,9 +1,11 @@
+// src/domain/entities/MembershipPlan.entity.ts
 import { MembershipErrorType } from '../enums/membershipErrorType.enum';
 
 interface MembershipProps {
   id?: string;
-  name: string; 
-  description: string | null ;
+  name: string;
+  type: 'Basic' | 'Premium' | 'Diamond';
+  description: string ;
   price: number;
   duration: number;
   features: string[];
@@ -12,59 +14,28 @@ interface MembershipProps {
 }
 
 export class MembershipPlan {
-  private _id?: string;
-  private _name: string;
- private _description:string | null ;
-  private _price: number;
-  private _duration: number;
-  private _features: string[];
-  private _createdAt: Date | string;
-  private _updatedAt: Date | string;
+  public id?: string;
+  public name: string;
+  public type: 'Basic' | 'Premium' | 'Diamond';
+  public description: string ;
+  public price: number;
+  public duration: number;
+  public features: string[];
+  public createdAt: Date | string;
+  public updatedAt: Date | string;
 
   constructor(props: MembershipProps) {
-    if (!props.name || !props.description || props.price == null || props.duration == null) {
+    if (!props.name || !props.type || props.price == null || props.duration == null) {
       throw new Error(MembershipErrorType.MissingRequiredFields);
     }
-    this._id = props.id;
-    this._name = props.name;
-    this._description = props.description || '' ;
-    this._price = props.price;
-    this._duration = props.duration;
-    this._features = props.features || [];
-    this._createdAt = props.createdAt || new Date();
-    this._updatedAt = props.updatedAt || new Date();
-  }
-
-  // Getters
-  get id(): string | undefined {
-    return this._id;
-  }
-
-  get name(): string {
-    return this._name;
-  }
-
-  get description():string | null   {
-    return this._description;
-  }
-
-  get price(): number {
-    return this._price;
-  }
-
-  get duration(): number {
-    return this._duration;
-  }
-
-  get features(): string[] {
-    return this._features;
-  }
-
-  get createdAt(): Date | string {
-    return this._createdAt;
-  }
-
-  get updatedAt(): Date | string {
-    return this._updatedAt;
+    this.id = props.id;
+    this.name = props.name;
+    this.type = props.type;
+    this.description = props.description;
+    this.price = props.price;
+    this.duration = props.duration;
+    this.features = props.features || [];
+    this.createdAt = props.createdAt || new Date();
+    this.updatedAt = props.updatedAt || new Date();
   }
 }

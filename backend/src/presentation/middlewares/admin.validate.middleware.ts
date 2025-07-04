@@ -1,3 +1,7 @@
+// src/presentation/middlewares/admin.validate.middleware.ts
+import { GetAdminGymsRequestSchema } from '@/domain/dtos/getAdminGymsRequest.dto';
+import { GetAdminMembershipPlansRequestSchema } from '@/domain/dtos/getAdminMembershipPlansRequest.dto';
+import { AddMembershipPlanRequestSchema } from '@/domain/dtos/IAddMembershipPlanRequestDTO';
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 
@@ -22,9 +26,11 @@ const adminRefreshTokenSchema = z.object({
 });
 
 const schemas = {
-  
+  getAdminGyms: GetAdminGymsRequestSchema,
   adminLogin: adminLoginSchema,
   adminRefreshToken: adminRefreshTokenSchema,
+ getAdminMembershipPlans: GetAdminMembershipPlansRequestSchema,
+ addMembershipPlan: AddMembershipPlanRequestSchema,
 };
 
 export const validateMiddleware = (schemaName: keyof typeof schemas) => {
@@ -35,7 +41,10 @@ export const validateMiddleware = (schemaName: keyof typeof schemas) => {
         res.status(400).json({ message: 'Invalid validation schema' });
         return;
       }
-      schema.parse(req.body);
+      schema.parse({
+        ...req.body,
+        ...req.query,
+      });
       next();
     } catch (error) {
       res.status(400).json({ message: 'Validation failed', error: (error as any).errors });

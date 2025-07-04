@@ -49,6 +49,7 @@ export interface User {
 export interface GetUsersResponse {
   users: User[];
   totalPages: number;
+  totalUsers :number;
 }
 
 

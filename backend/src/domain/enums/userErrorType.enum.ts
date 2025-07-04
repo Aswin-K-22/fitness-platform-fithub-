@@ -13,5 +13,9 @@ export enum UserErrorType {
   InvalidPassword  ='Invalid Password ',
   InvalidRole = "InvalidRole",
   NoAccessToken = "NoAccessToken",
-  NoRefreshToken = "NoRefreshToken"
+  NoRefreshToken = "NoRefreshToken",
+  UnauthorizedOperation = 'Unauthorized operation',
+  FailedToToggleVerification = 'Failed to toggle verification status',
+  FailedToFetchUsers = 'Failed to fetch users',
+
 }

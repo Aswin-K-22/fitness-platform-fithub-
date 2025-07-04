@@ -1,5 +1,6 @@
 // src/domain/dtos/admin/IGetTrainersResponseDTO.ts
-import { Trainer } from "../../entities/admin/Trainer";
+
+import type { Trainer } from "../trainer.type";
 
 export interface IGetTrainersResponseDTO {
   trainers: Trainer[];

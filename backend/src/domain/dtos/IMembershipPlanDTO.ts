@@ -1,7 +1,7 @@
 export interface MembershipPlanDTO {
   id: string;
   name: string; 
-  description: string;
+  description: string ;
   price: number;
   duration: number;
   features: string[];

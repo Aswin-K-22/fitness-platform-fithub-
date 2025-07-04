@@ -3,6 +3,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { Gym } from '@/domain/entities/Gym.entity';
 import { IGymsRepository } from '@/app/repositories/gym.repository.';
+import { isValidLocation } from '@/domain/valueObjects/location.valueObject';
 
 export class GymsRepository implements IGymsRepository {
   constructor(private prisma: PrismaClient) {}
@@ -218,6 +219,85 @@ export class GymsRepository implements IGymsRepository {
         })
     );
   }
+  async findByName(name: string): Promise<Gym | null> {
+    const gym = await this.prisma.gym.findUnique({
+      where: { name },
+      include: { bookings: true },
+    });
+
+    if (!gym) {
+      return null;
+    }
+
+    return new Gym({
+      id: gym.id,
+      name: gym.name,
+      type: gym.type || null,
+      description: gym.description || null,
+      maxCapacity: gym.maxCapacity,
+      membershipCompatibility: gym.membershipCompatibility || [],
+      address: gym.address || null,
+      contact: gym.contact || null,
+      equipment: gym.equipment || [],
+      schedule: gym.schedule || [],
+      trainers: gym.trainers || [],
+      facilities: gym.facilities || null,
+      location: gym.location
+        ? isValidLocation(gym.location)
+          ? {
+              type: (gym.location as { type: string }).type,
+              coordinates: (gym.location as { coordinates: [number, number] }).coordinates,
+            }
+          : null
+        : null,
+      images: (gym.images || []).map((img: any) => ({
+        url: img.url,
+        description: img.description || null,
+        uploadedAt: img.uploadedAt instanceof Date ? img.uploadedAt : new Date(img.uploadedAt),
+      })),
+      ratings: gym.ratings || null,
+      createdAt: gym.createdAt,
+      updatedAt: gym.updatedAt,
+    });
+  }
+
+   async create(data: Prisma.GymCreateInput): Promise<Gym> {
+    const createdGym = await this.prisma.gym.create({
+      data,
+      include: { bookings: true },
+    });
+
+    return new Gym({
+      id: createdGym.id,
+      name: createdGym.name,
+      type: createdGym.type || null,
+      description: createdGym.description || null,
+      maxCapacity: createdGym.maxCapacity,
+      membershipCompatibility: createdGym.membershipCompatibility || [],
+      address: createdGym.address || null,
+      contact: createdGym.contact || null,
+      equipment: createdGym.equipment || [],
+      schedule: createdGym.schedule || [],
+      trainers: createdGym.trainers || [],
+      facilities: createdGym.facilities || null,
+      location: createdGym.location
+        ? isValidLocation(createdGym.location)
+          ? {
+              type: (createdGym.location as { type: string }).type,
+              coordinates: (createdGym.location as { coordinates: [number, number] }).coordinates,
+            }
+          : null
+        : null,
+      images: (createdGym.images || []).map((img: any) => ({
+        url: img.url,
+        description: img.description || null,
+        uploadedAt: img.uploadedAt instanceof Date ? img.uploadedAt : new Date(img.uploadedAt),
+      })),
+      ratings: createdGym.ratings || null,
+      createdAt: createdGym.createdAt,
+      updatedAt: createdGym.updatedAt,
+    });
+  }
 
   async countWithFilters(filters: {
     search?: string;
@@ -282,4 +362,70 @@ export class GymsRepository implements IGymsRepository {
 
     return this.prisma.gym.count({ where });
   }
+
+  async findAllForAdmin(skip: number, take: number, search?: string): Promise<Gym[]> {
+  const where: Prisma.GymWhereInput = search
+      ? { name: { startsWith: search.trim(), mode: "insensitive" } }
+      : {};
+
+  const gyms = await this.prisma.gym.findMany({
+    where,
+    skip,
+    take,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      bookings: true,
+    },
+  });
+
+  return gyms.map(
+    (gym) =>
+      new Gym({
+        id: gym.id,
+        name: gym.name,
+        type: gym.type || null,
+        description: gym.description || null,
+        maxCapacity: gym.maxCapacity,
+        membershipCompatibility: gym.membershipCompatibility || [],
+        address: gym.address || null,
+        contact: gym.contact || null,
+        equipment: gym.equipment || [],
+        schedule: gym.schedule || [],
+        trainers: gym.trainers || [],
+        facilities: gym.facilities || null,
+        location: gym.location
+        ? isValidLocation(gym.location)
+          ? {
+              type: gym.location.type as string,
+              coordinates: gym.location.coordinates as [number, number],
+            }
+          : null
+          :null,
+        images: (gym.images || []).map((img: any) => ({
+          url: img.url,
+          description: img.description || null,
+          uploadedAt: img.uploadedAt instanceof Date ? img.uploadedAt : new Date(img.uploadedAt),
+        })),
+        ratings: gym.ratings || null,
+        createdAt: gym.createdAt,
+        updatedAt: gym.updatedAt,
+      }).toJSON()
+  );
 }
+
+async countForAdmin(search?: string): Promise<number> {
+  const where: Prisma.GymWhereInput = search
+    ? {
+        OR: [
+          { name: { startsWith: search.trim(), mode: 'insensitive' } },
+          { name: { contains: search.trim(), mode: 'insensitive' } },
+        ],
+      }
+    : {};
+
+  return this.prisma.gym.count({ where });
+}
+
+}
+
+

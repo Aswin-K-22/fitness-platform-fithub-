@@ -1,8 +1,9 @@
 // backend/src/infrastructure/repositories/trainers.repository.ts
+import { TrainerErrorType } from '@/domain/enums/trainerErrorType.enum';
 import { ITrainersRepository } from '../../app/repositories/trainers.repository';
 import { Trainer } from '../../domain/entities/Trainer.entity';
 import { Email } from '../../domain/valueObjects/email.valueObject';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 export class TrainersRepository implements ITrainersRepository {
   constructor(private prisma: PrismaClient) {}
@@ -170,4 +171,290 @@ export class TrainersRepository implements ITrainersRepository {
       throw new Error('Database error while updating refresh token');
     }
   }
+
+async findAll(
+    skip: number,
+    take: number,
+    search?: string,
+    status?: string,
+    specialization?: string,
+  ): Promise<Trainer[]> {
+    try {
+      const where: Prisma.TrainerWhereInput = { role: 'trainer' };
+
+      if (search) {
+       where.name = { startsWith: search.trim(), mode: "insensitive" };
+      }
+
+      if (status) {
+        where.verifiedByAdmin = status === 'Approved' ? true : status === 'Pending' ? false : undefined;
+      }
+
+      if (specialization) {
+        where.specialties = { has: specialization };
+      }
+
+      const trainers = await this.prisma.trainer.findMany({
+        where,
+        skip,
+        take,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          specialties: true,
+          experienceLevel: true,
+          verifiedByAdmin: true,
+          isVerified: true,
+          profilePic: true,
+          certifications: true,
+          bio: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+         orderBy: {  createdAt: "desc" },
+
+      });
+
+      return trainers.map(
+        (trainer) =>
+          new Trainer({
+            id: trainer.id,
+            name: trainer.name,
+            email: new Email({ address: trainer.email }),
+            password: '', // Avoid including password
+            role: 'trainer',
+            profilePic: trainer.profilePic,
+            isVerified: trainer.isVerified,
+            verifiedByAdmin: trainer.verifiedByAdmin,
+            otp: null, // Exclude sensitive fields
+            otpExpires: null,
+            refreshToken: null,
+            personalDetails: null,
+            certifications: trainer.certifications,
+            bio: trainer.bio,
+            specialties: trainer.specialties,
+            experienceLevel: trainer.experienceLevel,
+            clients: [], // Exclude relations unless needed
+            paymentDetails: null,
+            availability: [],
+            gyms: [],
+            phone: null,
+            ratings: null,
+            bookings: [],
+            payments: [],
+            createdAt: trainer.createdAt,
+            updatedAt: trainer.updatedAt,
+          }),
+      );
+    } catch (error) {
+      console.error('Error fetching trainers:', error);
+      throw new Error(TrainerErrorType.FailedToFetchTrainers);
+    }
+  }
+
+  async toggleApproval(trainerId: string, verifiedByAdmin: boolean): Promise<Trainer> {
+    try {
+      const trainer = await this.prisma.trainer.findUnique({
+        where: { id: trainerId, role: 'trainer' },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          specialties: true,
+          experienceLevel: true,
+          verifiedByAdmin: true,
+          isVerified: true,
+          profilePic: true,
+          certifications: true,
+          bio: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!trainer) {
+        throw new Error(TrainerErrorType.TrainerNotFound);
+      }
+
+      const updatedTrainer = await this.prisma.trainer.update({
+        where: { id: trainerId },
+        data: { verifiedByAdmin, updatedAt: new Date() },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          specialties: true,
+          experienceLevel: true,
+          verifiedByAdmin: true,
+          isVerified: true,
+          profilePic: true,
+          certifications: true,
+          bio: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      return new Trainer({
+        id: updatedTrainer.id,
+        name: updatedTrainer.name,
+        email: new Email({ address: updatedTrainer.email }),
+        password: '', // Avoid including password
+        role: 'trainer',
+        profilePic: updatedTrainer.profilePic,
+        isVerified: updatedTrainer.isVerified,
+        verifiedByAdmin: updatedTrainer.verifiedByAdmin,
+        otp: null,
+        otpExpires: null,
+        refreshToken: null,
+        personalDetails: null,
+        certifications: updatedTrainer.certifications,
+        bio: updatedTrainer.bio,
+        specialties: updatedTrainer.specialties,
+        experienceLevel: updatedTrainer.experienceLevel,
+        clients: [],
+        paymentDetails: null,
+        availability: [],
+        gyms: [],
+        phone: null,
+        ratings: null,
+        bookings: [],
+        payments: [],
+        createdAt: updatedTrainer.createdAt,
+        updatedAt: updatedTrainer.updatedAt,
+      });
+    } catch (error) {
+      console.error('Error toggling trainer approval:', error);
+      if (error instanceof Error && error.message === TrainerErrorType.TrainerNotFound) {
+        throw error;
+      }
+      throw new Error(TrainerErrorType.InvalidTrainerId);
+    }
+  }
+
+  async count(search?: string, status?: string, specialization?: string): Promise<number> {
+    try {
+      const where: Prisma.TrainerWhereInput = { role: 'trainer' };
+
+      if (search) {
+        where.OR = [
+          { name: { contains: search.trim(), mode: 'insensitive' } },
+          { email: { contains: search.trim(), mode: 'insensitive' } },
+        ];
+      }
+
+      if (status) {
+        where.verifiedByAdmin = status === 'Approved' ? true : status === 'Pending' ? false : undefined;
+      }
+
+      if (specialization) {
+        where.specialties = { has: specialization };
+      }
+
+      return await this.prisma.trainer.count({ where });
+    } catch (error) {
+      console.error('Error counting trainers:', error);
+      throw new Error(TrainerErrorType.FailedToFetchTrainers);
+    }
+  }
+
+  async countPending(): Promise<number> {
+    try {
+      return await this.prisma.trainer.count({
+        where: { role: 'trainer', verifiedByAdmin: false },
+      });
+    } catch (error) {
+      console.error('Error counting pending trainers:', error);
+      throw new Error(TrainerErrorType.FailedToFetchTrainers);
+    }
+  }
+
+  async countApproved(): Promise<number> {
+    try {
+      return await this.prisma.trainer.count({
+        where: { role: 'trainer', verifiedByAdmin: true },
+      });
+    } catch (error) {
+      console.error('Error counting approved trainers:', error);
+      throw new Error(TrainerErrorType.FailedToFetchTrainers);
+    }
+  }
+
+  async countSuspended(): Promise<number> {
+    try {
+      return await this.prisma.trainer.count({
+        where: { role: 'trainer', isVerified: false }, // Adjust if you have a specific suspended status
+      });
+    } catch (error) {
+      console.error('Error counting suspended trainers:', error);
+      throw new Error(TrainerErrorType.FailedToFetchTrainers);
+    }
+  }
+
+
+
+   async findAvailableTrainers(): Promise<{ id: string; name: string; active: boolean }[]> {
+    try {
+      return await this.prisma.trainer.findMany({
+        where: {
+          gyms: { isEmpty: true },
+          verifiedByAdmin: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          verifiedByAdmin: true,
+        },
+      }).then((trainers) =>
+        trainers.map((trainer) => ({
+          id: trainer.id,
+          name: trainer.name,
+          active: trainer.verifiedByAdmin,
+        }))
+      );
+    } catch (error) {
+      console.error('Error fetching available trainers:', error);
+      throw new Error(TrainerErrorType.FailedToFetchTrainers);
+    }
+  }
+
+
+   async checkTrainerAvailability(trainerIds: string[]): Promise<{ isValid: boolean; message?: string }> {
+    try {
+      const trainers = await this.prisma.trainer.findMany({
+        where: {
+          id: { in: trainerIds },
+          verifiedByAdmin: true,
+          gyms: { isEmpty: true },
+        },
+        select: { id: true },
+      });
+
+      const foundTrainerIds = trainers.map((t) => t.id);
+      const invalidIds = trainerIds.filter((id) => !foundTrainerIds.includes(id));
+
+      if (invalidIds.length > 0) {
+        return { isValid: false, message: `Invalid or unavailable trainer IDs: ${invalidIds.join(', ')}` };
+      }
+
+      return { isValid: true };
+    } catch (error) {
+      console.error('Error checking trainer availability:', error);
+      throw new Error(TrainerErrorType.FailedToFetchTrainers);
+    }
+  }
+
+  async assignTrainersToGym(trainerIds: string[], gymId: string): Promise<void> {
+    try {
+      await this.prisma.trainer.updateMany({
+        where: { id: { in: trainerIds } },
+        data: { gyms: { push: gymId } },
+      });
+    } catch (error) {
+      console.error('Error assigning trainers to gym:', error);
+      throw new Error(TrainerErrorType.FailedToAssignTrainers);
+    }
+  }
+
 }

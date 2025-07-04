@@ -4,7 +4,7 @@ import { GetGymsRequestDTO } from '@/domain/dtos/getGymsRequest.dto';
 import { GetGymsUseCase } from '@/app/useCases/getGyms.useCase';
 import { GetGymDetailsUseCase } from '@/app/useCases/getGymDetails.useCase';
 import { GetGymDetailsRequestDTO } from '@/domain/dtos/getGymDetailsRequest.dto';
-import { GetMembershipPlansRequestDTO } from '@/domain/dtos/getMembershipPlansRequest.dto';
+import { GetMembershipPlansRequestDTO, GetMembershipPlansRequestSchema } from '@/domain/dtos/getMembershipPlansRequest.dto';
 import { GetMembershipPlansUseCase } from '@/app/useCases/getMembershipPlans.useCase';
 import { InitiateMembershipPaymentUseCase } from '@/app/useCases/initiateMembershipPayment.useCase';
 import { VerifyMembershipPaymentUseCase } from '@/app/useCases/verifyMembershipPayment.useCase';
@@ -119,14 +119,10 @@ export class UserController {
 
   async getMembershipPlans(req: Request, res: Response): Promise<void> {
     try {
-      const { page, limit } = req.query;
+      const requestDTO: GetMembershipPlansRequestDTO = GetMembershipPlansRequestSchema.parse(req.query);
 
-      const requestDTO: GetMembershipPlansRequestDTO = {
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
-      };
-
-      const response = await this.getMembershipPlansUseCase.execute(requestDTO);
+      // Call use case with validated page and limit
+      const response = await this.getMembershipPlansUseCase.execute(requestDTO.page, requestDTO.limit);
       res.status(200).json(response);
     } catch (error: any) {
       console.error('Error fetching membership plans:', error);

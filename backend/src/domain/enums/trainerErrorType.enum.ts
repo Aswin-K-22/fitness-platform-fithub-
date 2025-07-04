@@ -28,6 +28,9 @@ export enum TrainerErrorType {
   InvalidAccessToken = "InvalidAccessToken",
   NoAccessTokenProvided = "NoAccessTokenProvided",
   InvalidRequest = "InvalidRequest",
+  InvalidTrainerId = 'Invalid trainer ID', // New
+  FailedToFetchTrainers = 'Failed to fetch trainers',
+  FailedToAssignTrainers = "FailedToAssignTrainers", // New
   
 
 }

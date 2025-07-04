@@ -9,7 +9,7 @@ const Sidebar: React.FC = () => {
     { icon: "fa-dumbbell", label: "Trainers", path: "/admin/trainers" },
     { icon: "fa-building", label: "Gyms", path: "/admin/gyms" },
     { icon: "fa-dollar-sign", label: "Earnings", path: "/admin/earnings" },
-    { icon: "fa-credit-card", label: "Subscriptions-Plans", path: "/admin/subscriptions" },
+    { icon: "fa-credit-card", label: "Membership-Plans", path: "/admin/membership-plans" },
     { icon: "fa-robot", label: "AI Training", path: "/admin/ai-training" },
     { icon: "fa-bell", label: "Notifications", path: "/admin/notifications" },
     { icon: "fa-headset", label: "Support", path: "/admin/support" },

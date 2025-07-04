@@ -1,21 +1,20 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import type { MembershipPlan } from "../../types/membership.types";
-import { getMembershipPlans } from "../../services/api/adminApi";
-
-
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/components/MembershipPlans.tsx
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import type { MembershipPlan } from '../../types/membership.types';
+import { getMembershipPlans } from '../../services/api/adminApi';
 
 const MembershipPlans: React.FC = () => {
   const navigate = useNavigate();
   const [plans, setPlans] = useState<MembershipPlan[]>([]);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   const [totalPlans, setTotalPlans] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const limit = 2; // 2 plans per page
+  const limit = 5;
 
   // Dummy stats (to be made dynamic later if needed)
   const stats = [
@@ -24,17 +23,18 @@ const MembershipPlans: React.FC = () => {
     { title: "Monthly Revenue", value: "$24,500", icon: "fa-dollar-sign" }, // Placeholder
   ];
 
-  useEffect(() => {
+useEffect(() => {
     const loadPlans = async () => {
+      if (page < 1 || limit < 1) return;
       setLoading(true);
       try {
         const { plans, total, pages } = await getMembershipPlans(page, limit);
         setPlans(plans);
         setTotalPlans(total);
         setTotalPages(pages);
-      } catch (error) {
-        toast.error("Failed to load membership plans");
-        console.error("Error fetching plans:", error);
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to load membership plans');
+        console.error('Error fetching plans:', error);
       } finally {
         setLoading(false);
       }
@@ -42,11 +42,14 @@ const MembershipPlans: React.FC = () => {
     loadPlans();
   }, [page]);
 
-  const handlePageChange = useCallback((newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) setPage(newPage);
-  }, [totalPages]);
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      if (newPage >= 1 && newPage <= totalPages) setPage(newPage);
+    },
+    [totalPages]
+  );
 
-  const renderPagination = useCallback(() => {
+const renderPagination = useCallback(() => {
     const pageNumbers = [];
     const maxPagesToShow = 5;
     const startPage = Math.max(1, page - Math.floor(maxPagesToShow / 2));
@@ -58,7 +61,7 @@ const MembershipPlans: React.FC = () => {
           key={i}
           onClick={() => handlePageChange(i)}
           className={`mx-1 px-3 py-1 rounded-full text-sm font-medium ${
-            page === i ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            page === i ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
           {i}
@@ -109,7 +112,8 @@ const MembershipPlans: React.FC = () => {
     );
   }, [page, totalPages, handlePageChange]);
 
-  return (
+
+ return (
     <main className="py-6 px-4 sm:px-6 lg:px-8 max-w-8xl mx-auto">
       {/* Stats Section */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
@@ -133,7 +137,7 @@ const MembershipPlans: React.FC = () => {
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-end">
             <button
-              onClick={() => navigate("/subscriptions/add")}
+              onClick={() => navigate('/admin/membership/add')}
               className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center justify-center"
             >
               <i className="fas fa-plus mr-2"></i>
@@ -144,12 +148,20 @@ const MembershipPlans: React.FC = () => {
 
         <div className="overflow-x-auto">
           {loading ? (
-            <div className="text-center py-4">Loading...</div>
+            <div className="text-center py-4">
+              <div className="animate-pulse space-y-4">
+                {Array(5)
+                  .fill(0)
+                  .map((_, index) => (
+                    <div key={index} className="h-12 bg-gray-200 rounded"></div>
+                  ))}
+              </div>
+            </div>
           ) : (
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-bg-gray-50">
+              <thead className="bg-gray-50">
                 <tr>
-                  {["Name", "Description", "Price", "Duration", "Features"].map((header) => (
+                  {['Name', 'Type', 'Description', 'Price', 'Duration', 'Features'].map((header) => (
                     <th
                       key={header}
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -166,15 +178,18 @@ const MembershipPlans: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{plan.name}</div>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{plan.type}</div>
+                      </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-500">{plan.description}</div>
+                        <div className="text-sm text-gray-500">{plan.description || 'N/A'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">₹{plan.price.toFixed(2)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {plan.duration} Month{plan.duration > 1 ? "s" : ""}
+                          {plan.duration} Month{plan.duration > 1 ? 's' : ''}
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -182,9 +197,9 @@ const MembershipPlans: React.FC = () => {
                           {plan.features.map((feature, idx) => (
                             <li key={idx}>
                               {feature
-                                .split("-")
+                                .split('-')
                                 .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                                .join(" ")}
+                                .join(' ')}
                             </li>
                           ))}
                         </ul>
@@ -193,7 +208,7 @@ const MembershipPlans: React.FC = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                       No plans found
                     </td>
                   </tr>
@@ -204,7 +219,7 @@ const MembershipPlans: React.FC = () => {
         </div>
 
         {/* Pagination */}
-        {renderPagination()}
+        {totalPages > 0 && renderPagination()}
       </div>
     </main>
   );

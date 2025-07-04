@@ -1,4 +1,4 @@
-import { GymErrorType } from "../enums/gymErrorType.enums";
+import { GymErrorType } from '../enums/gymErrorType.enums';
 
 interface GymAddress {
   street?: string | null;
@@ -47,6 +47,8 @@ interface Schedule {
   startTime: string;
   endTime: string;
   isClosed: boolean;
+  slotDuration?: number;
+  slotCapacity?: number;
 }
 
 interface Trainer {
@@ -63,6 +65,11 @@ interface Facilities {
   hasShowers?: boolean | null;
 }
 
+interface Location {
+  type: string;
+  coordinates: [number, number];
+}
+
 interface GymProps {
   id?: string;
   name: string;
@@ -76,7 +83,7 @@ interface GymProps {
   schedule?: Schedule[];
   trainers?: Trainer[];
   facilities?: Facilities | null;
-  location?: { type: string; coordinates: [number, number] } | null;
+  location?: Location | null;
   images?: GymImage[] | null;
   ratings?: Ratings | null;
   createdAt?: Date | string;
@@ -96,7 +103,7 @@ export class Gym {
   private _schedule: Schedule[];
   private _trainers: Trainer[];
   private _facilities: Facilities | null;
-  private _location: { type: string; coordinates: [number, number] } | null;
+  private _location: Location | null;
   private _images: GymImage[] | null;
   private _ratings: Ratings | null;
   private _createdAt: Date | string;
@@ -125,7 +132,6 @@ export class Gym {
     this._updatedAt = props.updatedAt || new Date();
   }
 
-  // Getters
   get id(): string | null {
     return this._id || null;
   }
@@ -174,7 +180,7 @@ export class Gym {
     return this._facilities;
   }
 
-  get location(): { type: string; coordinates: [number, number] } | null {
+  get location(): Location | null {
     return this._location;
   }
 
@@ -192,5 +198,26 @@ export class Gym {
 
   get updatedAt(): Date | string {
     return this._updatedAt;
+  }
+
+  toJSON(): any {
+    return {
+      id: this.id,
+      name: this.name,
+      type: this.type,
+      description: this.description,
+      maxCapacity: this.maxCapacity,
+      membershipCompatibility: this.membershipCompatibility,
+      address: this.address,
+      contact: this.contact,
+      equipment: this.equipment,
+      schedule: this.schedule,
+      trainers: this.trainers,
+      facilities: this.facilities,
+      images: this.images,
+      ratings: this.ratings,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+    };
   }
 }

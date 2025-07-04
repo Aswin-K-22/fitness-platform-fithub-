@@ -23,8 +23,8 @@ export const initializeAuth = () => async (dispatch: AppDispatch, getState: () =
 
   const results = await Promise.allSettled([
    dispatch(fetchAuthAdmin()),
-   //dispatch(fetchAuthTrainer()),
-   // dispatch(fetchAuthUser()),
+   dispatch(fetchAuthTrainer()),
+   dispatch(fetchAuthUser()),
   ]);
 
   results.forEach((result, index) => {

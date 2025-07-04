@@ -6,17 +6,8 @@ import { getMembershipPlansUser, subscribeToPlan, verifyPayment } from "../../se
 import Navbar from "../../components/common/user/Navbar";
 import type { RootState } from "../../store/store";
 import { useSelector } from "react-redux";
+import type { MembershipPlanDTO as MembershipPlan } from '../../types/dtos/MembershipPlanDTO';
 
-interface MembershipPlan {
-  id: string;
-  name: "Premium" | "Basic" | "Diamond";
-  description: string;
-  price: number;
-  duration: number;
-  features: string[];
-  createdAt: string;
-  updatedAt: string;
-}
 
 const MembershipPage: React.FC = () => {
   const { isAuthenticated, user, } = useSelector((state: RootState) => state.userAuth);
@@ -75,12 +66,13 @@ const MembershipPage: React.FC = () => {
   };
 
   const handlePayment = async (plan: MembershipPlan) => {
-     if (!isAuthenticated || user?.role === "user") {
+     if (!isAuthenticated || user?.role !== "user") {
       navigate("/auth");
       return ;
     }
     setPaymentLoading(plan.id);
     try {
+      console.log('Payment fn triggered')
       const response = await subscribeToPlan(plan.id);
       const { orderId, amount, currency } = response;
 
@@ -157,41 +149,41 @@ const MembershipPage: React.FC = () => {
     "spa-access": "Spa Access",
   };
 
-  const getPlanBadge = (planName: string) => {
-    switch (planName) {
-      case "Basic":
-        return (
-          <span className="bg-gradient-to-r from-green-100 to-green-200 text-green-700 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
-            Popular
-          </span>
-        );
-      case "Premium":
-        return (
-          <span className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
-            Best Value
-          </span>
-        );
-      case "Diamond":
-        return (
-          <span className="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-700 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
-            Premium
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
+ const getPlanBadge = (planType: string) => {
+  switch (planType) {
+    case 'Basic':
+      return (
+        <span className="bg-gradient-to-r from-green-100 to-green-200 text-green-700 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
+          Popular
+        </span>
+      );
+    case 'Premium':
+      return (
+        <span className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
+          Best Value
+        </span>
+      );
+    case 'Diamond':
+      return (
+        <span className="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-700 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
+          Premium
+        </span>
+      );
+    default:
+      return null;
+  }
+};
 
-  const getPlanStyle = (planName: string) => {
-    switch (planName) {
-      case "Premium":
-        return "border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-white shadow-lg hover:shadow-xl transform hover:-translate-y-1";
-      case "Diamond":
-        return "border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-white shadow-lg hover:shadow-xl transform hover:-translate-y-1";
-      default:
-        return "border border-gray-200 bg-white hover:shadow-lg transform hover:-translate-y-1";
-    }
-  };
+const getPlanStyle = (planType: string) => {
+  switch (planType) {
+    case 'Premium':
+      return 'border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-white shadow-lg hover:shadow-xl transform hover:-translate-y-1';
+    case 'Diamond':
+      return 'border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-white shadow-lg hover:shadow-xl transform hover:-translate-y-1';
+    default:
+      return 'border border-gray-200 bg-white hover:shadow-lg transform hover:-translate-y-1';
+  }
+};
 
   return (
     <div className="bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 font-inter min-h-screen">
@@ -218,75 +210,78 @@ const MembershipPage: React.FC = () => {
               {/* Plans Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
                 {plans.map((plan) => (
-                  <div
-                    key={plan.id}
-                    className={`${getPlanStyle(plan.name)} rounded-2xl p-8 transition-all duration-300 hover:shadow-2xl focus-within:shadow-xl focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 relative overflow-hidden`}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`Select ${plan.name} plan`}
-                  >
-                    {/* Background Pattern */}
-                    <div className="absolute top-0 right-0 w-32 h-32 opacity-5">
-                      <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-600 rounded-full transform translate-x-8 -translate-y-8"></div>
-                    </div>
+<div
+  key={plan.id}
+  className={`${getPlanStyle(plan.type)} rounded-2xl p-8 transition-all duration-300 hover:shadow-2xl focus-within:shadow-xl focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 relative overflow-hidden`}
+  tabIndex={0}
+  role="button"
+  aria-label={`Select ${plan.name} plan`}
+>
+  <div className="absolute top-0 right-0 w-32 h-32 opacity-5">
+    <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-600 rounded-full transform translate-x-8 -translate-y-8"></div>
+  </div>
 
-                    <div className="relative z-10">
-                      <div className="flex justify-between items-start mb-6">
-                        <div>
-                          <h3 className="text-2xl font-bold text-gray-900 mb-1">{plan.name}</h3>
-                          <p className="text-gray-500 font-medium">{plan.duration}-month membership</p>
-                        </div>
-                        {getPlanBadge(plan.name)}
-                      </div>
+  <div className="relative z-10">
+    <div className="flex justify-between items-start mb-6">
+      <div>
+        <h3 className="text-2xl font-bold text-gray-900 mb-1">{plan.name}</h3>
+        <p className="text-gray-500 font-medium">{plan.type} - {plan.duration}-month membership</p>
+      </div>
+      {getPlanBadge(plan.type)}
+    </div>
 
-                      <div className="mb-8">
-                        <div className="flex items-baseline">
-                          <span className="text-5xl font-bold text-gray-900">
-                            ₹{getDisplayPrice(plan).toFixed(0)}
-                          </span>
-                          <span className="text-lg font-medium text-gray-500 ml-2">/month</span>
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Total: ₹{plan.price} for {plan.duration} months
-                        </p>
-                      </div>
+    <div className="mb-8">
+      <div className="flex items-baseline">
+        <span className="text-5xl font-bold text-gray-900">
+          ₹{getDisplayPrice(plan).toFixed(0)}
+        </span>
+        <span className="text-lg font-medium text-gray-500 ml-2">/month</span>
+      </div>
+      <p className="text-sm text-gray-500 mt-1">
+        Total: ₹{plan.price} for {plan.duration} months
+      </p>
+    </div>
 
-                      <ul className="space-y-4 mb-8">
-                        {plan.features.map((feature, index) => (
-                          <li key={`${feature}-${index}`} className="flex items-center group">
-                            <div className="flex-shrink-0 w-5 h-5 bg-green-100 rounded-full flex items-center justify-center mr-3 group-hover:bg-green-200 transition-colors">
-                              <i className="fas fa-check text-green-600 text-xs"></i>
-                            </div>
-                            <span className="text-gray-700 font-medium">
-                              {featureLabels[feature] || feature}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
+    <ul className="space-y-4 mb-8">
+      {plan.features.map((feature, index) => (
+        <li key={`${feature}-${index}`} className="flex items-center group">
+          <div className="flex-shrink-0 w-5 h-5 bg-green-100 rounded-full flex items-center justify-center mr-3 group-hover:bg-green-200 transition-colors">
+            <i className="fas fa-check text-green-600 text-xs"></i>
+          </div>
+          <span className="text-gray-700 font-medium">
+            {featureLabels[feature] || feature}
+          </span>
+        </li>
+      ))}
+    </ul>
 
-                      <button
-                        className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-                          plan.name === "Premium"
-                            ? "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl"
-                            : plan.name === "Diamond"
-                            ? "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-lg hover:shadow-xl"
-                            : "bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-800 hover:to-gray-900 shadow-lg hover:shadow-xl"
-                        }`}
-                        onClick={() => handlePayment(plan)}
-                        disabled={paymentLoading === plan.id}
-                        aria-label={`Select ${plan.name} plan`}
-                      >
-                        {paymentLoading === plan.id ? (
-                          <div className="flex items-center justify-center">
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                            Processing...
-                          </div>
-                        ) : (
-                          "Select Plan"
-                        )}
-                      </button>
-                    </div>
-                  </div>
+    <p className="text-gray-500 mb-8">
+      {plan.description || 'Access to premium facilities and services'}
+    </p>
+
+    <button
+      className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+        plan.type === 'Premium'
+          ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
+          : plan.type === 'Diamond'
+          ? 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-lg hover:shadow-xl'
+          : 'bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-800 hover:to-gray-900 shadow-lg hover:shadow-xl'
+      }`}
+      onClick={() => handlePayment(plan)}
+      disabled={paymentLoading === plan.id}
+      aria-label={`Select ${plan.name} plan`}
+    >
+      {paymentLoading === plan.id ? (
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+          Processing...
+        </div>
+      ) : (
+        'Select Plan'
+      )}
+    </button>
+  </div>
+</div>
                 ))}
               </div>
 

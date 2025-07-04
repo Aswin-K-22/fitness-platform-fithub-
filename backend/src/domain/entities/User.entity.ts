@@ -48,6 +48,15 @@ interface Membership {
   id: string; // String @db.ObjectId in Prisma
 }
 
+// ... other imports and interfaces
+
+interface Membership {
+  id: string;
+  plan?: { name: string } | null;
+  status?: string | null;
+  startDate?: Date | null;
+}
+
 interface Booking {
   id: string; // String @db.ObjectId in Prisma
 }
@@ -70,13 +79,13 @@ interface UserProps {
   refreshToken?: string | null;
   profilePic?: string | null;
   membershipId?: string | null;
-  fitnessProfile?: FitnessProfile | null; // Updated to align with null
+  fitnessProfile?: FitnessProfile | null; 
   workoutPlanId?: string | null;
-  progress?: Progress[] | null; // Updated to align with null
-  weeklySummary?: WeeklySummary[] | null; // Updated to align with null
-  memberships?: Membership[] | null; // Updated to align with null
-  Bookings?: Booking[] | null; // Updated to align with null
-  payments?: Payment[] | null; // Updated to align with null
+  progress?: Progress[] | null; 
+  weeklySummary?: WeeklySummary[] | null; 
+  memberships?: Membership[] | null; 
+  Bookings?: Booking[] | null; 
+  payments?: Payment[] | null; 
 }
 
 export class User {

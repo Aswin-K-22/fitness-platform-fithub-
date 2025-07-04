@@ -34,7 +34,7 @@ export class UserRoutes {
     this.router.get('/gyms', this.userController.getGyms.bind(this.userController));
     this.router.get('/gyms/:gymId', this.userController.getGymDetails.bind(this.userController));
     this.router.get('/membership-plans', this.userController.getMembershipPlans.bind(this.userController));
-    
+         
     this.router.post('/membership/payment', this.authMiddleware.auth.bind(this.authMiddleware), this.userController.initiateMembershipPayment.bind(this.userController));
     this.router.post('/membership/verify-payment', this.authMiddleware.auth.bind(this.authMiddleware),this.userController.verifyMembershipPayment.bind(this.userController));
     // Protected routes

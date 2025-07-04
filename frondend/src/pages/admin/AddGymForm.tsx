@@ -1,4 +1,3 @@
-
 // src/presentation/features/admin/pages/AddGymForm.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useReducer, useEffect, useState } from "react";
@@ -16,7 +15,7 @@ import { addGym, getAvailableTrainers } from "../../services/api/adminApi";
 const gymSchema = z.object({
   name: z.string()
     .min(1, "Gym name is required")
-    .regex(/^\S+$/, "Gym name cannot contain spaces only"),
+    .regex(/^(?!\s*$).+/, "Gym name cannot contain spaces only"),
   type: z.enum(["Premium", "Basic", "Diamond"]),
   description: z.string()
     .min(1, "Description is required")
@@ -169,7 +168,7 @@ const AddGymForm: React.FC = () => {
       name: "",
       type: "Basic",
       description: "",
-      address: { street: "", city: "", state: "", postalCode: "", lat: "", lng: "" },
+      address: { street: "", city: "", state: "", postalCode: "", lat: "11.152967", lng: "75.8229835" },
       contact: { phone: "", email: "", website: "" },
       facilities: [],
       equipment: [],

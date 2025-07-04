@@ -4,6 +4,7 @@ import { Email } from '../valueObjects/email.valueObject';
 import { TrainerErrorType } from '../enums/trainerErrorType.enum';
 import { ICreateTrainerRequestDTO } from '../dtos/createTrainerRequest.dto';
 import { AuthErrorType } from '../enums/authErrorType.enum';
+import { TrainerResponseDTO } from '../dtos/getTrainersResponse.dto';
 
 // Interface for Certification as per Prisma schema
 interface Certification {
@@ -298,6 +299,23 @@ export class Trainer {
     return this._updatedAt;
   }
 
+
+  toJSON(): TrainerResponseDTO {
+    return {
+      id: this.id ?? '',
+      name: this.name,
+      email: this.email.address, // Convert Email object to string
+      specialties: this.specialties,
+      experienceLevel: this.experienceLevel,
+      verifiedByAdmin: this.verifiedByAdmin,
+      isVerified: this.isVerified,
+      profilePic: this.profilePic,
+      certifications: this.certifications,
+      bio: this.bio,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+    };
+  }
   // Methods
   updateOtp(otp: string, expires: Date): void {
     this._otp = otp;

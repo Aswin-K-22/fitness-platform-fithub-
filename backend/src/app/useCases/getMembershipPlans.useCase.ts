@@ -1,43 +1,44 @@
-import { IGetMembershipPlansResponseDTO, MembershipPlanDTO } from '@/domain/dtos/getMembershipPlansResponse.dto';
-import { GetMembershipPlansRequestDTO } from '@/domain/dtos/getMembershipPlansRequest.dto';
-import { MembershipPlan } from '@/domain/entities/MembershipPlan.entity';
+// src/app/useCases/getMembershipPlans.useCase.ts
 import { IMembershipsPlanRepository } from '@/app/repositories/membershipPlan.repository';
-import { MembershipErrorType } from '@/domain/enums/membershipErrorType.enum';
+import { MembershipPlanDTO } from '@/domain/dtos/IAdminMembershipPlanDTO';
 
 export class GetMembershipPlansUseCase {
   constructor(private membershipsPlanRepository: IMembershipsPlanRepository) {}
 
-  private toMembershipPlanDTO(plan: MembershipPlan): MembershipPlanDTO {
-    return {
-      id: plan.id || '',
-      name: plan.name,
-      description: plan.description,
-      price: plan.price,
-      duration: plan.duration,
-      features: plan.features,
-      createdAt: plan.createdAt instanceof Date ? plan.createdAt.toISOString() : plan.createdAt || undefined,
-      updatedAt: plan.updatedAt instanceof Date ? plan.updatedAt.toISOString() : plan.updatedAt || undefined,
-    };
-  }
+  async execute(page: number, limit: number): Promise<{
+    success: boolean;
+    plans: MembershipPlanDTO[];
+    page: number;
+    totalPages: number;
+    totalPlans: number;
+  }> {
+    try {
+      const skip = (page - 1) * limit;
+      const plans = await this.membershipsPlanRepository.findAllPlans(skip, limit);
+      const totalPlans = await this.membershipsPlanRepository.countPlans();
+      const totalPages = Math.ceil(totalPlans / limit);
 
-  async execute({ page = 1, limit = 3 }: GetMembershipPlansRequestDTO): Promise<IGetMembershipPlansResponseDTO> {
-    if (page < 1 || limit < 1) {
-      throw new Error(MembershipErrorType.InvalidPaginationParams);
+      const plansDTO = plans.map((plan) => ({
+        id: plan.id || '',
+        name: plan.name,
+        type: plan.type,
+        description: plan.description,
+        price: plan.price,
+        duration: plan.duration,
+        features: plan.features,
+        createdAt: plan.createdAt instanceof Date ? plan.createdAt.toISOString() : plan.createdAt || '',
+        updatedAt: plan.updatedAt instanceof Date ? plan.updatedAt.toISOString() : plan.updatedAt || '',
+      }));
+
+      return {
+        success: true,
+        plans: plansDTO,
+        page,
+        totalPages,
+        totalPlans,
+      };
+    } catch (error) {
+      throw new Error('Failed to fetch membership plans');
     }
-
-    const skip = (page - 1) * limit;
-    const plans = await this.membershipsPlanRepository.findAllPlans(skip, limit);
-    const totalPlans = await this.membershipsPlanRepository.countPlans();
-    const totalPages = Math.ceil(totalPlans / limit);
-
-    const planDTOs: MembershipPlanDTO[] = plans.map((plan) => this.toMembershipPlanDTO(plan));
-
-    return {
-      success: true,
-      plans: planDTOs,
-      page,
-      totalPages,
-      totalPlans,
-    };
   }
 }

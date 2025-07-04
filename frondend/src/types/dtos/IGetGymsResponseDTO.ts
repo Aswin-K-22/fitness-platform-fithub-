@@ -1,5 +1,6 @@
 // src/domain/dtos/admin/IGetGymsResponseDTO.ts
-import { Gym } from "../../entities/common/Gym";
+
+import type { Gym } from "../gym.types";
 
 export interface IGetGymsResponseDTO {
   gyms: Gym[];

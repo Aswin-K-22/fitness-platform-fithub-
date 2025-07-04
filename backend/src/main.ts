@@ -1,4 +1,5 @@
 // External Libraries
+// src/main.ts
 import express, { Request, Response, NextFunction } from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -84,6 +85,7 @@ import { TrainerRefreshTokenUseCase } from '@/app/useCases/trainerRefreshToken.u
 import { LoginAdminUseCase } from '@/app/useCases/loginAdmin.useCase';
 import { GetAdminUseCase } from '@/app/useCases/getAdmin.useCase';
 import { AdminRefreshTokenUseCase } from '@/app/useCases/adminRefreshToken.useCase';
+import {  GetAdminMembershipPlansUseCase} from '@/app/useCases/getAdminMembershipPlans.useCase';
 
 // Presentation - Controllers
 import { TrainerAuthController } from '@/presentation/controllers/trainer/auth.controller';
@@ -113,6 +115,14 @@ import { InitiateMembershipPaymentUseCase } from './app/useCases/initiateMembers
 import { VerifyMembershipPaymentUseCase } from './app/useCases/verifyMembershipPayment.useCase';
 import { GetUserProfileUseCase } from './app/useCases/getUserProfile.useCase';
 import { LogoutAdminUseCase } from './app/useCases/logoutAdmin.useCase';
+import { GetUsersUseCase } from './app/useCases/getUsers.useCase';
+import { ToggleUserVerificationUseCase } from './app/useCases/toggleUserVerification.useCase';
+import { GetTrainersUseCase } from './app/useCases/getTrainers.useCase';
+import { ApproveTrainerUseCase } from './app/useCases/approveTrainer.useCase';
+import { GetAdminGymsUseCase } from './app/useCases/getAdminGyms.useCase';
+import { AddGymUseCase } from './app/useCases/addGym.useCase';
+import { GetAvailableTrainersUseCase } from './app/useCases/getAvailableTrainers.useCase';
+import { AddMembershipPlanUseCase } from './app/useCases/addMembershipPlan.useCase';
 
 
 const app = express();
@@ -176,11 +186,17 @@ const getUserProfileUseCase = new GetUserProfileUseCase(usersRepository)
 const getGymsUseCase = new GetGymsUseCase(gymsRepository);
 const getGymDetailsUseCase = new GetGymDetailsUseCase(gymsRepository);
 const getMembershipPlansUseCase = new GetMembershipPlansUseCase(membershipsPlanRepository);
+const getAdminMembershipPlansUseCase = new GetAdminMembershipPlansUseCase(membershipsPlanRepository);
 const initiateMembershipPaymentUseCase = new InitiateMembershipPaymentUseCase(membershipsRepository,paymentsRepository,usersRepository,membershipsPlanRepository)
 const verifyMembershipPaymentUseCase = new VerifyMembershipPaymentUseCase(membershipsRepository,paymentsRepository,usersRepository,membershipsPlanRepository);
 const updateUserProfileUseCase = new UpdateUserProfileUseCase(usersRepository);
 const logoutAdminUseCase = new LogoutAdminUseCase(usersRepository);
 
+const getTrainersUseCase = new GetTrainersUseCase(trainersRepository);
+const approveTrainerUseCase = new ApproveTrainerUseCase(trainersRepository);
+const getAdminGymsUseCase = new GetAdminGymsUseCase(gymsRepository);
+const addGymUseCase = new AddGymUseCase(gymsRepository, trainersRepository);
+const getAvailableTrainersUseCase = new GetAvailableTrainersUseCase(trainersRepository);
 
 
 
@@ -197,6 +213,9 @@ const trainerRefreshTokenUseCase = new TrainerRefreshTokenUseCase(trainersReposi
 const loginAdminUseCase = new LoginAdminUseCase(usersRepository, passwordHasher, tokenService);
 const getAdminUseCase = new GetAdminUseCase(usersRepository);
 const adminRefreshTokenUseCase = new AdminRefreshTokenUseCase(usersRepository, tokenService);
+const getUsersUseCase = new GetUsersUseCase(usersRepository);
+const toggleUserVerificationUseCase = new ToggleUserVerificationUseCase(usersRepository);
+const addMembershipPlanUseCase = new AddMembershipPlanUseCase(membershipsPlanRepository);
 
 
 
@@ -246,7 +265,14 @@ const trainerController = new TrainerController(getTrainerUseCase);
 
 
 const adminAuthController = new AdminAuthController(loginAdminUseCase, adminRefreshTokenUseCase,logoutAdminUseCase );
-const adminController = new AdminController(getAdminUseCase);
+const adminController = new AdminController(
+  getAdminUseCase,
+  getUsersUseCase,
+  toggleUserVerificationUseCase,
+  getTrainersUseCase,
+  approveTrainerUseCase,
+  getAdminGymsUseCase, addGymUseCase, getAvailableTrainersUseCase, getAdminMembershipPlansUseCase,addMembershipPlanUseCase
+);
 
 
 // Routes

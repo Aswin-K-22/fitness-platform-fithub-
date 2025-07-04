@@ -1,3 +1,5 @@
+// src/domain/dtos/getMembershipPlansResponse.dto.ts
+
 export interface MembershipPlanDTO {
   id: string;
   name: string; 

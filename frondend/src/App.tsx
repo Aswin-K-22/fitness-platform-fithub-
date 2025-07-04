@@ -155,9 +155,9 @@ const App: React.FC = () => {
                 <Route path="/admin/trainers" element={<ProtectedRoute element={<TrainerManagement />} allowedRole="admin" />} />
                 <Route path="/admin/trainers/:id" element={<ProtectedRoute element={<TrainerDetails />} allowedRole="admin" />} />
                 <Route path="/admin/gyms" element={<ProtectedRoute element={<Gyms />} allowedRole="admin" />} />
-                <Route path="/admin/gyms/add" element={<ProtectedRoute element={<AddGymForm />} allowedRole="admin" />} />
-                <Route path="/admin/memberships" element={<ProtectedRoute element={<MembershipPlans />} allowedRole="admin" />} />
-                <Route path="/admin/memberships/add" element={<ProtectedRoute element={<AddMembershipPlan />} allowedRole="admin" />} />
+                <Route path="/admin/gym/add" element={<ProtectedRoute element={<AddGymForm />} allowedRole="admin" />} />
+                <Route path="/admin/membership-plans" element={<ProtectedRoute element={<MembershipPlans />} allowedRole="admin" />} />
+                <Route path="/admin/membership/add" element={<ProtectedRoute element={<AddMembershipPlan />} allowedRole="admin" />} />
               </Route>
 
               <Route

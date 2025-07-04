@@ -132,36 +132,29 @@ export const getUsers = async (
     },
   });
   console.log("API response for params:", { search, membership, isVerified }, "Users:", response.data.users);
-  return {
-    users: response.data.users.map((user: any) => ({
-      id: user.id,
-      name: user.name || "N/A",
-      email: user.email,
-      membership: user.membership || "None",
-      status: user.status || "None",
-      profilePic: user.profilePic || null,
-      isVerified: user.isVerified,
-    })),
+ return {
+    users: response.data.users, // Backend already maps to simplified structure
     totalPages: response.data.totalPages,
+    totalUsers: response.data.totalUsers,
   };
 };
 
 
 
 export const addGym = async (data: FormData): Promise<any> => {
-  const response = await apiClient.post("/admin/addGym", data, {
+  const response = await apiClient.post("/addGym", data, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return response.data;
 };
 
 export const getAvailableTrainers = async (): Promise<{ id: string; name: string; active: boolean }[]> => {
-  const response = await apiClient.get("/admin/available-trainers");
+  const response = await apiClient.get("/available-trainers");
   return response.data.trainers; 
 };
 
 export const getGyms = async (page: number, limit: number, search?: string): Promise<IGetGymsResponseDTO> => {
-  const response = await apiClient.get("/admin/gyms", {
+  const response = await apiClient.get("/gyms", {
     params: {
       page,
       limit,
@@ -197,38 +190,29 @@ export const trainersList = async (page: number, limit: number) => {
 };
 
 export const toggleUserVerification = async (id: string): Promise<User> => {
-  const response = await apiClient.put(`/admin/users/${id}/toggle-verification`);
-  const updatedUser = response.data.user; 
+  const response = await apiClient.put(`/users/${id}/toggle-verification`);
   console.log("Raw backend response:", response.data); 
-  return {
-    id: updatedUser.id,
-    email: updatedUser.email,
-    role: updatedUser.role,
-    name: updatedUser.name || "N/A",
-    createdAt: updatedUser.createdAt || null,
-    updatedAt: updatedUser.updatedAt || null,
-    isVerified: updatedUser.isVerified ?? false,
-    membershipId: updatedUser.membershipId || null,
-    fitnessProfile: updatedUser.fitnessProfile || null,
-    workoutPlanId: updatedUser.workoutPlanId || null,
-    progress: updatedUser.progress || null,
-    weeklySummary: updatedUser.weeklySummary || null,
-    profilePic: updatedUser.profilePic || null,
-    status: updatedUser.status || (updatedUser.isVerified ? "Active" : "Suspended"),
-    membership: updatedUser.membership || (updatedUser.membershipId ? "Premium" : "N/A"),
-  };
+  console.log('Raw backend response:', response.data);
+  return response.data.user;
 };
 
 export const getMembershipPlans = async (page: number, limit: number): Promise<IGetMembershipPlansResponseDTO> => {
-  const response = await apiClient.get("/admin/membership-plans", {
+  try{
+  const response = await apiClient.get("/membership-plans", {
     params: { page, limit },
   });
-  return response.data;
+ return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to fetch membership plans');
+  }
 };
 
-export const addMembershipPlan = async (data: IAddMembershipPlanRequestDTO):Promise<any> => {
-  const response = await apiClient.post("/admin/membership-plans", data);
-  return response.data;
+export const addMembershipPlan = async (data: IAddMembershipPlanRequestDTO): Promise<void> => {
+  try {
+    await apiClient.post('/membership-plans', data);
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to create membership plan');
+  }
 };
 
 
@@ -245,7 +229,7 @@ export const getTrainers = async (
   specialization?: string,
 
 ): Promise<IGetTrainersResponseDTO> => {
-  const response = await apiClient.get(`/admin/trainers`, {
+  const response = await apiClient.get(`/trainers`, {
     params: {
       page,
       limit,
@@ -253,7 +237,7 @@ export const getTrainers = async (
       status,
       specialization,
     
-      _t: Date.now(), // Prevent 304 responses
+      _t: Date.now(), 
     },
     headers: {
       "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -285,6 +269,10 @@ export const getTrainers = async (
 
 
  export const   getTrainerDetails = async (trainerId: string): Promise<any>=>{
-    const response = await apiClient.get(`/admin/trainers/${trainerId}`);
+    const response = await apiClient.get(`/trainers/${trainerId}`);
     return response.data;
+  }
+
+   export const approveTrainer =   async (trainerId: string): Promise<void>=> {
+    await apiClient.put(`/trainers/${trainerId}/toggle-approval`);
   }

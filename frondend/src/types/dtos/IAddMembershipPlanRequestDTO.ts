@@ -1,9 +1,9 @@
-// src/domain/dtos/admin/IAddMembershipPlanRequestDTO.ts
+// src/types/dtos/IAddMembershipPlanRequestDTO.ts
 export interface IAddMembershipPlanRequestDTO {
-  name: "Premium" | "Basic" | "Diamond";
+  name: string;
+  type: 'Basic' | 'Premium' | 'Diamond';
   description: string;
-  price: number; // Changed to number for consistency
-  duration: number; // Changed to number (months)
+  price: number;
+  duration: string
   features: string[];
 }
-

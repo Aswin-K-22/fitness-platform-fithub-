@@ -3,6 +3,8 @@ import { IUsersRepository } from '../../app/repositories/users.repository';
 import { User } from '../../domain/entities/User.entity';
 import { Email } from '../../domain/valueObjects/email.valueObject';
 import { PrismaClient } from '@prisma/client';
+import { IGetUsersRequestDTO } from '@/domain/dtos/getUsersRequest.dto';
+import { UserErrorType } from '@/domain/enums/userErrorType.enum';
 
 export class UsersRepository implements IUsersRepository {
   constructor(private prisma: PrismaClient) {}
@@ -176,6 +178,172 @@ async updateProfile(email: string, data: IUpdateUserProfileRequestDTO): Promise<
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
       fitnessProfile: updatedUser.fitnessProfile ?? null,
+      progress: updatedUser.progress ?? null,
+      weeklySummary: updatedUser.weeklySummary ?? null,
+      memberships: updatedUser.memberships ?? null,
+      Bookings: updatedUser.Bookings ?? null,
+      payments: updatedUser.payments ?? null,
+    });
+  }
+
+async findAllUsers({
+    page,
+    limit,
+    search,
+    membership,
+    isVerified,
+  }: IGetUsersRequestDTO): Promise<User[]> {
+    const skip = (page - 1) * limit;
+    const where: any = { role: 'user' }; // Only fetch users, not admins or trainers
+
+    if (search) {
+      where.name = { contains: search.trim(), mode: 'insensitive' };
+    }
+    if (membership) {
+      if (membership === 'None') {
+        where.membershipId = null;
+        where.memberships = { none: {} };
+      } else {
+        where.memberships = {
+          some: {
+            plan: { name: membership },
+            status: 'Active',
+          },
+        };
+      }
+    }
+    if (isVerified !== undefined) {
+      where.isVerified = isVerified === 'true';
+    }
+
+    const users = await this.prisma.user.findMany({
+      where,
+      skip,
+      take: limit,
+      include: {
+        memberships: {
+          select: {
+            id: true,
+            plan: { select: { name: true } },
+            status: true,
+            startDate: true,
+          },
+          where: {
+            status: 'Active',
+            ...(membership && membership !== 'None' ? { plan: { name: membership } } : {}),
+          },
+          orderBy: { startDate: 'desc' },
+          take: 1,
+        },
+        
+        payments: true,
+        Bookings: true,
+      },
+    });
+
+    return users.map(
+      (user) =>
+        new User({
+          id: user.id,
+          name: user.name,
+          email: new Email({ address: user.email }),
+          password: user.password,
+          role: user.role,
+          profilePic: user.profilePic ?? null,
+          isVerified: user.isVerified ?? false,
+          otp: user.otp ?? null,
+          otpExpires: user.otpExpires ?? null,
+          refreshToken: user.refreshToken ?? null,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          membershipId: user.membershipId ?? null,
+          fitnessProfile: user.fitnessProfile ?? null,
+          workoutPlanId: user.workoutPlanId ?? null,
+          progress: user.progress ?? null,
+          weeklySummary: user.weeklySummary ?? null,
+          memberships: user.memberships ?? null,
+          Bookings: user.Bookings ?? null,
+          payments: user.payments ?? null,
+        }),
+    );
+  }
+
+  async countUsers({
+    search,
+    membership,
+    isVerified,
+  }: IGetUsersRequestDTO): Promise<number> {
+    const where: any = { role: 'user' };
+
+    if (search) {
+      where.name = { contains: search.trim(), mode: 'insensitive' };
+    }
+    if (membership) {
+      if (membership === 'None') {
+        where.membershipId = null;
+        where.memberships = { none: {} };
+      } else {
+        where.memberships = {
+          some: {
+            plan: { name: membership },
+            status: 'Active',
+          },
+        };
+      }
+    }
+    if (isVerified !== undefined) {
+      where.isVerified = isVerified === 'true';
+    }
+
+    return this.prisma.user.count({ where });
+  }
+
+  async toggleUserVerification(userId: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new Error(UserErrorType.UserNotFound);
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        isVerified: !user.isVerified,
+        updatedAt: new Date(),
+      },
+      include: {
+        memberships: {
+          select: {
+            id: true,
+            plan: { select: { name: true } },
+            status: true,
+            startDate: true,
+          },
+          where: { status: 'Active' },
+          orderBy: { startDate: 'desc' },
+          take: 1,
+        },
+      
+        payments: true,
+        Bookings: true,
+      },
+    });
+
+    return new User({
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: new Email({ address: updatedUser.email }),
+      password: updatedUser.password,
+      role: updatedUser.role,
+      profilePic: updatedUser.profilePic ?? null,
+      isVerified: updatedUser.isVerified ?? false,
+      otp: updatedUser.otp ?? null,
+      otpExpires: updatedUser.otpExpires ?? null,
+      refreshToken: updatedUser.refreshToken ?? null,
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt,
+      membershipId: updatedUser.membershipId ?? null,
+      fitnessProfile: updatedUser.fitnessProfile ?? null,
+      workoutPlanId: updatedUser.workoutPlanId ?? null,
       progress: updatedUser.progress ?? null,
       weeklySummary: updatedUser.weeklySummary ?? null,
       memberships: updatedUser.memberships ?? null,

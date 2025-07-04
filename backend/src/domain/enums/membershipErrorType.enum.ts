@@ -6,4 +6,9 @@ export enum MembershipErrorType {
   PlanNotFound = 'PLAN_NOT_FOUND',
   InvalidPaginationParams = 'INVALID_PAGINATION',
   InternalServerError = 'INTERNAL_SERVER_ERROR',
+  Unauthorized = 'UNAUTHORIZED',
+  InvalidPagination = 'Invalid pagination parameters',
+  DatabaseError = 'Database error occurred',
+  UnknownError = 'An unknown error occurred',
+  PlanAlreadyExists = 'A plan with this name already exists',
 }
