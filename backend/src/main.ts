@@ -123,6 +123,8 @@ import { GetAdminGymsUseCase } from './app/useCases/getAdminGyms.useCase';
 import { AddGymUseCase } from './app/useCases/addGym.useCase';
 import { GetAvailableTrainersUseCase } from './app/useCases/getAvailableTrainers.useCase';
 import { AddMembershipPlanUseCase } from './app/useCases/addMembershipPlan.useCase';
+import { GetTrainerProfileUseCase } from './app/useCases/getTrainerProfile.useCase';
+import { UpdateTrainerProfileUseCase } from './app/useCases/updateTrainerProfile.useCase';
 
 
 const app = express();
@@ -208,8 +210,10 @@ const verifyTrainerOtpUseCase = new VerifyTrainerOtpUseCase(trainersRepository);
 const resendTrainerOtpUseCase = new ResendTrainerOtpUseCase(trainersRepository, emailService);
 const getTrainerUseCase = new GetTrainerUseCase(trainersRepository);
 const trainerRefreshTokenUseCase = new TrainerRefreshTokenUseCase(trainersRepository, tokenService);
+const getTrainerProfileUseCase = new GetTrainerProfileUseCase(trainersRepository);
+const updateTrainerProfileUseCase = new UpdateTrainerProfileUseCase(trainersRepository);
 
-
+// Admin use Case
 const loginAdminUseCase = new LoginAdminUseCase(usersRepository, passwordHasher, tokenService);
 const getAdminUseCase = new GetAdminUseCase(usersRepository);
 const adminRefreshTokenUseCase = new AdminRefreshTokenUseCase(usersRepository, tokenService);
@@ -261,7 +265,7 @@ const trainerAuthController = new TrainerAuthController(
   resendTrainerOtpUseCase,
     trainerRefreshTokenUseCase
 );
-const trainerController = new TrainerController(getTrainerUseCase);
+const trainerController = new TrainerController(getTrainerUseCase,getTrainerProfileUseCase,updateTrainerProfileUseCase);
 
 
 const adminAuthController = new AdminAuthController(loginAdminUseCase, adminRefreshTokenUseCase,logoutAdminUseCase );

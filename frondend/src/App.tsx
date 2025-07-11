@@ -12,6 +12,7 @@ import type { AppDispatch } from "./store/store";
 // Lazy-loaded components
 const HomePage = lazy(() => import("./pages/user/HomePage"));
 const ForbiddenPage = lazy(() => import("./pages/auth/ForbiddenPage"));
+const TrainerForbiddenPage = lazy(() => import("./pages/trainer/ForbiddenPage"));
 const GymSearchPage = lazy(() => import("./pages/user/GymSearchPage"));
 const GymDetailsPage = lazy(() => import("./pages/user/GymDetailsPage"));
 const MembershipPage = lazy(() => import("./pages/user/MembershipPage"));
@@ -43,6 +44,7 @@ const UserLayout = lazy(() => import("./components/layout/UserLayout/UserLayout"
 const TrainerLayout = lazy(() => import("./components/layout/TrainerLayout/TrainerLayout"));
 const AdminLayout = lazy(() => import("./components/layout/AdminLayout/AdminLayout"));
 const ErrorBoundary = lazy(() => import("./components/common/ErrorBoundary"));
+const AdminForbiddenPage =  lazy(()=>import("./pages/admin/ForbiddenPage")) 
 
 interface ProtectedRouteProps {
   element: React.ReactElement;
@@ -93,11 +95,28 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   };
 
+  const getForbiddenPath = () => {
+    const currentPath = location.pathname;
+  if (currentPath.startsWith("/trainer")) {
+    return "/trainer/forbidden"; 
+  }else if(currentPath.startsWith("/admin")){
+    return "/admin/forbidden"; 
+  }else{
+     return "/forbidden"; 
+  }
+    // if (isTrainerAuthenticated) return "/trainer/forbidden";
+    // if (isUserAuthenticated) return "/forbidden";
+    // if (isAdminAuthenticated) return "/forbidden"; // Admins could have their own forbidden page if needed
+   // return getRedirectPath(); // Default to login path if no role is authenticated
+  };
+
   useEffect(() => {
     if (!isRoleAuthenticated && !isPublic && !location.pathname.includes("auth") && !isRoleLoading) {
       navigate(getRedirectPath(), { replace: true, state: { from: location } });
-    } else if (isAnyAuthenticated && !isRoleAuthenticated && !isPublic) {
-      navigate("/forbidden", { replace: true });
+    } else if (isAdminAuthenticated || isTrainerAuthenticated || isUserAuthenticated) {
+      if (!isRoleAuthenticated && !isPublic) {
+        navigate(getForbiddenPath(), { replace: true, state: { from: location.pathname } });
+      }
     }
   }, [isRoleAuthenticated, isAnyAuthenticated, location, navigate, isPublic, isRoleLoading]);
 
@@ -146,7 +165,7 @@ const App: React.FC = () => {
               <Route path="/trainer/signup" element={<TrainerSignup />} />
               <Route path="/trainer/verify-otp" element={<TrainerVerifyOtp />} />
               <Route path="/trainer/pending-approval" element={<PendingApproval />} />
-              <Route path="/forbidden" element={<ForbiddenPage />} />
+              <Route path="/trainer/forbidden" element={<TrainerForbiddenPage />} />
 
               <Route element={<AdminLayout />}>
                 <Route path="/admin/dashboard" element={<ProtectedRoute element={<DashboardView />} allowedRole="admin" />} />
@@ -158,6 +177,7 @@ const App: React.FC = () => {
                 <Route path="/admin/gym/add" element={<ProtectedRoute element={<AddGymForm />} allowedRole="admin" />} />
                 <Route path="/admin/membership-plans" element={<ProtectedRoute element={<MembershipPlans />} allowedRole="admin" />} />
                 <Route path="/admin/membership/add" element={<ProtectedRoute element={<AddMembershipPlan />} allowedRole="admin" />} />
+                <Route path="/admin/forbidden" element={<AdminForbiddenPage />} />
               </Route>
 
               <Route

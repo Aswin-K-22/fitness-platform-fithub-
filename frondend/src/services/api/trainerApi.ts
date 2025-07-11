@@ -151,7 +151,7 @@ export const updateTrainerProfile = async (data: IUpdateTrainerProfileRequestDTO
   if (data.upiId) formData.append("upiId", data.upiId);
   if (data.bankAccount) formData.append("bankAccount", data.bankAccount);
   if (data.ifscCode) formData.append("ifscCode", data.ifscCode);
-  const response = await apiClient.put("/trainer/profile", formData, {
+  const response = await apiClient.put("/profile", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return response.data;

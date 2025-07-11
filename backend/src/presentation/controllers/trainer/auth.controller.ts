@@ -103,13 +103,15 @@ export class TrainerAuthController {
 
       const { trainer, accessToken, refreshToken } = result.data;
 
+      
+    res.cookie('trainerAccessToken', accessToken, { httpOnly: true, secure: true });
+    res.cookie('trainerRefreshToken', refreshToken, { httpOnly: true, secure: true });
+    
       if (!trainer.verifiedByAdmin) {
         res.status(200).json({ trainer, message: 'Pending admin approval' });
         return;
       }
 
-    res.cookie('trainerAccessToken', accessToken, { httpOnly: true, secure: true });
-    res.cookie('trainerRefreshToken', refreshToken, { httpOnly: true, secure: true });
   res.status(200).json({ trainer });
     } catch (error: any) {
       console.error('Login error:', error);

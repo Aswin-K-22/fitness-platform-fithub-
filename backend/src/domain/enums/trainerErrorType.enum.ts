@@ -28,9 +28,18 @@ export enum TrainerErrorType {
   InvalidAccessToken = "InvalidAccessToken",
   NoAccessTokenProvided = "NoAccessTokenProvided",
   InvalidRequest = "InvalidRequest",
-  InvalidTrainerId = 'Invalid trainer ID', // New
+  InvalidTrainerId = 'Invalid trainer ID', 
   FailedToFetchTrainers = 'Failed to fetch trainers',
-  FailedToAssignTrainers = "FailedToAssignTrainers", // New
+  FailedToAssignTrainers = "FailedToAssignTrainers",
+  InternalServerError = 'INTERNAL_SERVER_ERROR',
+  NoValidFieldsProvided = 'NO_VALID_FIELDS_PROVIDED',
+  InvalidSpecialties = 'INVALID_SPECIALTIES',
+  InvalidUpiId = 'INVALID_UPI_ID',
+  InvalidBankAccount = 'INVALID_BANK_ACCOUNT',
+  InvalidIfscCode = 'INVALID_IFSC_CODE',
+  MissingBankDetails = 'MISSING_BANK_DETAILS',
+  MissingPaymentDetails = 'MISSING_PAYMENT_DETAILS',
+  UpdateFailed = 'UPDATE_FAILED', //
   
 
 }

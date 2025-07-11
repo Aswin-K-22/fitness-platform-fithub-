@@ -1,4 +1,5 @@
 // backend/src/app/repositories/trainers.repository.ts
+import { IUpdateTrainerProfileRequestDTO } from '@/domain/enums/updateTrainerProfileRequest.dto';
 import { Trainer } from '../../domain/entities/Trainer.entity';
 
 export interface ITrainersRepository {
@@ -24,4 +25,5 @@ export interface ITrainersRepository {
   countApproved(): Promise<number>;
   countSuspended(): Promise<number>;
   toggleApproval(trainerId: string, verifiedByAdmin: boolean): Promise<Trainer>;
+  updateProfile(email: string, data: IUpdateTrainerProfileRequestDTO): Promise<Trainer>;
 }

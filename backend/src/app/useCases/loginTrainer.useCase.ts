@@ -43,7 +43,7 @@ export class LoginTrainerUseCase {
 
       const responseTrainer: ILoginResponseDTO['trainer'] = {
         id: trainer.id,
-        email: trainer.email,
+        email: trainer.email.address,
         name: trainer.name,
         role: 'trainer',
         isVerified: trainer.isVerified,
@@ -51,14 +51,16 @@ export class LoginTrainerUseCase {
         profilePic: trainer.profilePic || null,
       };
 
-      if (!trainer.verifiedByAdmin) {
-        return { success: true, data: { trainer: responseTrainer, accessToken: '', refreshToken: '' } };
-      }
+     
 
       const accessToken = await this.tokenService.generateAccessToken({ email: trainer.email.address, id: trainer.id });
       const refreshToken = await this.tokenService.generateRefreshToken({ email: trainer.email.address, id: trainer.id });
 
       await this.trainersRepository.updateRefreshToken(dto.email, refreshToken);
+
+       if (!trainer.verifiedByAdmin) {
+        return { success: true, data: { trainer: responseTrainer, accessToken, refreshToken} };
+      }
 
       return { success: true, data: { trainer: responseTrainer, accessToken, refreshToken } };
     } catch (error: any) {

@@ -1,8 +1,45 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useSelector } from "react-redux";
+import { useNavigate, useLocation, type Location } from "react-router-dom";
+import { toast } from "react-toastify";
+import type { RootState } from "../../store/store";
+
+// Define the shape of the location state
+interface LocationState {
+  from?: string;
+}
+
+// Extend Location to include typed state
+interface CustomLocation extends Location {
+  state: LocationState | null;
+}
 
 const ForbiddenPage: React.FC = () => {
+  const { isAuthenticated, trainer } = useSelector((state: RootState) => state.trainerAuth);
   const navigate = useNavigate();
+  const location = useLocation() as CustomLocation; // Type as CustomLocation
+
+  useEffect(() => {
+    console.log("ForbiddenPage useEffect triggered", { isAuthenticated, trainer });
+    if (isAuthenticated && trainer?.role === "trainer") {
+      console.log("Navigating based on verifiedByAdmin:", trainer.verifiedByAdmin);
+      if (trainer.verifiedByAdmin) {
+        // Get the last attempted URL from location.state or localStorage
+        const from = location.state?.from || localStorage.getItem("lastAttemptedUrl") || "/trainer/dashboard";
+        toast.success(`Welcome back, ${trainer.name}! Redirecting to your last page.`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        navigate(from, { replace: true });
+      } else {
+        toast.info("Your account is pending admin approval.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        navigate("/trainer/pending-approval", { replace: true });
+      }
+    }
+  }, [isAuthenticated, trainer, navigate, location.state]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">

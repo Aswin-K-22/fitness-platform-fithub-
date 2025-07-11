@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux"; 
@@ -18,6 +19,7 @@ const UserProfile: React.FC = () => {
   const navigate = useNavigate(); 
   const { user } = useSelector((state: RootState) => state.userAuth); 
   const [profileData, setProfileData] = useState<UserProfileData | null>(null);
+  const [membershipPlan, setMembershipPlan] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState("");
@@ -27,11 +29,21 @@ const UserProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileAndMembership = async () => {
       try {
         const response = await getUserProfile(); 
         setProfileData(response.user);
         setEditedName(response.user.name || "");
+
+        //const membershipResponse = await getMembershipPlansUser(1, 1); // Fetch one plan for the current user
+        // const membership = membershipResponse.memberships[0]; // Assuming first membership is the active one
+        // if (membership) {
+        //   setMembershipPlan({
+        //     ...membership,
+        //     plan: membershipResponse.plans.find((plan: any) => plan._id === membership.planId),
+        //   });
+        // }
+
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
         toast.error("Failed to load profile data");
@@ -39,7 +51,7 @@ const UserProfile: React.FC = () => {
         setLoading(false);
       }
     };
-    fetchProfile();
+   fetchProfileAndMembership();
   }, []);
 
   useEffect(() => {
@@ -473,22 +485,46 @@ const UserProfile: React.FC = () => {
                 </div>
               </div>
               
-              <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+<div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Current Plan</h3>
                 <div className="text-center">
-                  <div className="bg-gradient-to-br from-purple-100 to-pink-100 p-6 rounded-lg mb-4">
-                    <svg className="w-12 h-12 text-purple-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <h4 className="font-semibold text-gray-900 mb-2">
-                      {profileData.workoutPlanId ? "Custom Plan Active" : "No Plan Assigned"}
-                    </h4>
-                    <p className="text-gray-600 text-sm">
-                      {profileData.workoutPlanId ? "Tailored to your goals" : "Start your fitness journey"}
-                    </p>
-                  </div>
+                  {membershipPlan ? (
+                    <div className="bg-gradient-to-br from-purple-100 to-pink-100 p-6 rounded-lg mb-4">
+                      <svg className="w-12 h-12 text-purple-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <h4 className="font-semibold text-gray-900 mb-2">{membershipPlan.plan.name}</h4>
+                      <p className="text-gray-600 text-sm mb-2">{membershipPlan.plan.description}</p>
+                      <p className="text-gray-600 text-sm mb-2">
+                        <span className="font-medium">Status:</span> {membershipPlan.status}
+                      </p>
+                      <p className="text-gray-600 text-sm mb-2">
+                        <span className="font-medium">Price:</span> {membershipPlan.price} {membershipPlan.currency}
+                      </p>
+                      <p className="text-gray-600 text-sm mb-2">
+                        <span className="font-medium">Start Date:</span>{" "}
+                        {new Date(membershipPlan.startDate).toLocaleDateString()}
+                      </p>
+                      <p className="text-gray-600 text-sm mb-2">
+                        <span className="font-medium">End Date:</span>{" "}
+                        {new Date(membershipPlan.endDate).toLocaleDateString()}
+                      </p>
+                      <p className="text-gray-600 text-sm">
+                        <span className="font-medium">Features:</span>{" "}
+                        {membershipPlan.plan.features.join(", ") || "N/A"}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-gradient-to-br from-purple-100 to-pink-100 p-6 rounded-lg mb-4">
+                      <svg className="w-12 h-12 text-purple-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <h4 className="font-semibold text-gray-900 mb-2">No Plan Assigned</h4>
+                      <p className="text-gray-600 text-sm">Start your fitness journey</p>
+                    </div>
+                  )}
                   <button className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
-                    {profileData.workoutPlanId ? "View Plan" : "Get Started"}
+                    {membershipPlan ? "View Plan Details" : "Get Started"}
                   </button>
                 </div>
               </div>

@@ -3,7 +3,7 @@ import { Email } from "../valueObjects/email.valueObject";
 export interface ILoginResponseDTO {
   trainer: {
     id: string | null;
-    email: Email;
+    email: string;
     name: string;
     role: 'trainer';
     isVerified: boolean;

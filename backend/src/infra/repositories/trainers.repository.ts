@@ -4,6 +4,7 @@ import { ITrainersRepository } from '../../app/repositories/trainers.repository'
 import { Trainer } from '../../domain/entities/Trainer.entity';
 import { Email } from '../../domain/valueObjects/email.valueObject';
 import { Prisma, PrismaClient } from '@prisma/client';
+import { IUpdateTrainerProfileRequestDTO } from '@/domain/enums/updateTrainerProfileRequest.dto';
 
 export class TrainersRepository implements ITrainersRepository {
   constructor(private prisma: PrismaClient) {}
@@ -457,4 +458,90 @@ async findAll(
     }
   }
 
+  async updateProfile(email: string, data: IUpdateTrainerProfileRequestDTO): Promise<Trainer> {
+    try {
+
+      const existingTrainer = await this.prisma.trainer.findUnique({
+        where: { email },
+        select: { paymentDetails: true },
+      });
+
+      if (!existingTrainer) {
+        throw new Error(TrainerErrorType.TrainerNotFound);
+      }
+
+const updateData: any = {
+        updatedAt: new Date(),
+      };
+      if (data.name) updateData.name = data.name.trim();
+      if (data.bio) updateData.bio = data.bio.trim();
+      if (data.specialties) updateData.specialties = data.specialties;
+      if (data.profilePic) updateData.profilePic = `/uploads/${data.profilePic.filename}`;
+
+      // Handle paymentDetails update
+      if (data.upiId || data.bankAccount || data.ifscCode) {
+        // Merge existing paymentDetails with new values
+        const currentPaymentDetails = existingTrainer.paymentDetails || {
+          method: null,
+          rate: null,
+          currency: null,
+          paymentHistory: [],
+          upiId: null,
+          bankAccount: null,
+          ifscCode: null,
+        };
+        updateData.paymentDetails = {
+          ...currentPaymentDetails,
+          upiId: data.upiId !== undefined ? data.upiId : currentPaymentDetails.upiId,
+          bankAccount: data.bankAccount !== undefined ? data.bankAccount : currentPaymentDetails.bankAccount,
+          ifscCode: data.ifscCode !== undefined ? data.ifscCode : currentPaymentDetails.ifscCode,
+        };
+      }
+
+      const updatedTrainer = await this.prisma.trainer.update({
+        where: { email },
+        data: updateData,
+        include: {
+         //paymentDetails: { include: { paymentHistory: true } },
+         // availability: true,
+         // clients: true,
+          bookings: true, // Include bookings relation
+          payments: true, // Include payments relation
+        },
+        
+      });
+
+      return new Trainer({
+        id: updatedTrainer.id,
+        name: updatedTrainer.name,
+        email: new Email({ address: updatedTrainer.email }),
+        password: updatedTrainer.password,
+        role: updatedTrainer.role,
+        profilePic: updatedTrainer.profilePic,
+        isVerified: updatedTrainer.isVerified,
+        verifiedByAdmin: updatedTrainer.verifiedByAdmin,
+        otp: updatedTrainer.otp,
+        otpExpires: updatedTrainer.otpExpires,
+        refreshToken: updatedTrainer.refreshToken,
+        personalDetails: updatedTrainer.personalDetails,
+        certifications: updatedTrainer.certifications,
+        bio: updatedTrainer.bio,
+        specialties: updatedTrainer.specialties,
+        experienceLevel: updatedTrainer.experienceLevel,
+        clients: updatedTrainer.clients,
+        paymentDetails: updatedTrainer.paymentDetails,
+        availability: updatedTrainer.availability,
+        gyms: updatedTrainer.gyms,
+        phone: updatedTrainer.phone,
+        ratings: updatedTrainer.ratings,
+        bookings: updatedTrainer.bookings,
+        payments: updatedTrainer.payments,
+        createdAt: updatedTrainer.createdAt,
+        updatedAt: updatedTrainer.updatedAt,
+      });
+    } catch (error) {
+      console.error('[ERROR] Update trainer profile error:', error);
+      throw new Error(TrainerErrorType.InternalServerError);
+    }
+  }
 }

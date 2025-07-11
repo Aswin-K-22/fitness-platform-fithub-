@@ -172,6 +172,11 @@ export const getMembershipPlansUser = async (
   return response.data;
 };
 
+export const getUserPaidMembership = async (userId: string): Promise<IMembershipPlansResponseDTO> => {
+  const response = await apiClient.get(`/membership/user/${userId}`);
+  return response.data;
+};
+
 export const subscribeToPlan = async (planId: string): Promise<{ orderId: string; amount: number; currency: string }> => {
   const response = await apiClient.post("/membership/payment", { planId });
   return response.data;

@@ -44,13 +44,20 @@ export class TrainerRoutes {
     this.router.post(
       '/auth/logout',
       this.trainerAuthMiddleware.auth.bind(this.trainerAuthMiddleware),
-      validateMiddleware('logoutTrainer'),
+     validateMiddleware('logoutTrainer'),
       this.trainerAuthController.logout.bind(this.trainerAuthController)
     );
-    this.router.get(
+  this.router.get(
       '/profile',
       this.trainerAuthMiddleware.auth.bind(this.trainerAuthMiddleware),
-      this.trainerController.getTrainer.bind(this.trainerController)
+      this.trainerController.getTrainerProfile.bind(this.trainerController)
+    );
+
+    this.router.put(
+      '/profile',
+      this.trainerAuthMiddleware.auth.bind(this.trainerAuthMiddleware),
+      upload.single('profilePic'),
+      this.trainerController.updateTrainerProfile.bind(this.trainerController)
     );
 
        this.router.get(
@@ -64,7 +71,7 @@ export class TrainerRoutes {
       validateMiddleware('refreshToken'),
       this.trainerAuthController.refreshToken.bind(this.trainerAuthController)
     );
-     this.router.get('/trainer/profile', this.trainerAuthMiddleware.auth.bind(this.trainerAuthMiddleware), this.trainerController.getTrainer.bind(this.trainerController));
+    // this.router.get('/trainer/profile', this.trainerAuthMiddleware.auth.bind(this.trainerAuthMiddleware), this.trainerController.getTrainer.bind(this.trainerController));
 
   }
 }
