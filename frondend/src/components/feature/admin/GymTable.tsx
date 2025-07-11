@@ -78,15 +78,15 @@ const GymTable: React.FC<GymTableProps> = ({ gyms }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-3">
-                      <button className="text-indigo-600 hover:text-indigo-700">
+                      {/* <button className="text-indigo-600 hover:text-indigo-700">
                         <i className="fas fa-edit"></i>
-                      </button>
+                      </button> */}
                       <button className="text-gray-600 hover:text-gray-700" onClick={() => openModal(gym)}>
                         <i className="fas fa-eye"></i>
                       </button>
-                      <button className="text-red-600 hover:text-red-700">
+                      {/* <button className="text-red-600 hover:text-red-700">
                         <i className="fas fa-ban"></i>
-                      </button>
+                      </button> */}
                     </div>
                   </td>
                 </tr>
@@ -173,9 +173,9 @@ const GymTable: React.FC<GymTableProps> = ({ gyms }) => {
               </div>
             </div>
             <div className="flex items-center justify-end p-6 border-t border-gray-200 rounded-b">
-              <button className="text-white bg-indigo-600 hover:bg-indigo-700 font-medium rounded-md text-sm px-5 py-2.5 mr-2">
+              {/* <button className="text-white bg-indigo-600 hover:bg-indigo-700 font-medium rounded-md text-sm px-5 py-2.5 mr-2">
                 Save Changes
-              </button>
+              </button> */}
               <button
                 onClick={closeModal}
                 className="text-gray-500 bg-white hover:bg-gray-100 rounded-md border border-gray-300 text-sm font-medium px-5 py-2.5"

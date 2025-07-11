@@ -114,12 +114,12 @@ const UserTable: React.FC<UserTableProps> = ({ users, onUserUpdate }) => {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="rounded text-indigo-600 hover:text-indigo-700 mr-2">
+                  {/* <button className="rounded text-indigo-600 hover:text-indigo-700 mr-2">
                     <i className="fas fa-edit"></i>
                   </button>
                   <button className="rounded text-green-600 hover:text-green-700 mr-2">
                     <i className="fas fa-check"></i>
-                  </button>
+                  </button> */}
                   <button
                     onClick={() => handleToggleVerification(user.id)}
                     className={`rounded mr-2 ${
@@ -128,9 +128,9 @@ const UserTable: React.FC<UserTableProps> = ({ users, onUserUpdate }) => {
                   >
                     <i className={user.isVerified ? "fas fa-ban" : "fas fa-unlock"}></i>
                   </button>
-                  <button className="rounded text-gray-600 hover:text-gray-700">
+                  {/* <button className="rounded text-gray-600 hover:text-gray-700">
                     <i className="fas fa-ellipsis-v"></i>
-                  </button>
+                  </button> */}
                 </td>
               </tr>
             ))}

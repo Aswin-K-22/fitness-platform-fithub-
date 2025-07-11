@@ -55,7 +55,7 @@ const isGymOpen = (schedule: GymDetails['schedule']): boolean => {
   const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
   const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
   
-  const todaySchedule = schedule.find(s => s.dayOfWeek === currentDay);
+  const todaySchedule = schedule.find( s => s.dayOfWeek === currentDay || s.dayOfWeek === 'All Days');
   if (!todaySchedule || todaySchedule.isClosed) return false;
   
   return currentTime >= todaySchedule.startTime && currentTime <= todaySchedule.endTime;

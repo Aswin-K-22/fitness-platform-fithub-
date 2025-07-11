@@ -339,7 +339,7 @@ const TrainerManagement: React.FC = () => {
                 />
                 <div className="w-1/2 space-y-4">
                   <h4 className="font-semibold text-lg">{selectedTrainer.name}</h4>
-                  <p className="text-gray-600">{selectedTrainer.bio || "No bio available"}</p>
+                  {/* <p className="text-gray-600">{selectedTrainer.bio || "No bio available"}</p> */}
                   <div className="flex items-center space-x-2">
                     <i className="fas fa-envelope text-indigo-600"></i>
                     <span className="text-gray-600">{selectedTrainer.email}</span>
@@ -365,7 +365,7 @@ const TrainerManagement: React.FC = () => {
                   )}
                 </div>
               </div>
-              <div className="border-t border-gray-200 pt-6">
+              {/* <div className="border-t border-gray-200 pt-6">
                 <h5 className="font-semibold mb-4">Certifications</h5>
                 <div className="grid grid-cols-2 gap-4">
                   {selectedTrainer.certifications?.length ? (
@@ -385,7 +385,7 @@ const TrainerManagement: React.FC = () => {
                     <span className="text-gray-500">No certifications listed</span>
                   )}
                 </div>
-              </div>
+              </div> */}
             </div>
             <div className="flex items-center justify-end p-6 border-t border-gray-200 rounded-b">
               <button

@@ -1,8 +1,38 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useLocation, useNavigate ,type Location} from "react-router-dom";
+import type { RootState } from "../../store/store";
+import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
+// Define the shape of the location state
+interface LocationState {
+  from?: string;
+}
 
+// Extend Location to include typed state
+interface CustomLocation extends Location {
+  state: LocationState | null;
+}
 const ForbiddenPage: React.FC = () => {
-  const navigate = useNavigate();
+    
+
+    const { isAuthenticated, user } = useSelector((state: RootState) => state.userAuth);
+    const navigate = useNavigate();
+    const location = useLocation() as CustomLocation; // Type as CustomLocation
+  
+    useEffect(() => {
+      console.log("ForbiddenPage useEffect triggered", { isAuthenticated, user });
+      if (isAuthenticated && user?.role === "user") {
+   
+          const from = location.state?.from || localStorage.getItem("lastAttemptedUrl") || "/";
+          toast.success(`Welcome back, ${user.name}! Redirecting to your last page.`, {
+            position: "top-right",
+            autoClose: 3000,
+          });
+          navigate(from, { replace: true });
+      }
+      
+    }, [isAuthenticated, user, navigate, location.state]);
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
