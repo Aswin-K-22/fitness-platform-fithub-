@@ -1,7 +1,7 @@
 export interface TrainerResponseDTO {
   id: string;
   name: string;
-  email: string; // String instead of Email object
+  email: string;
   specialties: string[];
   experienceLevel: string | null;
   verifiedByAdmin: boolean;
@@ -19,12 +19,18 @@ export interface TrainerResponseDTO {
 }
 
 export interface IGetTrainersResponseDTO {
-  trainers: TrainerResponseDTO[];
-  stats: {
-    totalTrainers: number;
-    pendingApproval: number;
-    activeTrainers: number;
-    suspended: number;
+  success: boolean;
+  status: number;
+  message?: string;
+  data?: {
+    trainers: TrainerResponseDTO[];
+    stats: {
+      totalTrainers: number;
+      pendingApproval: number;
+      activeTrainers: number;
+      suspended: number;
+    };
+    totalPages: number;
   };
-  totalPages: number;
+  error?: { code: string; message: string };
 }

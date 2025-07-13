@@ -2,14 +2,11 @@ import { IUsersRepository } from '@/app/repositories/users.repository';
 import { ITokenService } from '@/app/providers/token.service';
 import { IAdminRefreshTokenRequestDTO } from '@/domain/dtos/adminRefreshTokenRequest.dto';
 import { IAdminLoginResponseDTO } from '@/domain/dtos/adminLoginResponse.dto';
-import { UserErrorType } from '@/domain/enums/userErrorType.enum';
-import { AuthErrorType } from '@/domain/enums/authErrorType.enum';
+import { HttpStatus } from '@/domain/enums/httpStatus.enum';
+import { MESSAGES } from '@/domain/constants/messages.constant';
+import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 
-interface IResponse {
-  success: boolean;
-  data?: IAdminLoginResponseDTO;
-  error?: string;
-}
+
 
 export class AdminRefreshTokenUseCase {
   constructor(
@@ -17,22 +14,41 @@ export class AdminRefreshTokenUseCase {
     private tokenService: ITokenService,
   ) {}
 
-  async execute(data: IAdminRefreshTokenRequestDTO): Promise<IResponse> {
+  async execute(data: IAdminRefreshTokenRequestDTO): Promise<IAdminLoginResponseDTO> {
     try {
-        console.log('admin referesh toke verifaction failed')
       const decoded = await this.tokenService.verifyRefreshToken(data.refreshToken);
-      console.log('admin referesh toke verifaction failed ,decode=',decoded)
       const admin = await this.usersRepository.findById(decoded.id);
       if (!admin) {
-        return { success: false, error: UserErrorType.UserNotFound };
+        return {
+          success: false,
+          status: HttpStatus.NOT_FOUND,
+          error: {
+            code: ERRORMESSAGES.AUTH_USER_NOT_FOUND.code,
+            message: ERRORMESSAGES.AUTH_USER_NOT_FOUND.message,
+          },
+        };
       }
 
       if (admin.role !== 'admin') {
-        return { success: false, error: AuthErrorType.InvalidRole };
+        return {
+          success: false,
+          status: HttpStatus.FORBIDDEN,
+          error: {
+            code: ERRORMESSAGES.AUTH_INVALID_ROLE.code,
+            message: ERRORMESSAGES.AUTH_INVALID_ROLE.message,
+          },
+        };
       }
 
       if (admin.refreshToken !== data.refreshToken) {
-        return { success: false, error: AuthErrorType.InvalidRefreshToken };
+        return {
+          success: false,
+          status: HttpStatus.UNAUTHORIZED,
+          error: {
+            code: ERRORMESSAGES.AUTH_INVALID_REFRESH_TOKEN.code,
+            message: ERRORMESSAGES.AUTH_INVALID_REFRESH_TOKEN.message,
+          },
+        };
       }
 
       const newAccessToken = await this.tokenService.generateAccessToken({ email: admin.email.address, id: admin.id! });
@@ -41,6 +57,8 @@ export class AdminRefreshTokenUseCase {
 
       return {
         success: true,
+        status: HttpStatus.OK,
+        message: MESSAGES.SUCCESS,
         data: {
           user: {
             id: admin.id!,
@@ -53,8 +71,14 @@ export class AdminRefreshTokenUseCase {
         },
       };
     } catch (error) {
-
-      return { success: false, error: AuthErrorType.InvalidRefreshToken };
+      return {
+        success: false,
+        status: HttpStatus.UNAUTHORIZED,
+        error: {
+          code: ERRORMESSAGES.AUTH_INVALID_REFRESH_TOKEN.code,
+          message: ERRORMESSAGES.AUTH_INVALID_REFRESH_TOKEN.message,
+        },
+      };
     }
   }
 }

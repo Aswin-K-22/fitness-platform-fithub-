@@ -1,10 +1,18 @@
-import { UserAuthResponseDTO } from './userAuthResponse.dto';
+export interface UserAuthResponseDTO {
+  id: string;
+  email: string;
+  name: string;
+  role: 'user' | 'admin' | 'trainer';
+  profilePic: string | null | undefined;
+  isVerified: boolean;
+}
 
-export interface GetUserResponseDTO {
+export interface IGetUserResponseDTO {
   success: boolean;
+  status: number;
+  message?: string;
   data?: {
     user: UserAuthResponseDTO;
-    
   };
-  error?: string;
+  error?: { code: string; message: string };
 }

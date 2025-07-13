@@ -3,14 +3,11 @@ import { IPasswordHasher } from '../providers/passwordHasher.service';
 import { IEmailService } from '../providers/email.service';
 import { Trainer } from '../../domain/entities/Trainer.entity';
 import { ICreateTrainerRequestDTO, CreateTrainerRequestDTO } from '../../domain/dtos/createTrainerRequest.dto';
-import { TrainerErrorType } from '../../domain/enums/trainerErrorType.enum';
+import { HttpStatus } from '../../domain/enums/httpStatus.enum';
+import { MESSAGES } from '../../domain/constants/messages.constant';
+import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { generateOtp } from '../../infra/utils/otp';
-
-interface CreateTrainerResult {
-  success: boolean;
-  error?: string;
-  data?: { trainer: Trainer };
-}
+import { ICreateTrainerResponseDTO } from '@/domain/dtos/createTrainerResponse.dto';
 
 export class CreateTrainerUseCase {
   constructor(
@@ -19,13 +16,20 @@ export class CreateTrainerUseCase {
     private emailService: IEmailService
   ) {}
 
-  async execute(data: ICreateTrainerRequestDTO): Promise<CreateTrainerResult> {
+  async execute(data: ICreateTrainerRequestDTO): Promise<ICreateTrainerResponseDTO> {
     try {
       const dto = new CreateTrainerRequestDTO(data);
 
       const existingTrainer = await this.trainersRepository.findByEmail(dto.email);
       if (existingTrainer) {
-        return { success: false, error: TrainerErrorType.TrainerAlreadyExists };
+        return {
+          success: false,
+          status: HttpStatus.CONFLICT,
+          error: {
+            code: ERRORMESSAGES.TRAINER_ALREADY_EXISTS.code,
+            message: ERRORMESSAGES.TRAINER_ALREADY_EXISTS.message,
+          },
+        };
       }
 
       const hashedPassword = await this.passwordHasher.hashPassword(dto.password);
@@ -45,10 +49,23 @@ export class CreateTrainerUseCase {
         subject: 'FitHub Trainer Signup - OTP Verification',
         text: `Your OTP is ${otp}. It expires in 30 seconds.`,
       });
-      console.log(`Trainer Signup  OTP is ${otp}. It expires in 30 seconds.`)
-      return { success: true, data: { trainer: savedTrainer } };
-    } catch (error: any) {
-      return { success: false, error: error.message || 'Internal server error' };
+      console.log(`Trainer Signup OTP is ${otp}. It expires in 30 seconds.`);
+
+      return {
+        success: true,
+        status: HttpStatus.CREATED,
+        message: MESSAGES.CREATED,
+        data: { trainer: savedTrainer },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      };
     }
   }
 }

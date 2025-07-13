@@ -1,10 +1,11 @@
-// src/app/useCases/getAdminMembershipPlans.useCase.ts
 import { IMembershipsPlanRepository } from '@/app/repositories/membershipPlan.repository';
-import { MembershipErrorType } from '@/domain/enums/membershipErrorType.enum';
 import { MembershipPlan } from '@/domain/entities/MembershipPlan.entity';
 import { MembershipPlanDTO } from '@/domain/dtos/IAdminMembershipPlanDTO';
 import { IGetAdminMembershipPlansRequestDTO } from '@/domain/dtos/getAdminMembershipPlansRequest.dto';
 import { IGetAdminMembershipPlansResponseDTO } from '@/domain/dtos/getAdminMembershipPlansResponse.dto';
+import { HttpStatus } from '@/domain/enums/httpStatus.enum';
+import { MESSAGES } from '@/domain/constants/messages.constant';
+import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 
 export class GetAdminMembershipPlansUseCase {
   constructor(private membershipsPlanRepository: IMembershipsPlanRepository) {}
@@ -27,7 +28,14 @@ export class GetAdminMembershipPlansUseCase {
     try {
       const { page, limit } = data;
       if (page < 1 || limit < 1) {
-        throw new Error(MembershipErrorType.InvalidPagination);
+        return {
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.MEMBERSHIP_INVALID_PAGINATION.code,
+            message: ERRORMESSAGES.MEMBERSHIP_INVALID_PAGINATION.message,
+          },
+        };
       }
 
       const skip = (page - 1) * limit;
@@ -37,18 +45,23 @@ export class GetAdminMembershipPlansUseCase {
 
       return {
         success: true,
-        plans: plans.map(this.toMembershipPlanDTO),
-        total,
-        pages,
+        status: HttpStatus.OK,
+        message: MESSAGES.SUCCESS,
+        data: {
+          plans: plans.map(this.toMembershipPlanDTO),
+          total,
+          pages,
+        },
       };
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === MembershipErrorType.InvalidPagination) {
-          throw error;
-        }
-        throw new Error(MembershipErrorType.DatabaseError);
-      }
-      throw new Error(MembershipErrorType.UnknownError);
+      return {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      };
     }
   }
 }

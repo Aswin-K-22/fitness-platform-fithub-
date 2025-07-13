@@ -1,5 +1,3 @@
-// backend/src/domain/dtos/getGymsResponse.dto.ts
-
 export interface GymDTO {
   id: string;
   name: string;
@@ -14,7 +12,7 @@ export interface GymDTO {
     lng?: number;
     street?: string;
   };
-  image?: string; 
+  image?: string;
   ratings?: {
     average?: number;
     count?: number;
@@ -25,8 +23,13 @@ export interface GymDTO {
 
 export interface IGetGymsResponseDTO {
   success: boolean;
-  gyms: GymDTO[];
-  page: number;
-  totalPages: number;
-  totalGyms: number;
+  status: number;
+  message?: string;
+  data?: {
+    gyms: GymDTO[];
+    page: number;
+    totalPages: number;
+    totalGyms: number;
+  };
+  error?: { code: string; message: string };
 }

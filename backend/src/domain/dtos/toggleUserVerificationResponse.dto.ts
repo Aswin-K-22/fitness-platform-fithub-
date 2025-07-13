@@ -1,5 +1,9 @@
-import { User } from '../entities/User.entity';
+import { UserAuthResponseDTO } from './userAuthResponse.dto';
 
 export interface IToggleUserVerificationResponseDTO {
-  user: User;
+  success: boolean;
+  status: number;
+  message?: string;
+  data?: { user: UserAuthResponseDTO };
+  error?: { code: string; message: string };
 }

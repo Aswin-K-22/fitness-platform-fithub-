@@ -3,7 +3,7 @@ import { GetTrainerUseCase } from '@/app/useCases/getTrainer.useCase';
 import { GetTrainerProfileUseCase } from '@/app/useCases/getTrainerProfile.useCase';
 import { TrainerErrorType } from '@/domain/enums/trainerErrorType.enum';
 import { UpdateTrainerProfileUseCase } from '@/app/useCases/updateTrainerProfile.useCase';
-import { IUpdateTrainerProfileRequestDTO } from '@/domain/enums/updateTrainerProfileRequest.dto';
+import { IUpdateTrainerProfileRequestDTO } from '@/domain/dtos/updateTrainerProfileRequest.dto';
 
 export class TrainerController {
   constructor(

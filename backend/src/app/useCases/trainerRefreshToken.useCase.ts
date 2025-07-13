@@ -1,59 +1,83 @@
 import { ITrainersRepository } from '../repositories/trainers.repository';
 import { ITokenService } from '../providers/token.service';
 import { IRefreshTokenRequestDTO } from '../../domain/dtos/refreshTokenRequest.dto';
-import { TrainerErrorType } from '../../domain/enums/trainerErrorType.enum';
-import { Trainer } from '../../domain/entities/Trainer.entity';
-import {  TrainerAuth } from '@/domain/dtos/getTrainerResponse.dto';
-
-
-interface RefreshTokenResponse  {
-  success: boolean;
-  error?: string;
-  data?: {
-    trainer: TrainerAuth;
-    accessToken: string;
-    refreshToken: string;
-  };
-}
-
-
+import { HttpStatus } from '../../domain/enums/httpStatus.enum';
+import { MESSAGES } from '../../domain/constants/messages.constant';
+import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { ITrainerRefreshTokenResponseDTO } from '../../domain/dtos/trainerRefreshTokenResponse.dto';
+import { TrainerAuth } from '../../domain/dtos/getTrainerResponse.dto';
 
 export class TrainerRefreshTokenUseCase {
   constructor(
     private trainersRepository: ITrainersRepository,
-    private tokenService: ITokenService
+    private tokenService: ITokenService,
   ) {}
 
-  async execute(dto: IRefreshTokenRequestDTO): Promise<RefreshTokenResponse> {
+  async execute(dto: IRefreshTokenRequestDTO): Promise<ITrainerRefreshTokenResponseDTO> {
     try {
       if (!dto.refreshToken) {
-        return { success: false, error: TrainerErrorType.NoRefreshTokenProvided };
+        return {
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.TRAINER_NO_REFRESH_TOKEN_PROVIDED.code,
+            message: ERRORMESSAGES.TRAINER_NO_REFRESH_TOKEN_PROVIDED.message,
+          },
+        };
       }
 
       const decoded = await this.tokenService.verifyRefreshToken(dto.refreshToken);
-      if (!decoded.email) {
-        return { success: false, error: TrainerErrorType.InvalidRefreshToken };
+      if (!decoded.email || !decoded.id) {
+        console.log('Invalid refresh token - email:', decoded.email, 'ID:', decoded.id);
+        return {
+          success: false,
+          status: HttpStatus.UNAUTHORIZED,
+          error: {
+            code: ERRORMESSAGES.TRAINER_INVALID_REFRESH_TOKEN.code,
+            message: ERRORMESSAGES.TRAINER_INVALID_REFRESH_TOKEN.message,
+          },
+        };
       }
 
       const trainer = await this.trainersRepository.findById(decoded.id);
       if (!trainer) {
-        return { success: false, error: TrainerErrorType.TrainerNotFound };
+        return {
+          success: false,
+          status: HttpStatus.NOT_FOUND,
+          error: {
+            code: ERRORMESSAGES.TRAINER_NOT_FOUND.code,
+            message: ERRORMESSAGES.TRAINER_NOT_FOUND.message,
+          },
+        };
       }
 
       if (trainer.refreshToken !== dto.refreshToken) {
-        return { success: false, error: TrainerErrorType.InvalidRefreshToken };
+        console.log(
+          'Invalid refresh token - ID:',
+          decoded.id,
+          'trainerDB refreshToken equals cookie refreshToken:',
+          trainer.refreshToken === dto.refreshToken,
+        );
+        return {
+          success: false,
+          status: HttpStatus.UNAUTHORIZED,
+          error: {
+            code: ERRORMESSAGES.TRAINER_INVALID_REFRESH_TOKEN.code,
+            message: ERRORMESSAGES.TRAINER_INVALID_REFRESH_TOKEN.message,
+          },
+        };
       }
 
-      const newAccessToken = await this.tokenService.generateAccessToken({
+      const accessToken = await this.tokenService.generateAccessToken({
         id: trainer.id!,
         email: trainer.email.address,
       });
-      const newRefreshToken = await this.tokenService.generateRefreshToken({
+      const refreshToken = await this.tokenService.generateRefreshToken({
         id: trainer.id!,
         email: trainer.email.address,
       });
 
-      await this.trainersRepository.updateRefreshToken(trainer.email.address, newRefreshToken);
+      await this.trainersRepository.updateRefreshToken(trainer.email.address, refreshToken);
 
       const trainerResponse: TrainerAuth = {
         id: trainer.id!,
@@ -61,21 +85,30 @@ export class TrainerRefreshTokenUseCase {
         name: trainer.name,
         role: trainer.role,
         profilePic: trainer.profilePic || null,
-        isVerified: trainer.isVerified,
-        verifiedByAdmin: trainer.verifiedByAdmin,
+        isVerified: trainer.isVerified || false,
+        verifiedByAdmin: trainer.verifiedByAdmin || false,
       };
 
       return {
         success: true,
+        status: HttpStatus.OK,
+        message: MESSAGES.USER_LOGGED_IN,
         data: {
           trainer: trainerResponse,
-          accessToken: newAccessToken,
-          refreshToken: newRefreshToken,
+          accessToken,
+          refreshToken,
         },
       };
-    } catch (error: any) {
-      console.error('[ERROR] Trainer refresh token error:', error);
-      return { success: false, error: TrainerErrorType.InvalidRefreshToken };
+    } catch (error) {
+      console.error('[ERROR] TrainerRefreshTokenUseCase error:', error);
+      return {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      };
     }
   }
 }

@@ -1,6 +1,8 @@
 import { ITrainersRepository } from '../repositories/trainers.repository';
 import { IGetTrainerResponseDTO, TrainerAuth } from '../../domain/dtos/getTrainerResponse.dto';
-import { TrainerErrorType } from '../../domain/enums/trainerErrorType.enum';
+import { HttpStatus } from '../../domain/enums/httpStatus.enum';
+import { MESSAGES } from '../../domain/constants/messages.constant';
+import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 
 export class GetTrainerUseCase {
   constructor(private trainersRepository: ITrainersRepository) {}
@@ -9,7 +11,14 @@ export class GetTrainerUseCase {
     try {
       const trainer = await this.trainersRepository.findByEmail(email);
       if (!trainer) {
-        throw new Error(TrainerErrorType.TrainerNotFound);
+        return {
+          success: false,
+          status: HttpStatus.NOT_FOUND,
+          error: {
+            code: ERRORMESSAGES.TRAINER_NOT_FOUND.code,
+            message: ERRORMESSAGES.TRAINER_NOT_FOUND.message,
+          },
+        };
       }
 
       const trainerResponse: TrainerAuth = {
@@ -22,10 +31,21 @@ export class GetTrainerUseCase {
         verifiedByAdmin: trainer.verifiedByAdmin,
       };
 
-      return { trainer: trainerResponse };
-    } catch (error: any) {
-      console.error('[ERROR] Get trainer error:', error);
-      throw new Error(TrainerErrorType.TrainerNotFound);
+      return {
+        success: true,
+        status: HttpStatus.OK,
+        message: MESSAGES.SUCCESS,
+        data: { trainer: trainerResponse },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.TRAINER_FIND_BY_EMAIL_FAILED.code,
+          message: ERRORMESSAGES.TRAINER_FIND_BY_EMAIL_FAILED.message,
+        },
+      };
     }
   }
 }

@@ -2,6 +2,8 @@ import { Gym } from '../entities/Gym.entity';
 
 export interface AddGymResponseDTO {
   success: boolean;
-  gym: ReturnType<Gym['toJSON']>;
-  message: string;
+  status: number;
+  message?: string;
+  data?: { gym: ReturnType<Gym['toJSON']> };
+  error?: { code: string; message: string };
 }

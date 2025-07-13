@@ -1,7 +1,9 @@
 import { ITrainersRepository } from '../repositories/trainers.repository';
-import { TrainerErrorType } from '../../domain/enums/trainerErrorType.enum';
-import { IUpdateTrainerProfileRequestDTO } from '@/domain/enums/updateTrainerProfileRequest.dto';
-import { IUpdateTrainerProfileResponseDTO, TrainerProfile } from '@/domain/enums/updateTrainerProfileResponse.dto';
+import { IUpdateTrainerProfileResponseDTO, TrainerProfile } from '@/domain/dtos/updateTrainerProfileResponse.dto';
+import { HttpStatus } from '../../domain/enums/httpStatus.enum';
+import { MESSAGES } from '../../domain/constants/messages.constant';
+import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { IUpdateTrainerProfileRequestDTO } from '@/domain/dtos/updateTrainerProfileRequest.dto';
 
 export class UpdateTrainerProfileUseCase {
   constructor(private trainersRepository: ITrainersRepository) {}
@@ -12,57 +14,88 @@ export class UpdateTrainerProfileUseCase {
       if (!data.name && !data.bio && !data.specialties && !data.profilePic && !data.upiId && !data.bankAccount && !data.ifscCode) {
         return {
           success: false,
-          error: TrainerErrorType.NoValidFieldsProvided,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.TRAINER_NO_VALID_FIELDS_PROVIDED.code,
+            message: ERRORMESSAGES.TRAINER_NO_VALID_FIELDS_PROVIDED.message,
+          },
         };
       }
 
       if (data.name && (!data.name.trim() || data.name.length < 2 || data.name.length > 50)) {
         return {
           success: false,
-          error: TrainerErrorType.InvalidName,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.TRAINER_INVALID_NAME.code,
+            message: ERRORMESSAGES.TRAINER_INVALID_NAME.message,
+          },
         };
       }
 
       if (data.bio && (!data.bio.trim() || data.bio.length > 500)) {
         return {
           success: false,
-          error: TrainerErrorType.InvalidBio,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.TRAINER_INVALID_BIO.code,
+            message: ERRORMESSAGES.TRAINER_INVALID_BIO.message,
+          },
         };
       }
 
       if (data.specialties && (data.specialties.length === 0 || data.specialties.length > 5)) {
         return {
           success: false,
-          error: TrainerErrorType.InvalidSpecialties,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.TRAINER_INVALID_SPECIALTIES.code,
+            message: ERRORMESSAGES.TRAINER_INVALID_SPECIALTIES.message,
+          },
         };
       }
 
       if (data.upiId && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(data.upiId)) {
         return {
           success: false,
-          error: TrainerErrorType.InvalidUpiId,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.TRAINER_INVALID_UPI_ID.code,
+            message: ERRORMESSAGES.TRAINER_INVALID_UPI_ID.message,
+          },
         };
       }
 
       if (data.bankAccount && !/^\d{9,18}$/.test(data.bankAccount)) {
         return {
           success: false,
-          error: TrainerErrorType.InvalidBankAccount,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.TRAINER_INVALID_BANK_ACCOUNT.code,
+            message: ERRORMESSAGES.TRAINER_INVALID_BANK_ACCOUNT.message,
+          },
         };
       }
 
       if (data.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(data.ifscCode)) {
         return {
           success: false,
-          error: TrainerErrorType.InvalidIfscCode,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.TRAINER_INVALID_IFSC_CODE.code,
+            message: ERRORMESSAGES.TRAINER_INVALID_IFSC_CODE.message,
+          },
         };
       }
 
-      // Ensure bankAccount and ifscCode are both provided or both omitted
       if ((data.bankAccount || data.ifscCode) && !(data.bankAccount && data.ifscCode)) {
         return {
           success: false,
-          error: TrainerErrorType.MissingBankDetails,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.TRAINER_MISSING_BANK_DETAILS.code,
+            message: ERRORMESSAGES.TRAINER_MISSING_BANK_DETAILS.message,
+          },
         };
       }
 
@@ -82,7 +115,11 @@ export class UpdateTrainerProfileUseCase {
       if (!trainer) {
         return {
           success: false,
-          error: TrainerErrorType.TrainerNotFound,
+          status: HttpStatus.NOT_FOUND,
+          error: {
+            code: ERRORMESSAGES.TRAINER_NOT_FOUND.code,
+            message: ERRORMESSAGES.TRAINER_NOT_FOUND.message,
+          },
         };
       }
 
@@ -143,15 +180,19 @@ export class UpdateTrainerProfileUseCase {
 
       return {
         success: true,
-        trainer: trainerProfile,
+        status: HttpStatus.OK,
+        message: MESSAGES.PROFILE_UPDATED,
+        data: { trainer: trainerProfile },
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('[ERROR] Update trainer profile error:', error);
       return {
         success: false,
-        error: error.message === TrainerErrorType.InternalServerError
-          ? TrainerErrorType.InternalServerError
-          : TrainerErrorType.UpdateFailed,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.TRAINER_UPDATE_FAILED.code,
+          message: ERRORMESSAGES.TRAINER_UPDATE_FAILED.message,
+        },
       };
     }
   }

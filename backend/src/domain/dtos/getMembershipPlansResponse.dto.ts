@@ -1,20 +1,24 @@
-// src/domain/dtos/getMembershipPlansResponse.dto.ts
-
 export interface MembershipPlanDTO {
   id: string;
-  name: string; 
-  description:string | null ;
+  name: string;
+  type: string;
+  description: string;
   price: number;
   duration: number;
   features: string[];
-  createdAt: string | undefined;
-  updatedAt: string | undefined;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface IGetMembershipPlansResponseDTO {
   success: boolean;
-  plans: MembershipPlanDTO[];
-  page: number;
-  totalPages: number;
-  totalPlans: number;
+  status: number;
+  message?: string;
+  data?: {
+    plans: MembershipPlanDTO[];
+    page: number;
+    totalPages: number;
+    totalPlans: number;
+  };
+  error?: { code: string; message: string };
 }

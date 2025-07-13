@@ -1,8 +1,10 @@
-import { IGetGymDetailsResponseDTO, GymDetailsDTO } from '@/domain/dtos/getGymDetailsResponse.dto';
+import { HttpStatus } from '@/domain/enums/httpStatus.enum';
+import { MESSAGES } from '@/domain/constants/messages.constant';
+import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 import { GetGymDetailsRequestDTO } from '@/domain/dtos/getGymDetailsRequest.dto';
+import { IGetGymDetailsResponseDTO, GymDetailsDTO } from '@/domain/dtos/getGymDetailsResponse.dto';
 import { Gym } from '@/domain/entities/Gym.entity';
-import { IGymsRepository } from '@/app/repositories/gym.repository.';
-import { GymErrorType } from '@/domain/enums/gymErrorType.enums';
+import { IGymsRepository } from '../repositories/gym.repository.';
 
 export class GetGymDetailsUseCase {
   constructor(private gymsRepository: IGymsRepository) {}
@@ -61,16 +63,46 @@ export class GetGymDetailsUseCase {
   }
 
   async execute({ gymId }: GetGymDetailsRequestDTO): Promise<IGetGymDetailsResponseDTO> {
-    if (!gymId) {
-      throw new Error(GymErrorType.MissingRequiredFields);
-    }
+    try {
+      if (!gymId) {
+        return {
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.GYM_MISSING_REQUIRED_FIELDS.code,
+            message: ERRORMESSAGES.GYM_MISSING_REQUIRED_FIELDS.message,
+          },
+        };
+      }
 
-    const gym = await this.gymsRepository.findById(gymId);
-    if (!gym) {
-      return { success: false, data: null };
-    }
+      const gym = await this.gymsRepository.findById(gymId);
+      if (!gym) {
+        return {
+          success: false,
+          status: HttpStatus.NOT_FOUND,
+          error: {
+            code: ERRORMESSAGES.GYM_NOT_FOUND.code,
+            message: ERRORMESSAGES.GYM_NOT_FOUND.message,
+          },
+        };
+      }
 
-    const gymDetailsDTO = this.toGymDetailsDTO(gym);
-    return { success: true, data: gymDetailsDTO };
+      const gymDetailsDTO = this.toGymDetailsDTO(gym);
+      return {
+        success: true,
+        status: HttpStatus.OK,
+        message: MESSAGES.SUCCESS,
+        data: { gym: gymDetailsDTO },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      };
+    }
   }
 }

@@ -5,7 +5,10 @@ export interface VerifyMembershipPaymentRequestDTO {
   planId: string;
 }
 
-export interface VerifyMembershipPaymentResponseDTO {
+export interface IVerifyMembershipPaymentResponseDTO {
   success: boolean;
+  status: number;
   message?: string;
+  data?: { membership: any }; 
+  error?: { code: string; message: string };
 }

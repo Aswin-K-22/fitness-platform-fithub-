@@ -1,5 +1,11 @@
 import { TrainerResponseDTO } from './getTrainersResponse.dto';
 
 export interface IApproveTrainerResponseDTO {
-  trainer: TrainerResponseDTO;
+  success: boolean;
+  status: number;
+  message?: string;
+  data?: { trainer: TrainerResponseDTO };
+  error?: { code: string; message: string };
 }
+
+

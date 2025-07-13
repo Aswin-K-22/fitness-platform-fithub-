@@ -1,44 +1,61 @@
 import { IUsersRepository } from '../repositories/users.repository';
-import { User } from '../../domain/entities/User.entity';
-import { AuthErrorType } from '../../domain/enums/authErrorType.enum';
-import { UserAuthResponseDTO } from '@/domain/dtos/userAuthResponse.dto';
-import { UserErrorType } from '@/domain/enums/userErrorType.enum';
-import { GetUserResponseDTO } from '@/domain/dtos/getUserResponse.dto';
-
-// interface GetUserResponseDTO {
-//   success: boolean;
-//   data?: { user: User };
-//   error?: string;
-// }
+import { IGetUserResponseDTO, UserAuthResponseDTO } from '../../domain/dtos/getUserResponse.dto';
+import { HttpStatus } from '../../domain/enums/httpStatus.enum';
+import { MESSAGES } from '../../domain/constants/messages.constant';
+import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 
 export class GetUserUseCase {
   constructor(private userRepository: IUsersRepository) {}
 
-  async execute(email: string): Promise<GetUserResponseDTO> {
+  async execute(email: string): Promise<IGetUserResponseDTO> {
     try {
       if (!email) {
-        return { success: false, error: AuthErrorType.UserNotAuthenticated };
+        return {
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.AUTH_MISSING_EMAIL.code,
+            message: ERRORMESSAGES.AUTH_MISSING_EMAIL.message,
+          },
+        };
       }
 
       const user = await this.userRepository.findByEmail(email);
       if (!user) {
-              return { success: false, error: UserErrorType.UserNotFound };
-            }
-            const userAuth: UserAuthResponseDTO = {
-              id: user.id || '', // Ensure id is always a string
-              email: user.email.address,
-              name: user.name,
-              role: user.role as 'user' | 'admin' | 'trainer',
-              profilePic: user.profilePic,
-              isVerified: user.isVerified,
-            };
-      if (!user) {
-        return { success: false, error: AuthErrorType.UserNotFound };
+        return {
+          success: false,
+          status: HttpStatus.NOT_FOUND,
+          error: {
+            code: ERRORMESSAGES.USER_NOT_FOUND.code,
+            message: ERRORMESSAGES.USER_NOT_FOUND.message,
+          },
+        };
       }
 
-      return { success: true, data: { user : userAuth ,} };
+      const userAuth: UserAuthResponseDTO = {
+        id: user.id || '',
+        email: user.email.address,
+        name: user.name,
+        role: user.role as 'user' | 'admin' | 'trainer',
+        profilePic: user.profilePic,
+        isVerified: user.isVerified,
+      };
+
+      return {
+        success: true,
+        status: HttpStatus.OK,
+        message: MESSAGES.SUCCESS,
+        data: { user: userAuth },
+      };
     } catch (error) {
-      return { success: false, error: (error as Error).message };
+      return {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      };
     }
   }
 }

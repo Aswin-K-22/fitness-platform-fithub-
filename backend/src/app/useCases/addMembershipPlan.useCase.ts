@@ -1,10 +1,18 @@
-// src/app/useCases/addMembershipPlan.useCase.ts
 import { IMembershipsPlanRepository } from '@/app/repositories/membershipPlan.repository';
 import { IAddMembershipPlanRequestDTO, AddMembershipPlanRequestSchema } from '@/domain/dtos/IAddMembershipPlanRequestDTO';
-import { IAddMembershipPlanResponseDTO } from '@/domain/dtos/IAddMembershipPlanResponseDTO';
-import { MembershipErrorType } from '@/domain/enums/membershipErrorType.enum';
 import { MembershipPlan } from '@/domain/entities/MembershipPlan.entity';
 import { MembershipPlanDTO } from '@/domain/dtos/IAdminMembershipPlanDTO';
+import { HttpStatus } from '@/domain/enums/httpStatus.enum';
+import { MESSAGES } from '@/domain/constants/messages.constant';
+import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
+
+interface IAddMembershipPlanResponseDTO {
+  success: boolean;
+  status: number;
+  message?: string;
+  data?: { plan: MembershipPlanDTO };
+  error?: { code: string; message: string };
+}
 
 export class AddMembershipPlanUseCase {
   constructor(private membershipsPlanRepository: IMembershipsPlanRepository) {}
@@ -31,7 +39,14 @@ export class AddMembershipPlanUseCase {
       // Check for existing plan with the same name
       const existingPlan = await this.membershipsPlanRepository.findByName(validatedData.name);
       if (existingPlan) {
-        throw new Error(MembershipErrorType.PlanAlreadyExists);
+        return {
+          success: false,
+          status: HttpStatus.CONFLICT,
+          error: {
+            code: ERRORMESSAGES.MEMBERSHIP_PLAN_ALREADY_EXISTS.code,
+            message: ERRORMESSAGES.MEMBERSHIP_PLAN_ALREADY_EXISTS.message,
+          },
+        };
       }
 
       // Create plan instance
@@ -42,23 +57,35 @@ export class AddMembershipPlanUseCase {
         price: validatedData.price,
         duration: validatedData.duration,
         features: validatedData.features,
-        // id is optional and not provided for new plans
       });
 
       const newPlan = await this.membershipsPlanRepository.createPlan(planData);
 
       return {
         success: true,
-        plan: this.toMembershipPlanDTO(newPlan),
+        status: HttpStatus.CREATED,
+        message: MESSAGES.MEMBERSHIP_CREATED,
+        data: { plan: this.toMembershipPlanDTO(newPlan) },
       };
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === MembershipErrorType.PlanAlreadyExists) {
-          throw error;
-        }
-        throw new Error(MembershipErrorType.DatabaseError);
+      if (error instanceof Error && error.message === ERRORMESSAGES.MEMBERSHIP_PLAN_ALREADY_EXISTS.code) {
+        return {
+          success: false,
+          status: HttpStatus.CONFLICT,
+          error: {
+            code: ERRORMESSAGES.MEMBERSHIP_PLAN_ALREADY_EXISTS.code,
+            message: ERRORMESSAGES.MEMBERSHIP_PLAN_ALREADY_EXISTS.message,
+          },
+        };
       }
-      throw new Error(MembershipErrorType.UnknownError);
+      return {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.MEMBERSHIP_DATABASE_ERROR.code,
+          message: ERRORMESSAGES.MEMBERSHIP_DATABASE_ERROR.message,
+        },
+      };
     }
   }
 }

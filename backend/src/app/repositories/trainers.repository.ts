@@ -1,5 +1,5 @@
 // backend/src/app/repositories/trainers.repository.ts
-import { IUpdateTrainerProfileRequestDTO } from '@/domain/enums/updateTrainerProfileRequest.dto';
+import { IUpdateTrainerProfileRequestDTO } from '@/domain/dtos/updateTrainerProfileRequest.dto';
 import { Trainer } from '../../domain/entities/Trainer.entity';
 
 export interface ITrainersRepository {

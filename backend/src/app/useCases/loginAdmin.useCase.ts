@@ -1,17 +1,12 @@
-import { IUsersRepository } from '@/app/repositories/users.repository';
-import { IPasswordHasher } from '@/app/providers/passwordHasher.service';
-import { ITokenService } from '@/app/providers/token.service';
-import { IAdminLoginRequestDTO } from '@/domain/dtos/adminLoginRequest.dto';
-import { IAdminLoginResponseDTO } from '@/domain/dtos/adminLoginResponse.dto';
-import { UserErrorType } from '@/domain/enums/userErrorType.enum';
-import { AuthErrorType } from '@/domain/enums/authErrorType.enum';
-import { User } from '@/domain/entities/User.entity';
-
-interface IResponse {
-  success: boolean;
-  data?: IAdminLoginResponseDTO;
-  error?: string;
-}
+import { IUsersRepository } from '../repositories/users.repository';
+import { IPasswordHasher } from '../providers/passwordHasher.service';
+import { ITokenService } from '../providers/token.service';
+import { IAdminLoginRequestDTO } from '../../domain/dtos/adminLoginRequest.dto';
+import { IAdminLoginResponseDTO } from '../../domain/dtos/adminLoginResponse.dto';
+import { User } from '../../domain/entities/User.entity';
+import { HttpStatus } from '../../domain/enums/httpStatus.enum';
+import { MESSAGES } from '../../domain/constants/messages.constant';
+import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 
 export class LoginAdminUseCase {
   constructor(
@@ -20,28 +15,74 @@ export class LoginAdminUseCase {
     private tokenService: ITokenService,
   ) {}
 
-  async execute(data: IAdminLoginRequestDTO): Promise<IResponse> {
+  async execute(data: IAdminLoginRequestDTO): Promise<IAdminLoginResponseDTO> {
     try {
+      if (!data.email || !data.password) {
+        return {
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.AUTH_MISSING_REQUIRED_FIELDS.code,
+            message: ERRORMESSAGES.AUTH_MISSING_REQUIRED_FIELDS.message,
+          },
+        };
+      }
+
       const user = await this.usersRepository.findByEmail(data.email);
       if (!user) {
-        return { success: false, error: UserErrorType.UserNotFound };
+        return {
+          success: false,
+          status: HttpStatus.NOT_FOUND,
+          error: {
+            code: ERRORMESSAGES.USER_NOT_FOUND.code,
+            message: ERRORMESSAGES.USER_NOT_FOUND.message,
+          },
+        };
       }
 
       if (user.role !== 'admin') {
-        return { success: false, error: AuthErrorType.InvalidRole };
+        return {
+          success: false,
+          status: HttpStatus.FORBIDDEN,
+          error: {
+            code: ERRORMESSAGES.AUTH_INVALID_ROLE.code,
+            message: ERRORMESSAGES.AUTH_INVALID_ROLE.message,
+          },
+        };
       }
 
       if (!user.isVerified) {
-        return { success: false, error: UserErrorType.UserNotVerified };
+        return {
+          success: false,
+          status: HttpStatus.FORBIDDEN,
+          error: {
+            code: ERRORMESSAGES.USER_NOT_VERIFIED.code,
+            message: ERRORMESSAGES.USER_NOT_VERIFIED.message,
+          },
+        };
       }
 
       if (!user.password) {
-        return { success: false, error: AuthErrorType.InvalidCredentials };
+        return {
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.AUTH_INVALID_CREDENTIALS.code,
+            message: ERRORMESSAGES.AUTH_INVALID_CREDENTIALS.message,
+          },
+        };
       }
 
       const isPasswordValid = await this.passwordHasher.comparePasswords(data.password, user.password);
       if (!isPasswordValid) {
-        return { success: false, error: AuthErrorType.InvalidCredentials };
+        return {
+          success: false,
+          status: HttpStatus.UNAUTHORIZED,
+          error: {
+            code: ERRORMESSAGES.AUTH_INVALID_CREDENTIALS.code,
+            message: ERRORMESSAGES.AUTH_INVALID_CREDENTIALS.message,
+          },
+        };
       }
 
       const accessToken = await this.tokenService.generateAccessToken({ email: user.email.address, id: user.id! });
@@ -50,6 +91,8 @@ export class LoginAdminUseCase {
 
       return {
         success: true,
+        status: HttpStatus.OK,
+        message: MESSAGES.USER_LOGGED_IN,
         data: {
           user: {
             id: user.id!,
@@ -62,7 +105,14 @@ export class LoginAdminUseCase {
         },
       };
     } catch (error) {
-      return { success: false, error: UserErrorType.InvalidCredentials };
+      return {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      };
     }
   }
 }

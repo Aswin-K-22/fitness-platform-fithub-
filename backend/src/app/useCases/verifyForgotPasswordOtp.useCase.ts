@@ -1,32 +1,63 @@
 import { IUsersRepository } from '../repositories/users.repository';
 import { IVerifyOtpRequestDTO } from '../../domain/dtos/verifyOtpRequest.dto';
-import { UserErrorType } from '../../domain/enums/userErrorType.enum';
-import { AuthErrorType } from '../../domain/enums/authErrorType.enum';
-
-interface VerifyForgotPasswordOtpResponseDTO {
-  success: boolean;
-  error?: string;
-}
+import { IVerifyForgotPasswordOtpResponseDTO } from '../../domain/dtos/verifyForgotPasswordOtpResponse.dto';
+import { HttpStatus } from '../../domain/enums/httpStatus.enum';
+import { MESSAGES } from '../../domain/constants/messages.constant';
+import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 
 export class VerifyForgotPasswordOtpUseCase {
   constructor(private userRepository: IUsersRepository) {}
 
-  async execute(data: IVerifyOtpRequestDTO): Promise<VerifyForgotPasswordOtpResponseDTO> {
+  async execute(data: IVerifyOtpRequestDTO): Promise<IVerifyForgotPasswordOtpResponseDTO> {
     try {
       const user = await this.userRepository.findByEmail(data.email);
       if (!user) {
-        return { success: false, error: UserErrorType.UserNotFound };
-      }
-      if (user.otp !== data.otp) {
-        return { success: false, error: AuthErrorType.InvalidOtp };
-      }
-      if (!user.otpExpires || Date.now() > user.otpExpires.getTime()) {
-        return { success: false, error: AuthErrorType.OtpExpired };
+        return {
+          success: false,
+          status: HttpStatus.NOT_FOUND,
+          error: {
+            code: ERRORMESSAGES.USER_NOT_FOUND.code,
+            message: ERRORMESSAGES.USER_NOT_FOUND.message,
+          },
+        };
       }
 
-      return { success: true };
+      if (user.otp !== data.otp) {
+        return {
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.AUTH_INVALID_OTP.code,
+            message: ERRORMESSAGES.AUTH_INVALID_OTP.message,
+          },
+        };
+      }
+
+      if (!user.otpExpires || Date.now() > user.otpExpires.getTime()) {
+        return {
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.AUTH_OTP_EXPIRED.code,
+            message: ERRORMESSAGES.AUTH_OTP_EXPIRED.message,
+          },
+        };
+      }
+
+      return {
+        success: true,
+        status: HttpStatus.OK,
+        message: MESSAGES.OTP_VERIFIED,
+      };
     } catch (error) {
-      return { success: false, error: (error as Error).message };
+      return {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      };
     }
   }
 }

@@ -1,9 +1,9 @@
 import { IUsersRepository } from '../repositories/users.repository';
 import { IUpdateUserProfileRequestDTO } from '../../domain/dtos/updateUserProfileRequest.dto';
 import { IUpdateUserProfileResponseDTO } from '../../domain/dtos/updateUserProfileResponse.dto';
-import { UserErrorType } from '../../domain/enums/userErrorType.enum';
-import { User } from '../../domain/entities/User.entity';
-import { Email } from '../../domain/valueObjects/email.valueObject';
+import { HttpStatus } from '../../domain/enums/httpStatus.enum';
+import { MESSAGES } from '../../domain/constants/messages.constant';
+import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 
 export class UpdateUserProfileUseCase {
   constructor(private usersRepository: IUsersRepository) {}
@@ -14,7 +14,11 @@ export class UpdateUserProfileUseCase {
       if (!data.name && !data.profilePic) {
         return {
           success: false,
-          error: UserErrorType.NoValidFieldsProvided,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.USER_NO_VALID_FIELDS_PROVIDED.code,
+            message: ERRORMESSAGES.USER_NO_VALID_FIELDS_PROVIDED.message,
+          },
         };
       }
 
@@ -23,13 +27,21 @@ export class UpdateUserProfileUseCase {
         if (data.name.length < 2) {
           return {
             success: false,
-            error: UserErrorType.InvalidName,
+            status: HttpStatus.BAD_REQUEST,
+            error: {
+              code: ERRORMESSAGES.USER_INVALID_NAME.code,
+              message: ERRORMESSAGES.USER_INVALID_NAME.message,
+            },
           };
         }
         if (/\s{2,}/.test(data.name) || /^\s|\s$/.test(data.name)) {
           return {
             success: false,
-            error: UserErrorType.InvalidNameFormat,
+            status: HttpStatus.BAD_REQUEST,
+            error: {
+              code: ERRORMESSAGES.USER_INVALID_NAME_FORMAT.code,
+              message: ERRORMESSAGES.USER_INVALID_NAME_FORMAT.message,
+            },
           };
         }
       }
@@ -39,46 +51,31 @@ export class UpdateUserProfileUseCase {
       if (!user) {
         return {
           success: false,
-          error: UserErrorType.UserNotFound,
+          status: HttpStatus.NOT_FOUND,
+          error: {
+            code: ERRORMESSAGES.USER_NOT_FOUND.code,
+            message: ERRORMESSAGES.USER_NOT_FOUND.message,
+          },
         };
       }
 
       // Update profile
-     const updatedUser = await this.usersRepository.updateProfile(email, data);
-
-     
+      const updatedUser = await this.usersRepository.updateProfile(email, data);
 
       return {
         success: true,
-        data: {
-          user: {
-            id: updatedUser.id,
-            name: updatedUser.name,
-            email: updatedUser.email.address,
-            password: updatedUser.password,
-            role: updatedUser.role,
-            createdAt: updatedUser.createdAt,
-            updatedAt: updatedUser.updatedAt,
-            otp: updatedUser.otp,
-            otpExpires: updatedUser.otpExpires,
-            isVerified: updatedUser.isVerified,
-            refreshToken: updatedUser.refreshToken,
-            profilePic: updatedUser.profilePic,
-            membershipId: updatedUser.membershipId,
-            fitnessProfile: updatedUser.fitnessProfile,
-            workoutPlanId: updatedUser.workoutPlanId,
-            progress: updatedUser.progress,
-            weeklySummary: updatedUser.weeklySummary,
-            memberships: updatedUser.memberships,
-            Bookings: updatedUser.Bookings,
-            payments: updatedUser.payments,
-          },
-        },
+        status: HttpStatus.OK,
+        message: MESSAGES.PROFILE_UPDATED,
+        data: { user: updatedUser },
       };
     } catch (error) {
       return {
         success: false,
-        error: UserErrorType.UpdateProfileFailed,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
       };
     }
   }

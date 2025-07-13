@@ -1,12 +1,13 @@
-// backend/src/domain/dtos/loginResponse.dto.ts
 import { UserAuthResponseDTO } from './userAuthResponse.dto';
 
-export interface LoginResponseDTO {
+export interface ILoginResponseDTO {
   success: boolean;
+  status: number;
+  message?: string;
   data?: {
     user: UserAuthResponseDTO;
     accessToken: string;
     refreshToken: string;
   };
-  error?: string;
+  error?: { code: string; message: string };
 }

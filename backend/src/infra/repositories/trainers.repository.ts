@@ -4,7 +4,7 @@ import { ITrainersRepository } from '../../app/repositories/trainers.repository'
 import { Trainer } from '../../domain/entities/Trainer.entity';
 import { Email } from '../../domain/valueObjects/email.valueObject';
 import { Prisma, PrismaClient } from '@prisma/client';
-import { IUpdateTrainerProfileRequestDTO } from '@/domain/enums/updateTrainerProfileRequest.dto';
+import { IUpdateTrainerProfileRequestDTO } from '@/domain/dtos/updateTrainerProfileRequest.dto';
 
 export class TrainersRepository implements ITrainersRepository {
   constructor(private prisma: PrismaClient) {}

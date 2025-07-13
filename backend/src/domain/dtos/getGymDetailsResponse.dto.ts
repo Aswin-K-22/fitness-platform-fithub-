@@ -37,5 +37,8 @@ export interface GymDetailsDTO {
 
 export interface IGetGymDetailsResponseDTO {
   success: boolean;
-  data: GymDetailsDTO | null;
+  status: number;
+  message?: string;
+  data?: { gym: GymDetailsDTO };
+  error?: { code: string; message: string };
 }

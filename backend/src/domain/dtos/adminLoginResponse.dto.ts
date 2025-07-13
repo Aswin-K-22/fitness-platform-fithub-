@@ -1,10 +1,16 @@
 export interface IAdminLoginResponseDTO {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
+  success: boolean;
+  status: number;
+  message?: string;
+  data?: {
+    user: {
+      id: string;
+      email: string;
+      name: string;
+      role: string;
+    };
+    accessToken: string;
+    refreshToken: string;
   };
-  accessToken: string;
-  refreshToken: string;
+  error?: { code: string; message: string };
 }

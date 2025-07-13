@@ -1,5 +1,3 @@
-import { TrainerErrorType } from '../enums/trainerErrorType.enum';
-
 export interface TrainerProfile {
   id: string;
   name: string;
@@ -51,6 +49,18 @@ export interface TrainerProfile {
 
 export interface IUpdateTrainerProfileResponseDTO {
   success: boolean;
-  trainer?: TrainerProfile;
-  error?: TrainerErrorType;
+  status: number;
+  message?: string;
+  data?: { trainer: TrainerProfile };
+  error?: { code: string; message: string };
+}
+
+export interface IUpdateTrainerProfileRequestDTO {
+  name?: string;
+  bio?: string;
+  specialties?: string[];
+  profilePic?: string;
+  upiId?: string;
+  bankAccount?: string;
+  ifscCode?: string;
 }

@@ -1,28 +1,33 @@
 import { IUsersRepository } from '../repositories/users.repository';
 import { IResendOtpRequestDTO } from '../../domain/dtos/resendOtpRequest.dto';
-import { UserErrorType } from '../../domain/enums/userErrorType.enum';
-import { AuthErrorType } from '../../domain/enums/authErrorType.enum';
+import { IResendOtpResponseDTO } from '@/domain/dtos/resendOtpResponse.dto';
 import { IEmailService } from '../providers/email.service';
-
-interface ResendOtpResponseDTO {
-  success: boolean;
-  error?: string;
-}
+import { HttpStatus } from '../../domain/enums/httpStatus.enum';
+import { MESSAGES } from '../../domain/constants/messages.constant';
+import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { generateOtp } from '../../infra/utils/otp';
 
 export class ResendOtpUseCase {
   constructor(
     private userRepository: IUsersRepository,
-    private emailService: IEmailService,
+    private emailService: IEmailService
   ) {}
 
-  async execute(data: IResendOtpRequestDTO): Promise<ResendOtpResponseDTO> {
+  async execute(data: IResendOtpRequestDTO): Promise<IResendOtpResponseDTO> {
     try {
       const user = await this.userRepository.findByEmail(data.email);
       if (!user) {
-        return { success: false, error: UserErrorType.UserNotFound };
+        return {
+          success: false,
+          status: HttpStatus.NOT_FOUND,
+          error: {
+            code: ERRORMESSAGES.USER_NOT_FOUND.code,
+            message: ERRORMESSAGES.USER_NOT_FOUND.message,
+          },
+        };
       }
 
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = generateOtp();
       await this.userRepository.updateOtp(data.email, otp);
 
       await this.emailService.sendMail({
@@ -31,10 +36,22 @@ export class ResendOtpUseCase {
         subject: 'FitHub OTP Verification',
         text: `Your new OTP is ${otp}. It expires in 30 seconds.`,
       });
-      console.log(`Resend new OTP is ${otp}. It expires in 30 seconds.`)
-      return { success: true };
+      console.log(`Resend new OTP is ${otp}. It expires in 30 seconds.`);
+
+      return {
+        success: true,
+        status: HttpStatus.OK,
+        message: MESSAGES.OTP_SENT,
+      };
     } catch (error) {
-      return { success: false, error: AuthErrorType.EmailSendFailed };
+      return {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.AUTH_EMAIL_SEND_FAILED.code,
+          message: ERRORMESSAGES.AUTH_EMAIL_SEND_FAILED.message,
+        },
+      };
     }
   }
 }

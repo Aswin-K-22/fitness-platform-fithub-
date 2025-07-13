@@ -158,11 +158,11 @@ const AdminLogin: React.FC = () => {
             {authError && <p className="text-red-500 text-sm mt-1">{authError}</p>}
 
             <div className="flex items-center justify-end">
-              <div className="text-sm">
+              {/* <div className="text-sm">
                 <a href="#" className="font-medium text-indigo-600 hover:text-indigo-700">
                   Forgot your password?
                 </a>
-              </div>
+              </div> */}
             </div>
 
             <div>

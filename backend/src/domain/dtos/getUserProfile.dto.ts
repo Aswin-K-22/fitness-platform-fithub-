@@ -2,14 +2,11 @@
 
 
 import { UserProfileDataDTO } from './getUserProfileResoponse.dto';
-import { UserAuthResponseDTO } from './userAuthResponse.dto';
 
-export interface GetUserProfileResponseDTO {
+export interface IGetUserProfileResponseDTO {
   success: boolean;
-  data?: {
-    user:  UserProfileDataDTO;
-    
-  };
-  error?: string;
+  status: number;
+  message?: string;
+  data?: { user: UserProfileDataDTO };
+  error?: { code: string; message: string };
 }
-

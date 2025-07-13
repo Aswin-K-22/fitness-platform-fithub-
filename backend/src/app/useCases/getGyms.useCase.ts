@@ -1,13 +1,14 @@
-// backend/src/app/useCases/getGyms.useCase.ts
-
-import { GymDTO, IGetGymsResponseDTO } from '@/domain/dtos/getGymsResponse.dto';
+import { GetGymsRequestDTO } from '@/domain/dtos/getGymsRequest.dto';
+import { IGetGymsResponseDTO, GymDTO } from '@/domain/dtos/getGymsResponse.dto';
 import { Gym } from '@/domain/entities/Gym.entity';
 import { IGymsRepository } from '../repositories/gym.repository.';
-import { GetGymsRequestDTO } from '@/domain/dtos/getGymsRequest.dto';
-import { GymErrorType } from '@/domain/enums/gymErrorType.enums';
+import { HttpStatus } from '@/domain/enums/httpStatus.enum';
+import { MESSAGES } from '@/domain/constants/messages.constant';
+import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 
 export class GetGymsUseCase {
   constructor(private gymsRepository: IGymsRepository) {}
+
   private toGymDTO(gym: Gym): GymDTO {
     return {
       id: gym.id || '', // Ensure id is always a string
@@ -25,7 +26,7 @@ export class GetGymsUseCase {
             street: gym.address.street || undefined,
           }
         : undefined,
-      image: gym.images && gym.images.length > 0 ? gym.images[0].url : undefined, 
+      image: gym.images && gym.images.length > 0 ? gym.images[0].url : undefined,
       ratings: gym.ratings
         ? {
             average: gym.ratings.average || undefined,
@@ -47,29 +48,57 @@ export class GetGymsUseCase {
     gymType,
     rating,
   }: GetGymsRequestDTO): Promise<IGetGymsResponseDTO> {
-    const skip = (page - 1) * limit;
+    try {
+      // Validate filters
+      if ((lat !== undefined && lng === undefined) || (lat === undefined && lng !== undefined)) {
+        return {
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.GYM_INVALID_FILTERS.code,
+            message: ERRORMESSAGES.GYM_INVALID_FILTERS.message,
+          },
+        };
+      }
+      if (radius !== undefined && (lat === undefined || lng === undefined)) {
+        return {
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: ERRORMESSAGES.GYM_INVALID_FILTERS.code,
+            message: ERRORMESSAGES.GYM_INVALID_FILTERS.message,
+          },
+        };
+      }
 
-    // Validate filters
-    if (lat !== undefined && lng === undefined || lat === undefined && lng !== undefined) {
-      throw new Error(GymErrorType.InvalidFilters);
+      const skip = (page - 1) * limit;
+      const filters = { search, lat, lng, radius, gymType, rating };
+      const gyms: Gym[] = await this.gymsRepository.findAllForUsers(skip, limit, filters);
+      const totalGyms = await this.gymsRepository.countWithFilters(filters);
+      const totalPages = Math.ceil(totalGyms / limit);
+
+      const gymDTOs: GymDTO[] = gyms.map((gym) => this.toGymDTO(gym));
+
+      return {
+        success: true,
+        status: HttpStatus.OK,
+        message: MESSAGES.SUCCESS,
+        data: {
+          gyms: gymDTOs,
+          page,
+          totalPages,
+          totalGyms,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GYM_FAILED_TO_FETCH_GYMS.code,
+          message: ERRORMESSAGES.GYM_FAILED_TO_FETCH_GYMS.message,
+        },
+      };
     }
-    if (radius !== undefined && (lat === undefined || lng === undefined)) {
-      throw new Error(GymErrorType.InvalidFilters);
-    }
-
-    const filters = { search, lat, lng, radius, gymType, rating };
-    const gyms: Gym[] = await this.gymsRepository.findAllForUsers(skip, limit, filters);
-    const totalGyms = await this.gymsRepository.countWithFilters(filters);
-    const totalPages = Math.ceil(totalGyms / limit);
-
-   const gymDTOs: GymDTO[] = gyms.map((gym) => this.toGymDTO(gym));
-
-    return {
-      success: true,
-      gyms: gymDTOs,
-      page,
-      totalPages,
-      totalGyms,
-    };
   }
 }
