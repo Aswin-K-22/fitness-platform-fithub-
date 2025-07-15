@@ -5,6 +5,7 @@ import { MembershipPlanDTO } from '@/domain/dtos/IAdminMembershipPlanDTO';
 import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { MESSAGES } from '@/domain/constants/messages.constant';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
+import { IAddMembershipPlanUseCase } from './interfaces/IAddMembershipPlanUseCase';
 
 interface IAddMembershipPlanResponseDTO {
   success: boolean;
@@ -14,7 +15,7 @@ interface IAddMembershipPlanResponseDTO {
   error?: { code: string; message: string };
 }
 
-export class AddMembershipPlanUseCase {
+export class AddMembershipPlanUseCase implements IAddMembershipPlanUseCase {
   constructor(private membershipsPlanRepository: IMembershipsPlanRepository) {}
 
   private toMembershipPlanDTO(plan: MembershipPlan): MembershipPlanDTO {
@@ -59,7 +60,7 @@ export class AddMembershipPlanUseCase {
         features: validatedData.features,
       });
 
-      const newPlan = await this.membershipsPlanRepository.createPlan(planData);
+      const newPlan = await this.membershipsPlanRepository.create(planData);
 
       return {
         success: true,

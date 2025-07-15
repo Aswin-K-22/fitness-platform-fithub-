@@ -1,68 +1,99 @@
 import { Request, Response } from 'express';
-import { GetTrainerUseCase } from '@/app/useCases/getTrainer.useCase';
-import { GetTrainerProfileUseCase } from '@/app/useCases/getTrainerProfile.useCase';
-import { TrainerErrorType } from '@/domain/enums/trainerErrorType.enum';
-import { UpdateTrainerProfileUseCase } from '@/app/useCases/updateTrainerProfile.useCase';
+import { IGetTrainerUseCase } from '@/app/useCases/interfaces/IGetTrainerUseCase';
+import { IGetTrainerProfileUseCase } from '@/app/useCases/interfaces/IGetTrainerProfileUseCase';
+import { IUpdateTrainerProfileUseCase } from '@/app/useCases/interfaces/IUpdateTrainerProfileUseCase';
 import { IUpdateTrainerProfileRequestDTO } from '@/domain/dtos/updateTrainerProfileRequest.dto';
+import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
+import { HttpStatus } from '@/domain/enums/httpStatus.enum';
+import { IResponseDTO } from '@/domain/dtos/response.dto';
 
 export class TrainerController {
   constructor(
-    private getTrainerUseCase: GetTrainerUseCase,
-    private getTrainerProfileUseCase: GetTrainerProfileUseCase,
-    private updateTrainerProfileUseCase: UpdateTrainerProfileUseCase
+    private readonly getTrainerUseCase: IGetTrainerUseCase,
+    private readonly getTrainerProfileUseCase: IGetTrainerProfileUseCase,
+    private readonly updateTrainerProfileUseCase: IUpdateTrainerProfileUseCase
   ) {}
 
-  async getTrainer(req: Request, res: Response): Promise<void> {
-    try {
-      if (!req.trainer?.email) {
-        console.log('[DEBUG] Trainer not authenticated');
-        res.status(401).json({ success: false, error: TrainerErrorType.NOT_AUTHENTICATED });
-        return;
-      }
+  private sendResponse<T>(res: Response, result: IResponseDTO<T>): void {
+    res.status(result.status).json({
+      success: result.success,
+      message: result.message,
+      ...(result.success ? { data: result.data } : { error: result.error }),
+    });
+  }
 
+  async getTrainer(req: Request, res: Response): Promise<void> {
+    if (!req.trainer?.email) {
+      this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.UNAUTHORIZED,
+        error: {
+          code: ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.code,
+          message: ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.message,
+        },
+      });
+      return;
+    }
+
+    try {
       const result = await this.getTrainerUseCase.execute(req.trainer.email);
-      res.status(200).json({ success: true, trainer: result.trainer });
-    } catch (error: any) {
+      this.sendResponse(res, result);
+    } catch (error) {
       console.error('[ERROR] Get trainer error:', error);
-      res.status(500).json({ success: false, error: error.message || TrainerErrorType.InternalServerError });
+      this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      });
     }
   }
 
   async getTrainerProfile(req: Request, res: Response): Promise<void> {
-    try {
-      if (!req.trainer?.email) {
-        console.log('[DEBUG] Trainer not authenticated');
-        res.status(401).json({ success: false, error: TrainerErrorType.NOT_AUTHENTICATED });
-        return;
-      }
-
-      const result = await this.getTrainerProfileUseCase.execute(req.trainer.email);
-      if (!result.success) {
-        res.status(result.error === TrainerErrorType.TrainerNotFound ? 404 : 500).json({
-          success: false,
-          error: result.error,
-        });
-        return;
-      }
-
-      res.status(200).json({
-        success: true,
-        trainer: result.trainer,
+    if (!req.trainer?.email) {
+      this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.UNAUTHORIZED,
+        error: {
+          code: ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.code,
+          message: ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.message,
+        },
       });
-    } catch (error: any) {
+      return;
+    }
+
+    try {
+      const result = await this.getTrainerProfileUseCase.execute(req.trainer.email);
+      this.sendResponse(res, result);
+    } catch (error) {
       console.error('[ERROR] Get trainer profile error:', error);
-      res.status(500).json({ success: false, error: TrainerErrorType.InternalServerError });
+      this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      });
     }
   }
 
- async updateTrainerProfile(req: Request, res: Response): Promise<void> {
-    try {
-      if (!req.trainer?.email) {
-        console.log('[DEBUG] Trainer not authenticated');
-        res.status(401).json({ success: false, error: TrainerErrorType.NOT_AUTHENTICATED });
-        return;
-      }
+  async updateTrainerProfile(req: Request, res: Response): Promise<void> {
+    if (!req.trainer?.email) {
+      this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.UNAUTHORIZED,
+        error: {
+          code: ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.code,
+          message: ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.message,
+        },
+      });
+      return;
+    }
 
+    try {
       const data: IUpdateTrainerProfileRequestDTO = {
         name: req.body.name || undefined,
         bio: req.body.bio || undefined,
@@ -74,30 +105,17 @@ export class TrainerController {
       };
 
       const result = await this.updateTrainerProfileUseCase.execute(req.trainer.email, data);
-      if (!result.success) {
-        const status = result.error === TrainerErrorType.TrainerNotFound ? 404 :
-                       result.error === TrainerErrorType.NoValidFieldsProvided ? 400 :
-                       result.error === TrainerErrorType.InvalidName ||
-                       result.error === TrainerErrorType.InvalidBio ||
-                       result.error === TrainerErrorType.InvalidSpecialties ||
-                       result.error === TrainerErrorType.InvalidUpiId ||
-                       result.error === TrainerErrorType.InvalidBankAccount ||
-                       result.error === TrainerErrorType.InvalidIfscCode ||
-                       result.error === TrainerErrorType.MissingBankDetails ? 400 : 500;
-        res.status(status).json({
-          success: false,
-          error: result.error,
-        });
-        return;
-      }
-
-      res.status(200).json({
-        success: true,
-        trainer: result.trainer,
-      });
-    } catch (error: any) {
+      this.sendResponse(res, result);
+    } catch (error) {
       console.error('[ERROR] Update trainer profile error:', error);
-      res.status(500).json({ success: false, error: TrainerErrorType.InternalServerError });
+      this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      });
     }
   }
 }

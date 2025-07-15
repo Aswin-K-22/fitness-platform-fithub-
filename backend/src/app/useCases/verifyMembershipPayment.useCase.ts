@@ -7,8 +7,18 @@ import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import crypto from 'crypto';
+import { Membership } from '@/domain/entities/Membership.entity';
+import { IVerifyMembershipPaymentUseCase } from './interfaces/IVerifyMembershipPaymentUseCase';
 
-export class VerifyMembershipPaymentUseCase {
+// Utility function to log errors with context
+const logError = (context: string, error: unknown) => {
+  console.error(`[VerifyMembershipPaymentUseCase] ${context}:`, {
+    message: error instanceof Error ? error.message : 'Unknown error',
+    stack: error instanceof Error ? error.stack : undefined,
+  });
+};
+
+export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentUseCase {
   constructor(
     private membershipsRepository: IMembershipsRepository,
     private paymentsRepository: IPaymentsRepository,
@@ -21,8 +31,20 @@ export class VerifyMembershipPaymentUseCase {
     userId: string
   ): Promise<IVerifyMembershipPaymentResponseDTO> {
     try {
+      // Log input parameters
+      console.log('[VerifyMembershipPaymentUseCase] Input:', {
+        razorpay_payment_id,
+        razorpay_order_id,
+        razorpay_signature,
+        planId,
+        userId,
+      });
+
+      // Step 1: Verify user
+      console.log('[VerifyMembershipPaymentUseCase] Finding user by ID:', userId);
       const user = await this.usersRepository.findById(userId);
       if (!user) {
+        logError('User not found', new Error(`User ID: ${userId}`));
         return {
           success: false,
           status: HttpStatus.NOT_FOUND,
@@ -32,9 +54,13 @@ export class VerifyMembershipPaymentUseCase {
           },
         };
       }
+      console.log('[VerifyMembershipPaymentUseCase] User found:', user);
 
-      const plan = await this.membershipsPlanRepository.findPlanById(planId);
+      // Step 2: Verify plan
+      console.log('[VerifyMembershipPaymentUseCase] Finding plan by ID:', planId);
+      const plan = await this.membershipsPlanRepository.findById(planId);
       if (!plan) {
+        logError('Plan not found', new Error(`Plan ID: ${planId}`));
         return {
           success: false,
           status: HttpStatus.NOT_FOUND,
@@ -44,9 +70,13 @@ export class VerifyMembershipPaymentUseCase {
           },
         };
       }
+      console.log('[VerifyMembershipPaymentUseCase] Plan found:', plan);
 
+      // Step 3: Verify payment
+      console.log('[VerifyMembershipPaymentUseCase] Finding payment by order ID:', razorpay_order_id);
       const payment = await this.paymentsRepository.findPaymentByOrderId(razorpay_order_id);
       if (!payment) {
+        logError('Payment not found', new Error(`Order ID: ${razorpay_order_id}`));
         return {
           success: false,
           status: HttpStatus.NOT_FOUND,
@@ -56,13 +86,34 @@ export class VerifyMembershipPaymentUseCase {
           },
         };
       }
+      console.log('[VerifyMembershipPaymentUseCase] Payment found:', payment);
+
+      // Step 4: Verify Razorpay signature
+      console.log('[VerifyMembershipPaymentUseCase] Generating signature');
+      if (!process.env.RAZORPAY_KEY_SECRET) {
+        logError('Razorpay key secret missing', new Error('Environment variable RAZORPAY_KEY_SECRET not set'));
+        return {
+          success: false,
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: {
+            code: ERRORMESSAGES.GENERIC_ERROR.code,
+            message: 'Razorpay key secret not configured',
+          },
+        };
+      }
 
       const generatedSignature = crypto
-        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
         .update(`${razorpay_order_id}|${razorpay_payment_id}`)
         .digest('hex');
 
+      console.log('[VerifyMembershipPaymentUseCase] Signature comparison:', {
+        generatedSignature,
+        razorpay_signature,
+      });
+
       if (generatedSignature !== razorpay_signature) {
+        logError('Invalid signature', new Error('Signature mismatch'));
         return {
           success: false,
           status: HttpStatus.BAD_REQUEST,
@@ -73,27 +124,72 @@ export class VerifyMembershipPaymentUseCase {
         };
       }
 
-      await this.paymentsRepository.updatePaymentStatus(payment.id!, 'Paid');
-      await this.paymentsRepository.updatePaymentId(payment.id!, razorpay_payment_id);
+      // Step 5: Update payment status and ID
+      console.log('[VerifyMembershipPaymentUseCase] Updating payment status for ID:', payment.id);
+      if (!payment.id) {
+        logError('Payment ID missing', new Error(`Payment ID is undefined for order ID: ${razorpay_order_id}`));
+        return {
+          success: false,
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: {
+            code: ERRORMESSAGES.GENERIC_ERROR.code,
+            message: 'Payment ID is missing',
+          },
+        };
+      }
 
+      await this.paymentsRepository.updatePaymentStatus(payment.id, 'Paid');
+      console.log('[VerifyMembershipPaymentUseCase] Payment status updated to Paid');
+
+      await this.paymentsRepository.updatePaymentId(payment.id, razorpay_payment_id);
+      console.log('[VerifyMembershipPaymentUseCase] Payment ID updated');
+
+      // Step 6: Create membership
       const startDate = new Date();
       const endDate = new Date();
       endDate.setMonth(endDate.getMonth() + plan.duration);
-
-      const membership = await this.membershipsRepository.createMembership({
+      console.log('[VerifyMembershipPaymentUseCase] Creating membership with:', {
         userId,
         planId,
-        status: 'Active',
         startDate,
         endDate,
-        paymentId: payment.id!,
+        paymentId: payment.id,
         price: plan.price,
         currency: 'INR',
-        paymentStatus: 'Paid',
-        paymentDate: new Date(),
       });
 
-      await this.usersRepository.updateMembership(userId, membership.id!);
+      const membership = await this.membershipsRepository.create(
+        new Membership({
+          userId,
+          planId,
+          status: 'Active',
+          startDate,
+          endDate,
+          paymentId: payment.id,
+          price: plan.price,
+          currency: 'INR',
+          paymentStatus: 'Paid',
+          paymentDate: new Date(),
+        }).toJSON()
+      );
+      console.log('[VerifyMembershipPaymentUseCase] Membership created:', membership);
+
+      // Step 7: Update user membership
+      console.log('[VerifyMembershipPaymentUseCase] Updating user membership for user ID:', userId);
+      if (!membership.id) {
+        logError('Membership ID missing', new Error('Membership ID is undefined after creation'));
+        return {
+          success: false,
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: {
+            code: ERRORMESSAGES.GENERIC_ERROR.code,
+            message: 'Membership ID is missing',
+          },
+        };
+      }
+
+      await this.usersRepository.updateMembership(userId, membership.id);
+      console.log('[VerifyMembershipPaymentUseCase] User membership updated');
 
       return {
         success: true,
@@ -102,6 +198,7 @@ export class VerifyMembershipPaymentUseCase {
         data: { membership },
       };
     } catch (error) {
+      logError('Unexpected error in execute', error);
       return {
         success: false,
         status: HttpStatus.INTERNAL_SERVER_ERROR,

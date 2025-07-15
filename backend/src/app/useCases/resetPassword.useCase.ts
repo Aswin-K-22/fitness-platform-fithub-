@@ -6,8 +6,9 @@ import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { Email } from '../../domain/valueObjects/email.valueObject';
+import { IResetPasswordUseCase } from './interfaces/IResetPasswordUseCase';
 
-export class ResetPasswordUseCase {
+export class ResetPasswordUseCase implements IResetPasswordUseCase {
   constructor(
     private userRepository: IUsersRepository,
     private passwordHasher: IPasswordHasher

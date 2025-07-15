@@ -6,8 +6,9 @@ import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { ITrainerRefreshTokenResponseDTO } from '../../domain/dtos/trainerRefreshTokenResponse.dto';
 import { TrainerAuth } from '../../domain/dtos/getTrainerResponse.dto';
+import { ITrainerRefreshTokenUseCase } from './interfaces/ITrainerRefreshTokenUseCase';
 
-export class TrainerRefreshTokenUseCase {
+export class TrainerRefreshTokenUseCase implements ITrainerRefreshTokenUseCase {
   constructor(
     private trainersRepository: ITrainersRepository,
     private tokenService: ITokenService,

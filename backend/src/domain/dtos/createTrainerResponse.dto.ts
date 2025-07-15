@@ -1,9 +1,5 @@
-import { Trainer } from '../../domain/entities/Trainer.entity';
+// src/domain/dtos/createTrainerResponse.dto.ts
+import { Trainer } from '../entities/Trainer.entity';
+import { IResponseDTO } from './response.dto';
 
-export interface ICreateTrainerResponseDTO {
-  success: boolean;
-  status: number;
-  message?: string;
-  data?: { trainer: Trainer };
-  error?: { code: string; message: string };
-}
+export interface ICreateTrainerResponseDTO extends IResponseDTO<{ trainer: Trainer }> {}

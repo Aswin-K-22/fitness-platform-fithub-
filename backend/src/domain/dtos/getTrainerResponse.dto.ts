@@ -1,3 +1,5 @@
+import { IResponseDTO } from "./response.dto";
+
 export interface TrainerAuth {
   id: string | null;
   email: string;
@@ -8,10 +10,9 @@ export interface TrainerAuth {
   profilePic: string | null;
 }
 
-export interface IGetTrainerResponseDTO {
-  success: boolean;
-  status: number;
-  message?: string;
-  data?: { trainer: TrainerAuth };
-  error?: { code: string; message: string };
+export interface IGetTrainerResponseDTO extends IResponseDTO<Data>{
+
+}
+interface Data {
+  trainer :TrainerAuth
 }

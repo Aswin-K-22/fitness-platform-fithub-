@@ -64,4 +64,22 @@ export class Membership {
   get paymentDate(): Date | null { return this._paymentDate; }
   get createdAt(): Date { return this._createdAt; }
   get updatedAt(): Date { return this._updatedAt; }
+
+toJSON(): any {
+    return {
+      id: this._id,
+      userId: this._userId,
+      planId: this._planId,
+      status: this._status,
+      startDate: this._startDate,
+      endDate: this._endDate,
+      paymentId: this._paymentId,
+      price: this._price,
+      currency: this._currency,
+      paymentStatus: this._paymentStatus,
+      paymentDate: this._paymentDate,
+      createdAt: this._createdAt,
+      updatedAt: this._updatedAt,
+    };
+  }
 }

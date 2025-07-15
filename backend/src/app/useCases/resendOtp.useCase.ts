@@ -6,8 +6,9 @@ import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { generateOtp } from '../../infra/utils/otp';
+import { IResendOtpUseCase } from './interfaces/IResendOtpUseCase';
 
-export class ResendOtpUseCase {
+export class ResendOtpUseCase implements IResendOtpUseCase {
   constructor(
     private userRepository: IUsersRepository,
     private emailService: IEmailService

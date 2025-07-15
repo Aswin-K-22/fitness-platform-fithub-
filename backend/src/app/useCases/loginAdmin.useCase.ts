@@ -7,8 +7,9 @@ import { User } from '../../domain/entities/User.entity';
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { ILoginAdminUseCase } from './interfaces/ILoginAdminUseCase';
 
-export class LoginAdminUseCase {
+export class LoginAdminUseCase implements ILoginAdminUseCase {
   constructor(
     private usersRepository: IUsersRepository,
     private passwordHasher: IPasswordHasher,

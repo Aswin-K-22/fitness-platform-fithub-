@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { CreateTrainerRequestDTO, ICreateTrainerRequestDTO } from '../../domain/dtos/createTrainerRequest.dto';
 import { IVerifyTrainerOtpRequestDTO, VerifyTrainerOtpRequestDTO } from '../../domain/dtos/verifyTrainerOtpRequest.dto';
-import { IResendOtpRequestDTO, ResendOtpRequestDTO } from '../../domain/dtos/resendOtpRequest.dto';
+import { IResendOtpRequestDTO } from '../../domain/dtos/resendOtpRequest.dto';
 import { ILoginRequestDTO, LoginRequestDTO } from '../../domain/dtos/loginRequest.dto';
 import { ILogoutRequestDTO } from '@/domain/dtos/logoutRequest.dto';
 import { IRefreshTokenRequestDTO } from '@/domain/dtos/refreshTokenRequest.dto';
@@ -18,9 +18,7 @@ export function validateMiddleware(type: string) {
         case 'verifyTrainerOtp':
           new VerifyTrainerOtpRequestDTO(req.body);
           break;
-        case 'resendTrainerOtp':
-          new ResendOtpRequestDTO(req.body);
-          break;
+     
         case 'loginTrainer':
           new LoginRequestDTO(req.body);
           break;

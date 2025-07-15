@@ -4,8 +4,9 @@ import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { IUpdateTrainerProfileRequestDTO } from '@/domain/dtos/updateTrainerProfileRequest.dto';
+import { IUpdateTrainerProfileUseCase } from './interfaces/IUpdateTrainerProfileUseCase';
 
-export class UpdateTrainerProfileUseCase {
+export class UpdateTrainerProfileUseCase implements IUpdateTrainerProfileUseCase {
   constructor(private trainersRepository: ITrainersRepository) {}
 
   async execute(email: string, data: IUpdateTrainerProfileRequestDTO): Promise<IUpdateTrainerProfileResponseDTO> {

@@ -1,167 +1,166 @@
 // backend/src/infra/repositories/gyms.repository.ts
-
 import { PrismaClient, Prisma } from '@prisma/client';
 import { Gym } from '@/domain/entities/Gym.entity';
 import { IGymsRepository } from '@/app/repositories/gym.repository.';
+import { BaseRepository } from './base.repository';
 import { isValidLocation } from '@/domain/valueObjects/location.valueObject';
 
-export class GymsRepository implements IGymsRepository {
-  constructor(private prisma: PrismaClient) {}
-  async findById(id: string): Promise<Gym | null> {
-    const gym = await this.prisma.gym.findUnique({
-      where: { id },
-    });
+export class GymsRepository extends BaseRepository<Gym> implements IGymsRepository {
+  constructor(prisma: PrismaClient) {
+    super(prisma, 'gym');
+  }
 
-    if (!gym) {
-      return null;
-    }
-
-    const location = gym.location
-      ? typeof gym.location === 'object' &&
-        gym.location !== null &&
-        'type' in gym.location &&
-        'coordinates' in gym.location &&
-        Array.isArray(gym.location.coordinates) &&
-        gym.location.coordinates.length === 2 &&
-        typeof gym.location.coordinates[0] === 'number' &&
-        typeof gym.location.coordinates[1] === 'number'
-        ? { type: gym.location.type as string, coordinates: gym.location.coordinates as [number, number] }
-        : null
-      : null;
+  protected toDomain(record: any): Gym {
     return new Gym({
-      id: gym.id,
-      name: gym.name,
-      type: gym.type || null,
-      description: gym.description || null,
-      maxCapacity: gym.maxCapacity,
-      membershipCompatibility: gym.membershipCompatibility || [],
-      address: gym.address || null,
-      contact: gym.contact || null,
-      equipment: gym.equipment || [],
-      schedule: gym.schedule || [],
-      trainers: gym.trainers || [],
-      facilities: gym.facilities || null,
-      location,
-      images: (gym.images || []).map((img: any) => ({
+      id: record.id,
+      name: record.name,
+      type: record.type || null,
+      description: record.description || null,
+      maxCapacity: record.maxCapacity,
+      membershipCompatibility: record.membershipCompatibility || [],
+      address: record.address || null,
+      contact: record.contact || null,
+      equipment: record.equipment || [],
+      schedule: record.schedule || [],
+      trainers: record.trainers || [],
+      facilities: record.facilities || null,
+      location: record.location && isValidLocation(record.location)
+        ? { type: record.location.type, coordinates: record.location.coordinates }
+        : null,
+      images: (record.images || []).map((img: any) => ({
         url: img.url,
         description: img.description || null,
         uploadedAt: img.uploadedAt instanceof Date ? img.uploadedAt : new Date(img.uploadedAt),
       })),
-      ratings: gym.ratings || null,
-      createdAt: gym.createdAt,
-      updatedAt: gym.updatedAt,
+      ratings: record.ratings || null,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
     });
   }
 
-  async findAllForUsers(
-    skip: number,
-    take: number,
-    filters: {
-      search?: string;
-      lat?: number;
-      lng?: number;
-      radius?: number;
-      gymType?: string;
-      rating?: string;
-    }
-  ): Promise<Gym[]> {
+async findAllForUsers(
+  skip: number,
+  take: number,
+  filters: {
+    search?: string;
+    lat?: number;
+    lng?: number;
+    radius?: number;
+    gymType?: string;
+    rating?: string;
+  }
+): Promise<Gym[]> {
+  try {
     const { search, lat, lng, radius, gymType, rating } = filters;
+    console.log('findAllForUsers - Input parameters:', { skip, take, filters });
+
+    if (skip < 0 || take <= 0) {
+      console.error('Invalid pagination parameters:', { skip, take });
+      throw new Error('Invalid skip or take values');
+    }
 
     if (lat !== undefined && lng !== undefined && radius !== undefined) {
-      const maxDistance = radius * 1000; // km to meters
-      const aggregationResult = await this.prisma.$runCommandRaw({
-        aggregate: 'Gym',
-        pipeline: [
-          {
-            $geoNear: {
-              near: { type: 'Point', coordinates: [lng, lat] },
-              distanceField: 'distance',
-              maxDistance,
-              key: 'location',
-              spherical: true,
-            },
+      const maxDistance = radius * 1000;
+      console.log('Performing geoNear query with:', { lat, lng, radius, maxDistance });
+
+      const aggregationPipeline = [
+        {
+          $geoNear: {
+            near: { type: 'Point', coordinates: [lng, lat] },
+            distanceField: 'distance',
+            maxDistance,
+            key: 'location',
+            spherical: true,
           },
-          ...(gymType && gymType !== 'All Types' ? [{ $match: { type: gymType } }] : []),
-          ...(rating && rating !== 'Any Rating'
-            ? [{ $match: { 'ratings.average': { $gte: parseFloat(rating) } } }]
-            : []),
-          ...(search
-            ? [
-                {
-                  $match: {
-                    $or: [
-                      { name: { $regex: `^${search}`, $options: 'i' } },
-                      { name: { $regex: search, $options: 'i' } },
-                    ],
-                  },
+        },
+        ...(gymType && gymType !== 'All Types' ? [{ $match: { type: gymType } }] : []),
+        ...(rating && rating !== 'Any Rating'
+          ? [{ $match: { 'ratings.average': { $gte: parseFloat(rating) } } }]
+          : []),
+        ...(search
+          ? [
+              {
+                $match: {
+                  $or: [
+                    { name: { $regex: `^${search}`, $options: 'i' } },
+                    { name: { $regex: search, $options: 'i' } },
+                  ],
                 },
-              ]
-            : []),
-          { $skip: skip },
-          { $limit: take },
-          {
-            $project: {
-              id: { $toString: '$_id' },
-              name: 1,
-              address: 1,
-              type: 1,
-              images: 1,
-              ratings: 1,
-              location: 1,
-              description: 1,
-              createdAt: 1,
-              updatedAt: 1,
-            },
+              },
+            ]
+          : []),
+        { $skip: skip },
+        { $limit: take },
+        {
+          $project: {
+            id: { $toString: '$_id' },
+            name: 1,
+            address: 1,
+            type: 1,
+            images: 1,
+            ratings: 1,
+            location: 1,
+            description: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            facilities: 1,
           },
-        ],
+        },
+      ];
+      console.log('Aggregation pipeline:', JSON.stringify(aggregationPipeline, null, 2));
+
+      const aggregationResult: any = await this.prisma.$runCommandRaw({
+        aggregate: 'Gym',
+        pipeline: aggregationPipeline,
         cursor: {},
+      }).catch((error) => {
+        console.error('Error executing geoNear aggregation:', error);
+        throw new Error(`GeoNear query failed: ${error.message}`);
       });
 
-      const result = aggregationResult as { cursor?: { firstBatch?: any[] } };
-      const gyms = result.cursor?.firstBatch || [];
+      console.log('Raw aggregation result:', aggregationResult);
 
-      return gyms.map(
-        (gym: any) =>
-          new Gym({
-            id: gym.id,
-            name: gym.name,
-            address: gym.address || null,
-            type: gym.type || null,
-            images: gym.images || null,
-            ratings: gym.ratings || null,
-            location: gym.location || null,
-            description: gym.description || null,
-            createdAt: gym.createdAt,
-            updatedAt: gym.updatedAt,
-          })
-      );
+      const gyms = (aggregationResult.cursor?.firstBatch || []).map((g: any) => {
+        try {
+          const gym = this.toDomain(g);
+          console.log('Transformed gym:', gym.toJSON());
+          return gym;
+        } catch (transformError) {
+          console.error('Error transforming gym record:', g, transformError);
+          throw transformError;
+        }
+      });
+
+      console.log('GeoNear query returned:', gyms.length, 'gyms');
+      return gyms;
     }
 
+    // Non-geo query with prioritized search
+    console.log('Performing non-geo query with filters:', filters);
     const whereBase: Prisma.GymWhereInput = {};
     if (gymType && gymType !== 'All Types') whereBase.type = gymType;
     if (rating && rating !== 'Any Rating') {
       const minRating = parseFloat(rating);
+      if (isNaN(minRating)) {
+        console.error('Invalid rating filter:', rating);
+        throw new Error('Invalid rating value');
+      }
       whereBase.ratings = { is: { average: { gte: minRating } } };
     }
 
     let gyms: any[] = [];
     if (search) {
+      // Fetch gyms starting with the search term
       const startsWithGyms = await this.prisma.gym.findMany({
         where: { ...whereBase, name: { startsWith: search, mode: 'insensitive' } },
         orderBy: { name: 'asc' },
-        select: {
-          id: true,
-          name: true,
-          address: true,
-          type: true,
-          images: true,
-          ratings: true,
-          location: true,
-          description: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+      }).catch((error) => {
+        console.error('Error fetching startsWith gyms:', error);
+        throw new Error(`StartsWith query failed: ${error.message}`);
       });
+      console.log('StartsWith gyms:', startsWithGyms.length);
+
+      // Fetch gyms containing the search term, excluding those already in startsWith
       const containsGyms = await this.prisma.gym.findMany({
         where: {
           ...whereBase,
@@ -169,135 +168,46 @@ export class GymsRepository implements IGymsRepository {
           NOT: startsWithGyms.map((gym) => ({ id: gym.id })),
         },
         orderBy: { name: 'asc' },
-        select: {
-          id: true,
-          name: true,
-          address: true,
-          type: true,
-          images: true,
-          ratings: true,
-          location: true,
-          description: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+      }).catch((error) => {
+        console.error('Error fetching contains gyms:', error);
+        throw new Error(`Contains query failed: ${error.message}`);
       });
+      console.log('Contains gyms:', containsGyms.length);
+
       gyms = [...startsWithGyms, ...containsGyms];
     } else {
       gyms = await this.prisma.gym.findMany({
         where: whereBase,
         orderBy: { name: 'asc' },
-        select: {
-          id: true,
-          name: true,
-          address: true,
-          type: true,
-          images: true,
-          ratings: true,
-          location: true,
-          description: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+      }).catch((error) => {
+        console.error('Error fetching all gyms:', error);
+        throw new Error(`Prisma query failed: ${error.message}`);
       });
+      console.log('All gyms (no search):', gyms.length);
     }
 
+    // Apply pagination
     const paginatedGyms = gyms.slice(skip, skip + take);
-    return paginatedGyms.map(
-      (gym) =>
-        new Gym({
-          id: gym.id,
-          name: gym.name,
-          address: gym.address || null,
-          type: gym.type || null,
-          images: gym.images || null,
-          ratings: gym.ratings || null,
-          location: gym.location || null,
-          description: gym.description || null,
-          createdAt: gym.createdAt,
-          updatedAt: gym.updatedAt,
-        })
-    );
+    console.log('Paginated gyms:', paginatedGyms.length);
+
+    const transformedGyms = paginatedGyms.map((gym) => {
+      try {
+        const transformed = this.toDomain(gym);
+        console.log('Transformed gym (non-geo):', transformed.toJSON());
+        return transformed;
+      } catch (transformError) {
+        console.error('Error transforming gym record (non-geo):', gym, transformError);
+        throw transformError;
+      }
+    });
+
+    console.log('Final gyms returned:', transformedGyms.length);
+    return transformedGyms;
+  } catch (error) {
+    console.error('findAllForUsers failed:', error);
+    throw new Error(`Failed to fetch gyms: ${error}`);
   }
-  async findByName(name: string): Promise<Gym | null> {
-    const gym = await this.prisma.gym.findUnique({
-      where: { name },
-      include: { bookings: true },
-    });
-
-    if (!gym) {
-      return null;
-    }
-
-    return new Gym({
-      id: gym.id,
-      name: gym.name,
-      type: gym.type || null,
-      description: gym.description || null,
-      maxCapacity: gym.maxCapacity,
-      membershipCompatibility: gym.membershipCompatibility || [],
-      address: gym.address || null,
-      contact: gym.contact || null,
-      equipment: gym.equipment || [],
-      schedule: gym.schedule || [],
-      trainers: gym.trainers || [],
-      facilities: gym.facilities || null,
-      location: gym.location
-        ? isValidLocation(gym.location)
-          ? {
-              type: (gym.location as { type: string }).type,
-              coordinates: (gym.location as { coordinates: [number, number] }).coordinates,
-            }
-          : null
-        : null,
-      images: (gym.images || []).map((img: any) => ({
-        url: img.url,
-        description: img.description || null,
-        uploadedAt: img.uploadedAt instanceof Date ? img.uploadedAt : new Date(img.uploadedAt),
-      })),
-      ratings: gym.ratings || null,
-      createdAt: gym.createdAt,
-      updatedAt: gym.updatedAt,
-    });
-  }
-
-   async create(data: Prisma.GymCreateInput): Promise<Gym> {
-    const createdGym = await this.prisma.gym.create({
-      data,
-      include: { bookings: true },
-    });
-
-    return new Gym({
-      id: createdGym.id,
-      name: createdGym.name,
-      type: createdGym.type || null,
-      description: createdGym.description || null,
-      maxCapacity: createdGym.maxCapacity,
-      membershipCompatibility: createdGym.membershipCompatibility || [],
-      address: createdGym.address || null,
-      contact: createdGym.contact || null,
-      equipment: createdGym.equipment || [],
-      schedule: createdGym.schedule || [],
-      trainers: createdGym.trainers || [],
-      facilities: createdGym.facilities || null,
-      location: createdGym.location
-        ? isValidLocation(createdGym.location)
-          ? {
-              type: (createdGym.location as { type: string }).type,
-              coordinates: (createdGym.location as { coordinates: [number, number] }).coordinates,
-            }
-          : null
-        : null,
-      images: (createdGym.images || []).map((img: any) => ({
-        url: img.url,
-        description: img.description || null,
-        uploadedAt: img.uploadedAt instanceof Date ? img.uploadedAt : new Date(img.uploadedAt),
-      })),
-      ratings: createdGym.ratings || null,
-      createdAt: createdGym.createdAt,
-      updatedAt: createdGym.updatedAt,
-    });
-  }
+}
 
   async countWithFilters(filters: {
     search?: string;
@@ -307,11 +217,11 @@ export class GymsRepository implements IGymsRepository {
     gymType?: string;
     rating?: string;
   }): Promise<number> {
-    const { search, lat, lng, radius, gymType, rating } = filters;
+    const { lat, lng, radius, gymType, rating, search } = filters;
 
     if (lat !== undefined && lng !== undefined && radius !== undefined) {
       const maxDistance = radius * 1000;
-      const aggregationResult = await this.prisma.$runCommandRaw({
+      const aggregationResult: any = await this.prisma.$runCommandRaw({
         aggregate: 'Gym',
         pipeline: [
           {
@@ -327,24 +237,13 @@ export class GymsRepository implements IGymsRepository {
             ? [{ $match: { 'ratings.average': { $gte: parseFloat(rating) } } }]
             : []),
           ...(search
-            ? [
-                {
-                  $match: {
-                    $or: [
-                      { name: { $regex: `^${search}`, $options: 'i' } },
-                      { name: { $regex: search, $options: 'i' } },
-                    ],
-                  },
-                },
-              ]
+            ? [{ $match: { name: { $regex: search, $options: 'i' } } }]
             : []),
           { $count: 'total' },
         ],
         cursor: {},
       });
-
-      const result = aggregationResult as { cursor?: { firstBatch?: [{ total: number }] } };
-      return result.cursor?.firstBatch?.[0]?.total || 0;
+      return aggregationResult.cursor?.firstBatch?.[0]?.total || 0;
     }
 
     const where: Prisma.GymWhereInput = {};
@@ -359,73 +258,36 @@ export class GymsRepository implements IGymsRepository {
       const minRating = parseFloat(rating);
       where.ratings = { is: { average: { gte: minRating } } };
     }
-
     return this.prisma.gym.count({ where });
   }
 
+  async findByName(name: string): Promise<Gym | null> {
+    const gym = await this.prisma.gym.findUnique({ where: { name } });
+    return gym ? this.toDomain(gym) : null;
+  }
+
   async findAllForAdmin(skip: number, take: number, search?: string): Promise<Gym[]> {
-  const where: Prisma.GymWhereInput = search
-      ? { name: { startsWith: search.trim(), mode: "insensitive" } }
+    const where: Prisma.GymWhereInput = search
+      ? { name: { startsWith: search.trim(), mode: 'insensitive' } }
       : {};
+    const gyms = await this.prisma.gym.findMany({
+      where,
+      skip,
+      take,
+      orderBy: { createdAt: 'desc' },
+    });
+    return gyms.map(this.toDomain);
+  }
 
-  const gyms = await this.prisma.gym.findMany({
-    where,
-    skip,
-    take,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      bookings: true,
-    },
-  });
-
-  return gyms.map(
-    (gym) =>
-      new Gym({
-        id: gym.id,
-        name: gym.name,
-        type: gym.type || null,
-        description: gym.description || null,
-        maxCapacity: gym.maxCapacity,
-        membershipCompatibility: gym.membershipCompatibility || [],
-        address: gym.address || null,
-        contact: gym.contact || null,
-        equipment: gym.equipment || [],
-        schedule: gym.schedule || [],
-        trainers: gym.trainers || [],
-        facilities: gym.facilities || null,
-        location: gym.location
-        ? isValidLocation(gym.location)
-          ? {
-              type: gym.location.type as string,
-              coordinates: gym.location.coordinates as [number, number],
-            }
-          : null
-          :null,
-        images: (gym.images || []).map((img: any) => ({
-          url: img.url,
-          description: img.description || null,
-          uploadedAt: img.uploadedAt instanceof Date ? img.uploadedAt : new Date(img.uploadedAt),
-        })),
-        ratings: gym.ratings || null,
-        createdAt: gym.createdAt,
-        updatedAt: gym.updatedAt,
-      }).toJSON()
-  );
+  async countForAdmin(search?: string): Promise<number> {
+    const where: Prisma.GymWhereInput = search
+      ? {
+          OR: [
+            { name: { startsWith: search.trim(), mode: 'insensitive' } },
+            { name: { contains: search.trim(), mode: 'insensitive' } },
+          ],
+        }
+      : {};
+    return this.prisma.gym.count({ where });
+  }
 }
-
-async countForAdmin(search?: string): Promise<number> {
-  const where: Prisma.GymWhereInput = search
-    ? {
-        OR: [
-          { name: { startsWith: search.trim(), mode: 'insensitive' } },
-          { name: { contains: search.trim(), mode: 'insensitive' } },
-        ],
-      }
-    : {};
-
-  return this.prisma.gym.count({ where });
-}
-
-}
-
-

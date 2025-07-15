@@ -21,14 +21,7 @@ export interface GymDetailsDTO {
   equipment: { type: string; category: string; quantity: number; condition: string }[];
   schedule: { dayOfWeek: string; startTime: string; endTime: string; isClosed: boolean }[];
   trainers: { trainerId: string; active: boolean }[];
-  facilities: {
-    hasPool: boolean | null;
-    hasSauna: boolean | null;
-    hasParking: boolean | null;
-    hasLockerRooms: boolean | null;
-    hasWifi: boolean | null;
-    hasShowers: boolean | null;
-  } | undefined;
+  facilities:String[];
   images: { url: string; uploadedAt: string }[];
   ratings: { average?: number; count?: number } | undefined;
   createdAt: string | undefined;

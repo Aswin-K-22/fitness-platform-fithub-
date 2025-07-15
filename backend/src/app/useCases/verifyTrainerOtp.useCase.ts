@@ -4,8 +4,9 @@ import { IVerifyTrainerOtpResponseDTO } from '../../domain/dtos/verifyTrainerOtp
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { IVerifyTrainerOtpUseCase } from './interfaces/IVerifyTrainerOtpUseCase';
 
-export class VerifyTrainerOtpUseCase {
+export class VerifyTrainerOtpUseCase implements IVerifyTrainerOtpUseCase {
   constructor(private trainersRepository: ITrainersRepository) {}
 
   async execute(data: IVerifyTrainerOtpRequestDTO): Promise<IVerifyTrainerOtpResponseDTO> {

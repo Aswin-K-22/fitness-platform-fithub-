@@ -1,10 +1,7 @@
-// src/app/repositories/membershipPlan.repository.ts
+// backend/src/app/repositories/membershipPlan.repository.ts
+import { IBaseRepository } from './base.repository';
 import { MembershipPlan } from '@/domain/entities/MembershipPlan.entity';
 
-export interface IMembershipsPlanRepository {
+export interface IMembershipsPlanRepository extends IBaseRepository<MembershipPlan> {
   findByName(name: string): Promise<MembershipPlan | null>;
-  createPlan(data: MembershipPlan): Promise<MembershipPlan>;
-  findAllPlans(skip: number, take: number): Promise<MembershipPlan[]>;
-  countPlans(): Promise<number>;
-  findPlanById(id: string): Promise<MembershipPlan | null>;
 }

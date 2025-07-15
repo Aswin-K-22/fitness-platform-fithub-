@@ -6,8 +6,9 @@ import { ILoginTrainerResponseDTO } from '../../domain/dtos/trainerLoginResponse
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { ILoginTrainerUseCase } from './interfaces/ILoginTrainerUseCase';
 
-export class LoginTrainerUseCase {
+export class LoginTrainerUseCase implements ILoginTrainerUseCase {
   constructor(
     private trainersRepository: ITrainersRepository,
     private passwordHasher: IPasswordHasher,
@@ -23,6 +24,7 @@ export class LoginTrainerUseCase {
         return {
           success: false,
           status: HttpStatus.NOT_FOUND,
+          message: ERRORMESSAGES.TRAINER_NOT_FOUND.message,
           error: {
             code: ERRORMESSAGES.TRAINER_NOT_FOUND.code,
             message: ERRORMESSAGES.TRAINER_NOT_FOUND.message,
@@ -35,6 +37,7 @@ export class LoginTrainerUseCase {
         return {
           success: false,
           status: HttpStatus.UNAUTHORIZED,
+          message: ERRORMESSAGES.TRAINER_INVALID_CREDENTIALS.message,
           error: {
             code: ERRORMESSAGES.TRAINER_INVALID_CREDENTIALS.code,
             message: ERRORMESSAGES.TRAINER_INVALID_CREDENTIALS.message,
@@ -46,6 +49,7 @@ export class LoginTrainerUseCase {
         return {
           success: false,
           status: HttpStatus.FORBIDDEN,
+          message: ERRORMESSAGES.TRAINER_EMAIL_NOT_VERIFIED.message,
           error: {
             code: ERRORMESSAGES.TRAINER_EMAIL_NOT_VERIFIED.code,
             message: ERRORMESSAGES.TRAINER_EMAIL_NOT_VERIFIED.message,
@@ -57,6 +61,7 @@ export class LoginTrainerUseCase {
         return {
           success: false,
           status: HttpStatus.FORBIDDEN,
+           message: ERRORMESSAGES.TRAINER_NOT_APPROVED_BY_ADMIN.message,
           error: {
             code: ERRORMESSAGES.TRAINER_NOT_APPROVED_BY_ADMIN.code,
             message: ERRORMESSAGES.TRAINER_NOT_APPROVED_BY_ADMIN.message,
@@ -89,6 +94,7 @@ export class LoginTrainerUseCase {
       return {
         success: false,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
         error: {
           code: ERRORMESSAGES.GENERIC_ERROR.code,
           message: ERRORMESSAGES.GENERIC_ERROR.message,

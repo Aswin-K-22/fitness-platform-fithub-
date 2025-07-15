@@ -4,8 +4,9 @@ import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { IGymsRepository } from '../repositories/gym.repository.';
+import { IGetAdminGymsUseCase } from './interfaces/IGetAdminGymsUseCase';
 
-export class GetAdminGymsUseCase {
+export class GetAdminGymsUseCase implements IGetAdminGymsUseCase {
   constructor(private gymsRepository: IGymsRepository) {}
 
   async execute({

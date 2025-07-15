@@ -3,8 +3,9 @@ import { IGetUserResponseDTO, UserAuthResponseDTO } from '../../domain/dtos/getU
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { IGetUserUseCase } from './interfaces/IGetUserUseCase';
 
-export class GetUserUseCase {
+export class GetUserUseCase implements IGetUserUseCase {
   constructor(private userRepository: IUsersRepository) {}
 
   async execute(email: string): Promise<IGetUserResponseDTO> {

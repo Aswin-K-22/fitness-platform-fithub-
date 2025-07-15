@@ -1,13 +1,14 @@
 import { ITrainersRepository } from '../repositories/trainers.repository';
 import { IEmailService } from '../providers/email.service';
-import { IResendOtpRequestDTO, ResendOtpRequestDTO } from '../../domain/dtos/resendOtpRequest.dto';
+import { IResendOtpRequestDTO } from '../../domain/dtos/resendOtpRequest.dto';
 import { IResendTrainerOtpResponseDTO } from '../../domain/dtos/resendTrainerOtpResponse.dto';
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { generateOtp } from '../../infra/utils/otp';
+import { IResendTrainerOtpUseCase } from './interfaces/IResendTrainerOtpUseCase';
 
-export class ResendTrainerOtpUseCase {
+export class ResendTrainerOtpUseCase implements IResendTrainerOtpUseCase {
   constructor(
     private trainersRepository: ITrainersRepository,
     private emailService: IEmailService
@@ -15,9 +16,8 @@ export class ResendTrainerOtpUseCase {
 
   async execute(data: IResendOtpRequestDTO): Promise<IResendTrainerOtpResponseDTO> {
     try {
-      const dto = new ResendOtpRequestDTO(data);
 
-      const trainer = await this.trainersRepository.findByEmail(dto.email);
+      const trainer = await this.trainersRepository.findByEmail(data.email);
       if (!trainer) {
         return {
           success: false,
@@ -41,11 +41,11 @@ export class ResendTrainerOtpUseCase {
       }
 
       const otp = generateOtp();
-      await this.trainersRepository.updateOtp(dto.email, otp);
+      await this.trainersRepository.updateOtp(data.email, otp);
 
       await this.emailService.sendMail({
         from: process.env.EMAIL_USER || 'no-reply@fithub.com',
-        to: dto.email,
+        to: data.email,
         subject: 'FitHub Trainer Signup - OTP Verification',
         text: `Your new OTP is ${otp}. It expires in 30 seconds.`,
       });

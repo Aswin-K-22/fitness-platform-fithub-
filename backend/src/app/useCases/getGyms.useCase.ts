@@ -5,13 +5,15 @@ import { IGymsRepository } from '../repositories/gym.repository.';
 import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { MESSAGES } from '@/domain/constants/messages.constant';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
+import { IGetGymsUseCase } from './interfaces/IGetGymsUseCase';
 
-export class GetGymsUseCase {
+
+export class GetGymsUseCase implements IGetGymsUseCase {
   constructor(private gymsRepository: IGymsRepository) {}
 
   private toGymDTO(gym: Gym): GymDTO {
     return {
-      id: gym.id || '', // Ensure id is always a string
+      id: gym.id || '', 
       name: gym.name,
       type: gym.type || undefined,
       description: gym.description || undefined,
@@ -60,6 +62,7 @@ export class GetGymsUseCase {
           },
         };
       }
+
       if (radius !== undefined && (lat === undefined || lng === undefined)) {
         return {
           success: false,
@@ -73,8 +76,13 @@ export class GetGymsUseCase {
 
       const skip = (page - 1) * limit;
       const filters = { search, lat, lng, radius, gymType, rating };
+
       const gyms: Gym[] = await this.gymsRepository.findAllForUsers(skip, limit, filters);
+      console.log('getGymusecase',skip,limit,filters)
+
       const totalGyms = await this.gymsRepository.countWithFilters(filters);
+      console.log('getGymusecase-2')
+
       const totalPages = Math.ceil(totalGyms / limit);
 
       const gymDTOs: GymDTO[] = gyms.map((gym) => this.toGymDTO(gym));

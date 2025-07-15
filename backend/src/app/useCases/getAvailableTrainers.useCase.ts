@@ -3,8 +3,9 @@ import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { MESSAGES } from '@/domain/constants/messages.constant';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 import { IGetAvailableTrainersResponseDTO } from '@/domain/dtos/getAvailableTrainersResponse.dto';
+import { IGetAvailableTrainersUseCase } from './interfaces/IGetAvailableTrainersUseCase';
 
-export class GetAvailableTrainersUseCase {
+export class GetAvailableTrainersUseCase implements IGetAvailableTrainersUseCase {
   constructor(private trainersRepository: ITrainersRepository) {}
 
   async execute(): Promise<IGetAvailableTrainersResponseDTO> {

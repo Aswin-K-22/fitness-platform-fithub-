@@ -5,8 +5,9 @@ import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { UserAuthResponseDTO } from '../../domain/dtos/userAuthResponse.dto';
+import { IToggleUserVerificationUseCase } from './interfaces/IToggleUserVerificationUseCase';
 
-export class ToggleUserVerificationUseCase {
+export class ToggleUserVerificationUseCase implements IToggleUserVerificationUseCase {
   constructor(private usersRepository: IUsersRepository) {}
 
   async execute(data: IToggleUserVerificationRequestDTO): Promise<IToggleUserVerificationResponseDTO> {

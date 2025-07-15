@@ -4,8 +4,9 @@ import { MESSAGES } from '@/domain/constants/messages.constant';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 import { IGetMembershipPlansResponseDTO, MembershipPlanDTO } from '@/domain/dtos/getMembershipPlansResponse.dto';
 import { MembershipPlan } from '@/domain/entities/MembershipPlan.entity';
+import { IGetMembershipPlansUseCase } from './interfaces/IGetMembershipPlansUseCase';
 
-export class GetMembershipPlansUseCase {
+export class GetMembershipPlansUseCase implements IGetMembershipPlansUseCase {
   constructor(private membershipsPlanRepository: IMembershipsPlanRepository) {}
 
   private toMembershipPlanDTO(plan: MembershipPlan): MembershipPlanDTO {
@@ -36,8 +37,8 @@ export class GetMembershipPlansUseCase {
       }
 
       const skip = (page - 1) * limit;
-      const plans = await this.membershipsPlanRepository.findAllPlans(skip, limit);
-      const totalPlans = await this.membershipsPlanRepository.countPlans();
+      const plans = await this.membershipsPlanRepository.findAll(skip, limit);
+      const totalPlans = await this.membershipsPlanRepository.count();
       const totalPages = Math.ceil(totalPlans / limit);
 
       return {

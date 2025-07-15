@@ -1,3 +1,8 @@
+// src/domain/dtos/getTrainerProfileResponse.dto.ts
+import { IResponseDTO } from './response.dto';
+export interface IGetTrainerProfileResponseDTO extends IResponseDTO<{ trainer: TrainerProfile }> {}
+
+
 export interface TrainerProfile {
   id: string;
   name: string;
@@ -47,10 +52,3 @@ export interface TrainerProfile {
   }[];
 }
 
-export interface IGetTrainerProfileResponseDTO {
-  success: boolean;
-  status: number;
-  message?: string;
-  data?: { trainer: TrainerProfile };
-  error?: { code: string; message: string };
-}

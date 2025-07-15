@@ -6,8 +6,9 @@ import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { IRefreshTokenResponseDTO } from '@/domain/dtos/refreshTokenResponse.dto';
 import { UserAuthResponseDTO } from '../../domain/dtos/userAuthResponse.dto';
+import { IRefreshTokenUseCase } from './interfaces/IRefreshTokenUseCase';
 
-export class RefreshTokenUseCase {
+export class RefreshTokenUseCase implements IRefreshTokenUseCase {
   constructor(
     private userRepository: IUsersRepository,
     private tokenService: ITokenService,

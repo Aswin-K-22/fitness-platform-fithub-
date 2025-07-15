@@ -4,8 +4,9 @@ import { IVerifyForgotPasswordOtpResponseDTO } from '../../domain/dtos/verifyFor
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { IVerifyForgotPasswordOtpUseCase } from './interfaces/IVerifyForgotPasswordOtpUseCase';
 
-export class VerifyForgotPasswordOtpUseCase {
+export class VerifyForgotPasswordOtpUseCase implements IVerifyForgotPasswordOtpUseCase {
   constructor(private userRepository: IUsersRepository) {}
 
   async execute(data: IVerifyOtpRequestDTO): Promise<IVerifyForgotPasswordOtpResponseDTO> {

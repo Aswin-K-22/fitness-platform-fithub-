@@ -6,8 +6,9 @@ import { ITokenService } from '../providers/token.service';
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { IVerifyUserOtpUseCase } from './interfaces/IVerifyUserOtpUseCase';
 
-export class VerifyUserOtpUseCase {
+export class VerifyUserOtpUseCase implements IVerifyUserOtpUseCase {
   constructor(
     private userRepository: IUsersRepository,
     private tokenService: ITokenService,

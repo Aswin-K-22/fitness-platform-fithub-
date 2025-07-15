@@ -3,8 +3,9 @@ import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { IGetTrainerProfileResponseDTO, TrainerProfile } from '../../domain/dtos/getTrainerProfileResponse.dto';
+import { IGetTrainerProfileUseCase } from './interfaces/IGetTrainerProfileUseCase';
 
-export class GetTrainerProfileUseCase {
+export class GetTrainerProfileUseCase implements IGetTrainerProfileUseCase {
   constructor(private trainersRepository: ITrainersRepository) {}
 
   private toTrainerProfileDTO(trainer: any): TrainerProfile {

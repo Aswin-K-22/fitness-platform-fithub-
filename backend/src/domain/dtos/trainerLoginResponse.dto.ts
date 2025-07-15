@@ -1,24 +1,17 @@
-export interface ILoginTrainerResponseDTO {
-  success: boolean;
-  status: number;
-  message?: string;
-  data?: {
-    trainer: {
-      id: string | null;
-      email: string;
-      name: string;
-      role: 'trainer';
-      isVerified: boolean;
-      verifiedByAdmin: boolean;
-      profilePic: string | null;
-    };
-    accessToken: string;
-    refreshToken: string;
-  };
-  error?: { code: string; message: string };
-}
+import { TrainerAuth } from "./getTrainerResponse.dto";
+import { IResponseDTO } from "./response.dto";
+
+// src/domain/dtos/loginTrainerResponse.dto.ts
+export interface ILoginTrainerResponseDTO extends IResponseDTO<ITrainer> {}
 
 export interface ILoginRequestDTO {
   email: string;
   password: string;
+}
+
+export interface ITrainer {
+ trainer:TrainerAuth
+    accessToken: string;
+    refreshToken: string;
+  
 }

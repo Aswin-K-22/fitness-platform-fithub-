@@ -5,10 +5,11 @@ import { IAdminLoginResponseDTO } from '@/domain/dtos/adminLoginResponse.dto';
 import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { MESSAGES } from '@/domain/constants/messages.constant';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
+import { IAdminRefreshTokenUseCase } from './interfaces/IAdminRefreshTokenUseCase';
 
 
 
-export class AdminRefreshTokenUseCase {
+export class AdminRefreshTokenUseCase implements IAdminRefreshTokenUseCase {
   constructor(
     private usersRepository: IUsersRepository,
     private tokenService: ITokenService,

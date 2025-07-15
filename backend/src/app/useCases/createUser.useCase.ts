@@ -7,8 +7,9 @@ import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { ICreateUserResponseDTO } from '../../domain/dtos/createUserResponse.dto';
+import { ICreateUserUseCase } from './interfaces/ICreateUserUseCase';
 
-export class CreateUserUseCase {
+export class CreateUserUseCase implements ICreateUserUseCase {
   constructor(
     private userRepository: IUsersRepository,
     private passwordHasher: IPasswordHasher,

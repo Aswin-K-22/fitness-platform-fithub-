@@ -1,31 +1,68 @@
 import { Request, Response } from 'express';
-import { CreateTrainerUseCase } from '@/app/useCases/createTrainer.useCase';
-import { LoginTrainerUseCase } from '@/app/useCases/loginTrainer.useCase';
-import { LogoutTrainerUseCase } from '@/app/useCases/logoutTrainer.useCase';
-import { VerifyTrainerOtpUseCase } from '@/app/useCases/verifyTrainerOtp.useCase';
-import { ResendTrainerOtpUseCase } from '@/app/useCases/resendOtpTrainer.useCase';
+import { ICreateTrainerUseCase } from '@/app/useCases/interfaces/ICreateTrainerUseCase';
+import { ILoginTrainerUseCase } from '@/app/useCases/interfaces/ILoginTrainerUseCase';
+import { ILogoutTrainerUseCase } from '@/app/useCases/interfaces/ILogoutTrainerUseCase';
+import { IVerifyTrainerOtpUseCase } from '@/app/useCases/interfaces/IVerifyTrainerOtpUseCase';
+import { IResendTrainerOtpUseCase } from '@/app/useCases/interfaces/IResendTrainerOtpUseCase';
+import { ITrainerRefreshTokenUseCase } from '@/app/useCases/interfaces/ITrainerRefreshTokenUseCase';
 import { ICreateTrainerRequestDTO } from '@/domain/dtos/createTrainerRequest.dto';
 import { ILoginRequestDTO } from '@/domain/dtos/loginRequest.dto';
 import { ILogoutRequestDTO } from '@/domain/dtos/logoutRequest.dto';
 import { IVerifyTrainerOtpRequestDTO } from '@/domain/dtos/verifyTrainerOtpRequest.dto';
 import { IResendOtpRequestDTO } from '@/domain/dtos/resendOtpRequest.dto';
-import { TrainerErrorType } from '@/domain/enums/trainerErrorType.enum';
 import { IRefreshTokenRequestDTO } from '@/domain/dtos/refreshTokenRequest.dto';
-import { TrainerRefreshTokenUseCase } from '@/app/useCases/trainerRefreshToken.useCase';
+import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
+import { HttpStatus } from '@/domain/enums/httpStatus.enum';
+import { IResponseDTO } from '@/domain/dtos/response.dto';
 
 export class TrainerAuthController {
   constructor(
-    private createTrainerUseCase: CreateTrainerUseCase,
-    private loginTrainerUseCase: LoginTrainerUseCase,
-    private logoutTrainerUseCase: LogoutTrainerUseCase,
-    private verifyTrainerOtpUseCase: VerifyTrainerOtpUseCase,
-    private resendTrainerOtpUseCase: ResendTrainerOtpUseCase,
-    private trainerRefreshTokenUseCase: TrainerRefreshTokenUseCase
+    private readonly createTrainerUseCase: ICreateTrainerUseCase,
+    private readonly loginTrainerUseCase: ILoginTrainerUseCase,
+    private readonly logoutTrainerUseCase: ILogoutTrainerUseCase,
+    private readonly verifyTrainerOtpUseCase: IVerifyTrainerOtpUseCase,
+    private readonly resendTrainerOtpUseCase: IResendTrainerOtpUseCase,
+    private readonly trainerRefreshTokenUseCase: ITrainerRefreshTokenUseCase
   ) {}
+
+  private sendResponse<T>(res: Response, result: IResponseDTO<T>): void {
+    res.status(result.status).json({
+      success: result.success,
+      message: result.message,
+      ...(result.success ? { data: result.data } : { error: result.error }),
+    });
+  }
+
+  private setAuthCookies(res: Response, accessToken: string, refreshToken: string): void {
+    res.cookie('trainerAccessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+      sameSite: 'lax',
+    });
+    res.cookie('trainerRefreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: 'lax',
+    });
+  }
+
+  private clearAuthCookies(res: Response): void {
+    res.clearCookie('trainerAccessToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+    res.clearCookie('trainerRefreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+  }
 
   async signup(req: Request, res: Response): Promise<void> {
     try {
-      console.log('signup funciton triggered')
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       const certificationsData = req.body.certifications
         ? Array.isArray(req.body.certifications)
@@ -36,7 +73,9 @@ export class TrainerAuthController {
       const certifications = certificationsData.map((cert: any, index: number) => {
         const fileField = `certifications[${index}][file]`;
         const file = files[fileField]?.[0];
-        if (!file) throw new Error(`Certification ${index + 1}: ${TrainerErrorType.MissingCertificationFile}`);
+        if (!file) {
+          throw new Error(`${ERRORMESSAGES.TRAINER_MISSING_CERTIFICATION_FILE.code}: ${ERRORMESSAGES.TRAINER_MISSING_CERTIFICATION_FILE.message}`);
+        }
         return {
           name: cert.name?.trim() || '',
           issuer: cert.issuer?.trim() || '',
@@ -56,133 +95,136 @@ export class TrainerAuthController {
       };
 
       const result = await this.createTrainerUseCase.execute(data);
-      if (!result.success) {
-        res.status(400).json({ message: result.error });
-        return;
-      }
-      res.status(201).json({ message: 'Signup successful. OTP sent to your email.', trainer: result.data?.trainer });
+      this.sendResponse(res, result);
     } catch (error: any) {
-      res.status(500).json({ message: error.message || 'Internal server error' });
+      console.error('[ERROR] Signup error:', error);
+      this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: error.message.includes(':')
+            ? error.message.split(':')[0]
+            : ERRORMESSAGES.GENERIC_ERROR.code,
+          message: error.message.includes(':')
+            ? error.message.split(':')[1].trim()
+            : ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      });
     }
   }
 
   async verifyOtp(req: Request, res: Response): Promise<void> {
-    const data: IVerifyTrainerOtpRequestDTO = req.body;
-    const result = await this.verifyTrainerOtpUseCase.execute(data);
-    if (!result.success) {
-      res.status(400).json({ message: result.error });
-      return;
+    try {
+      const data: IVerifyTrainerOtpRequestDTO = req.body;
+      const result = await this.verifyTrainerOtpUseCase.execute(data);
+      this.sendResponse(res, result);
+    } catch (error: any) {
+      console.error('[ERROR] Verify OTP error:', error);
+      this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      });
     }
-    res.status(200).json({ message: 'OTP verified successfully. Awaiting admin approval.' });
   }
 
   async resendOtp(req: Request, res: Response): Promise<void> {
-    const data: IResendOtpRequestDTO = req.body;
-    const result = await this.resendTrainerOtpUseCase.execute(data);
-    if (!result.success) {
-      res.status(400).json({ message: result.error });
-      return;
+    try {
+      const data: IResendOtpRequestDTO = req.body;
+      const result = await this.resendTrainerOtpUseCase.execute(data);
+      this.sendResponse(res, result);
+    } catch (error: any) {
+      console.error('[ERROR] Resend OTP error:', error);
+      this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      });
     }
-    res.status(200).json({ message: 'OTP resent successfully' });
   }
 
- async login(req: Request, res: Response): Promise<void> {
+  async login(req: Request, res: Response): Promise<void> {
     try {
       const data: ILoginRequestDTO = req.body;
       const result = await this.loginTrainerUseCase.execute(data);
 
-      if (!result.success) {
-        res.status(401).json({ message: result.error });
-        return;
+      if (result.success && result.data) {
+        const { accessToken, refreshToken } = result.data;
+        this.setAuthCookies(res, accessToken, refreshToken);
       }
 
-      if (!result.data) {
-        res.status(500).json({ message: 'Internal server error' });
-        return;
-      }
-
-      const { trainer, accessToken, refreshToken } = result.data;
-
-      
-    res.cookie('trainerAccessToken', accessToken, { httpOnly: true, secure: true });
-    res.cookie('trainerRefreshToken', refreshToken, { httpOnly: true, secure: true });
-    
-      if (!trainer.verifiedByAdmin) {
-        res.status(200).json({ trainer, message: 'Pending admin approval' });
-        return;
-      }
-
-  res.status(200).json({ trainer });
+      this.sendResponse(res, result);
     } catch (error: any) {
-      console.error('Login error:', error);
-      res.status(401).json({ message: error.message || 'Login failed—check credentials' });
+      console.error('[ERROR] Login error:', error);
+      this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      });
     }
   }
 
- async logout(req: Request, res: Response): Promise<void> {
+  async logout(req: Request, res: Response): Promise<void> {
+    if (!req.trainer?.email) {
+      this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.UNAUTHORIZED,
+        error: {
+          code: ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.code,
+          message: ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.message,
+        },
+      });
+      return;
+    }
+
     try {
-      console.log(`[DEBUG /
-
-] Processing logout for trainer: ${req.trainer?.email}`);
-      const data: ILogoutRequestDTO = { email: req.trainer?.email! };
+      const data: ILogoutRequestDTO = { email: req.trainer.email };
       const result = await this.logoutTrainerUseCase.execute(data);
-      if (!result.success) {
-        console.log(`[DEBUG] Logout failed: ${result.error}`);
-        res.status(400).json({ success: false, message: result.error });
-        return;
-      }
-
-      res.clearCookie('trainerAccessToken', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-      });
-      res.clearCookie('trainerRefreshToken', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-      });
-      console.log(`[DEBUG] Cookies cleared for trainer: ${req.trainer?.email}`);
-      res.status(200).json({ success: true, message: 'Logged out successfully' });
+      this.clearAuthCookies(res);
+      this.sendResponse(res, result);
     } catch (error: any) {
-      console.error(`[ERROR] Logout error for trainer: ${req.trainer?.email}`, error);
-      res.status(500).json({ success: false, message: error.message || 'Internal server error' });
+      console.error('[ERROR] Logout error:', error);
+      this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: {
+          code: ERRORMESSAGES.GENERIC_ERROR.code,
+          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      });
     }
   }
-
-
 
   async refreshToken(req: Request, res: Response): Promise<void> {
     try {
       const data: IRefreshTokenRequestDTO = { refreshToken: req.body.refreshToken };
       const result = await this.trainerRefreshTokenUseCase.execute(data);
 
-      if (!result.success || !result.data) {
-        console.log(`[DEBUG] Refresh token failed: ${result.error}`);
-        res.status(401).json({ success: false, error: result.error });
-        return;
+      if (result.success && result.data) {
+        const { accessToken, refreshToken } = result.data;
+        this.setAuthCookies(res, accessToken, refreshToken);
       }
 
-      const { trainer, accessToken, refreshToken } = result.data;
-
-      res.cookie('trainerAccessToken', accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 15 * 60 * 1000, // 15 minutes
-        sameSite: 'lax',
-      });
-      res.cookie('trainerRefreshToken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        sameSite: 'lax',
-      });
-
-      console.log(`[DEBUG] New trainer tokens set for: ${trainer.email}`);
-      res.status(200).json({ success: true, trainer });
+      this.sendResponse(res, result);
     } catch (error: any) {
       console.error('[ERROR] Trainer refresh token error:', error);
-      res.status(401).json({ success: false, error: error.message || 'Invalid refresh token' });
+      this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.UNAUTHORIZED,
+        error: {
+          code: ERRORMESSAGES.TRAINER_INVALID_REFRESH_TOKEN.code,
+          message: ERRORMESSAGES.TRAINER_INVALID_REFRESH_TOKEN.message,
+        },
+      });
     }
   }
 }

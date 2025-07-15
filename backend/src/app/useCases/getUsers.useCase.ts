@@ -4,8 +4,9 @@ import { IGetUsersResponseDTO } from '../../domain/dtos/getUsersResponse.dto';
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { IGetUsersUseCase } from './interfaces/IGetUsersUseCase';
 
-export class GetUsersUseCase {
+export class GetUsersUseCase implements IGetUsersUseCase {
   constructor(private usersRepository: IUsersRepository) {}
 
   async execute(params: IGetUsersRequestDTO): Promise<IGetUsersResponseDTO> {

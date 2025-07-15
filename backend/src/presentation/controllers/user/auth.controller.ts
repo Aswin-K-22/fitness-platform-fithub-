@@ -1,15 +1,15 @@
+// src/presentation/controllers/user/auth.controller.ts
 import { Request, Response } from 'express';
-import { CreateUserUseCase } from '@/app/useCases/createUser.useCase';
-import { LoginUserUseCase } from '@/app/useCases/loginUser.useCase';
-import { LogoutUserUseCase } from '@/app/useCases/logoutUser.useCase';
-import { GoogleAuthUseCase } from '@/app/useCases/googleAuth.useCase';
-import { RefreshTokenUseCase } from '@/app/useCases/refreshToken.useCase';
-import { ResendOtpUseCase } from '@/app/useCases/resendOtp.useCase';
-import { ForgotPasswordUseCase } from '@/app/useCases/forgotPassword.useCase';
-import { VerifyForgotPasswordOtpUseCase } from '@/app/useCases/verifyForgotPasswordOtp.useCase';
-import { ResetPasswordUseCase } from '@/app/useCases/resetPassword.useCase';
-import { VerifyUserOtpUseCase} from '@/app/useCases/verifyUserOtp.useCase'
-
+import { ICreateUserUseCase } from '@/app/useCases/interfaces/ICreateUserUseCase';
+import { ILoginUserUseCase } from '@/app/useCases/interfaces/ILoginUserUseCase';
+import { ILogoutUserUseCase } from '@/app/useCases/interfaces/ILogoutUserUseCase';
+import { IGoogleAuthUseCase } from '@/app/useCases/interfaces/IGoogleAuthUseCase';
+import { IRefreshTokenUseCase } from '@/app/useCases/interfaces/IRefreshTokenUseCase';
+import { IResendOtpUseCase } from '@/app/useCases/interfaces/IResendOtpUseCase';
+import { IForgotPasswordUseCase } from '@/app/useCases/interfaces/IForgotPasswordUseCase';
+import { IVerifyForgotPasswordOtpUseCase } from '@/app/useCases/interfaces/IVerifyForgotPasswordOtpUseCase';
+import { IResetPasswordUseCase } from '@/app/useCases/interfaces/IResetPasswordUseCase';
+import { IVerifyUserOtpUseCase } from '@/app/useCases/interfaces/IVerifyUserOtpUseCase';
 import { ICreateUserRequestDTO } from '@/domain/dtos/createUserRequest.dto';
 import { ILoginRequestDTO } from '@/domain/dtos/loginRequest.dto';
 import { ILogoutRequestDTO } from '@/domain/dtos/logoutRequest.dto';
@@ -19,133 +19,160 @@ import { IResendOtpRequestDTO } from '@/domain/dtos/resendOtpRequest.dto';
 import { IForgotPasswordRequestDTO } from '@/domain/dtos/forgotPasswordRequest.dto';
 import { IVerifyOtpRequestDTO } from '@/domain/dtos/verifyOtpRequest.dto';
 import { IResetPasswordRequestDTO } from '@/domain/dtos/resetPasswordRequest.dto';
-
+import { IResponseDTO } from '@/domain/dtos/response.dto';
+import { HttpStatus } from '@/domain/enums/httpStatus.enum';
+import { MESSAGES } from '@/domain/constants/messages.constant';
+import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 
 export class UserAuthController {
   constructor(
-    private createUserUseCase: CreateUserUseCase,
-    private loginUserUseCase: LoginUserUseCase,
-    private logoutUserUseCase: LogoutUserUseCase,
-    private googleAuthUseCase: GoogleAuthUseCase,
-    private refreshTokenUseCase: RefreshTokenUseCase,
-    private resendOtpUseCase: ResendOtpUseCase,
-    private forgotPasswordUseCase: ForgotPasswordUseCase,
-    private verifyForgotPasswordOtpUseCase: VerifyForgotPasswordOtpUseCase,
-    private resetPasswordUseCase: ResetPasswordUseCase,
-    private  verifyUserOtpUseCase :  VerifyUserOtpUseCase,
+    private createUserUseCase: ICreateUserUseCase,
+    private loginUserUseCase: ILoginUserUseCase,
+    private logoutUserUseCase: ILogoutUserUseCase,
+    private googleAuthUseCase: IGoogleAuthUseCase,
+    private refreshTokenUseCase: IRefreshTokenUseCase,
+    private resendOtpUseCase: IResendOtpUseCase,
+    private forgotPasswordUseCase: IForgotPasswordUseCase,
+    private verifyForgotPasswordOtpUseCase: IVerifyForgotPasswordOtpUseCase,
+    private resetPasswordUseCase: IResetPasswordUseCase,
+    private verifyUserOtpUseCase: IVerifyUserOtpUseCase
   ) {}
+
+  private sendResponse<T>(res: Response, result: IResponseDTO<T>): void {
+    res.status(result.status).json({
+      success: result.success,
+      message: result.message,
+      ...(result.success ? { data: result.data } : { error: result.error }),
+    });
+  }
 
   async signup(req: Request, res: Response): Promise<void> {
     const data: ICreateUserRequestDTO = req.body;
     const result = await this.createUserUseCase.execute(data);
-    if (!result.success) {
-      res.status(400).json({ message: result.error });
-      return;
-    }
-    res.status(201).json({ message: 'User created successfully. OTP sent to email.', user: result.data?.user });
+    this.sendResponse(res, {
+      ...result,
+      message: result.success ? MESSAGES.OTP_SENT : result.message,
+      status: result.success ? HttpStatus.CREATED : result.status,
+    });
   }
 
   async login(req: Request, res: Response): Promise<void> {
     const data: ILoginRequestDTO = req.body;
-    console.log('login fn called with data=',data)
-
     const result = await this.loginUserUseCase.execute(data);
-    if (!result.success) {
-      res.status(401).json({ message: result.error });
-      return;
+    if (result.success && result.data) {
+      res.cookie('userAccessToken', result.data.accessToken, { httpOnly: true, secure: true });
+      res.cookie('userRefreshToken', result.data.refreshToken, { httpOnly: true, secure: true });
     }
-    res.cookie('userAccessToken', result.data?.accessToken, { httpOnly: true, secure: true });
-    res.cookie('userRefreshToken', result.data?.refreshToken, { httpOnly: true, secure: true });
-    res.status(200).json({ user: result.data?.user });
+    this.sendResponse(res, {
+      ...result,
+      message: result.success ? MESSAGES.USER_LOGGED_IN : result.message,
+    });
   }
 
   async logout(req: Request, res: Response): Promise<void> {
-    const data: ILogoutRequestDTO = { email: req.user?.email! };
-    const result = await this.logoutUserUseCase.execute(data);
-    if (!result.success) {
-      res.status(400).json({ message: result.error });
-      return;
+    const email = req.user?.email;
+    if (!email) {
+      return this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.UNAUTHORIZED,
+        error: {
+          code: ERRORMESSAGES.AUTH_USER_NOT_AUTHENTICATED.code,
+          message: ERRORMESSAGES.AUTH_USER_NOT_AUTHENTICATED.message,
+        },
+      });
     }
-    res.clearCookie('userAccessToken');
-    res.clearCookie('userRefreshToken');
-    res.status(200).json({ message: 'Logged out successfully' });
+    const data: ILogoutRequestDTO = { email };
+    const result = await this.logoutUserUseCase.execute(data);
+    if (result.success) {
+      res.clearCookie('userAccessToken');
+      res.clearCookie('userRefreshToken');
+    }
+    this.sendResponse(res, {
+      ...result,
+      message: result.success ? MESSAGES.USER_LOGGED_OUT : result.message,
+    });
   }
 
   async googleAuth(req: Request, res: Response): Promise<void> {
     const data: IGoogleAuthRequestDTO = req.body;
     const result = await this.googleAuthUseCase.execute(data);
-    if (!result.success) {
-      res.status(401).json({ message: result.error });
-      return;
+    if (result.success && result.data) {
+      res.cookie('userAccessToken', result.data.accessToken, { httpOnly: true, secure: true });
+      res.cookie('userRefreshToken', result.data.refreshToken, { httpOnly: true, secure: true });
     }
-    res.cookie('userAccessToken', result.data?.accessToken, { httpOnly: true, secure: true });
-    res.cookie('userRefreshToken', result.data?.refreshToken, { httpOnly: true, secure: true });
-    res.status(200).json({ user: result.data?.user });
+    this.sendResponse(res, {
+      ...result,
+      message: result.success ? MESSAGES.USER_LOGGED_IN : result.message,
+    });
   }
 
   async refreshToken(req: Request, res: Response): Promise<void> {
-    console.log('Refresh token route hit, body:', req.body.refreshToken[0], 'cookie:', req.cookies.userRefreshToken[0]);
-    const data: IRefreshTokenRequestDTO = { refreshToken: req.cookies.userRefreshToken };
-    const result = await this.refreshTokenUseCase.execute(data);
-    if (!result.success) {
-      res.status(401).json({ message: result.error });
-      return;
+    const refreshToken = req.cookies.userRefreshToken;
+    if (!refreshToken) {
+      return this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.BAD_REQUEST,
+        error: {
+          code: ERRORMESSAGES.AUTH_MISSING_REFRESH_TOKEN.code,
+          message: ERRORMESSAGES.AUTH_MISSING_REFRESH_TOKEN.message,
+        },
+      });
     }
-    res.cookie('userAccessToken', result.data?.accessToken, { httpOnly: true, secure: true });
-    res.cookie('userRefreshToken', result.data?.refreshToken, { httpOnly: true, secure: true });
-    res.status(200).json({ user: result.data?.user });
+    const data: IRefreshTokenRequestDTO = { refreshToken };
+    const result = await this.refreshTokenUseCase.execute(data);
+    if (result.success && result.data) {
+      res.cookie('userAccessToken', result.data.accessToken, { httpOnly: true, secure: true });
+      res.cookie('userRefreshToken', result.data.refreshToken, { httpOnly: true, secure: true });
+    }
+    this.sendResponse(res, result);
   }
 
   async resendOtp(req: Request, res: Response): Promise<void> {
     const data: IResendOtpRequestDTO = req.body;
     const result = await this.resendOtpUseCase.execute(data);
-    if (!result.success) {
-      res.status(400).json({ message: result.error });
-      return;
-    }
-    res.status(200).json({ message: 'OTP resent successfully' });
+    this.sendResponse(res, {
+      ...result,
+      message: result.success ? MESSAGES.OTP_SENT : result.message,
+    });
   }
 
- async forgotPassword(req: Request, res: Response): Promise<void> {
+  async forgotPassword(req: Request, res: Response): Promise<void> {
     const data: IForgotPasswordRequestDTO = req.body;
     const result = await this.forgotPasswordUseCase.execute(data);
-    if (!result.success) {
-      res.status(400).json({ message: result.error });
-      return;
-    }
-    res.status(200).json({ message: 'Password reset OTP sent to email' });
+    this.sendResponse(res, {
+      ...result,
+      message: result.success ? MESSAGES.OTP_SENT : result.message,
+    });
   }
 
   async verifyForgotPasswordOtp(req: Request, res: Response): Promise<void> {
     const data: IVerifyOtpRequestDTO = req.body;
     const result = await this.verifyForgotPasswordOtpUseCase.execute(data);
-    if (!result.success) {
-      res.status(400).json({ message: result.error });
-      return;
-    }
-    res.status(200).json({ message: 'OTP verified successfully' });
+    this.sendResponse(res, {
+      ...result,
+      message: result.success ? MESSAGES.OTP_VERIFIED : result.message,
+    });
   }
 
   async resetPassword(req: Request, res: Response): Promise<void> {
     const data: IResetPasswordRequestDTO = req.body;
     const result = await this.resetPasswordUseCase.execute(data);
-    if (!result.success) {
-      res.status(400).json({ message: result.error });
-      return;
-    }
-    res.status(200).json({ message: 'Password reset successfully' });
+    this.sendResponse(res, {
+      ...result,
+      message: result.success ? MESSAGES.UPDATED : result.message,
+    });
   }
 
-  
   async verifyOtp(req: Request, res: Response): Promise<void> {
-  const data: IVerifyOtpRequestDTO = req.body;
-  const result = await this.verifyUserOtpUseCase.execute(data);
-  if (!result.success) {
-    res.status(400).json({ message: result.error });
-    return;
+    const data: IVerifyOtpRequestDTO = req.body;
+    const result = await this.verifyUserOtpUseCase.execute(data);
+    if (result.success && result.data) {
+      res.cookie('userAccessToken', result.data.accessToken, { httpOnly: true, secure: true });
+      res.cookie('userRefreshToken', result.data.refreshToken, { httpOnly: true, secure: true });
+    }
+    this.sendResponse(res, {
+      ...result,
+      message: result.success ? MESSAGES.OTP_VERIFIED : result.message,
+    });
   }
-  res.cookie('userAccessToken', result.data?.accessToken, { httpOnly: true, secure: true });
-  res.cookie('userRefreshToken', result.data?.refreshToken, { httpOnly: true, secure: true });
-  res.status(200).json({ message: 'OTP verified successfully', user: result.data?.user });
-}
 }

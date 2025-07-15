@@ -5,8 +5,9 @@ import { GetGymDetailsRequestDTO } from '@/domain/dtos/getGymDetailsRequest.dto'
 import { IGetGymDetailsResponseDTO, GymDetailsDTO } from '@/domain/dtos/getGymDetailsResponse.dto';
 import { Gym } from '@/domain/entities/Gym.entity';
 import { IGymsRepository } from '../repositories/gym.repository.';
+import { IGetGymDetailsUseCase } from './interfaces/IGetGymDetailsUseCase';
 
-export class GetGymDetailsUseCase {
+export class GetGymDetailsUseCase implements IGetGymDetailsUseCase {
   constructor(private gymsRepository: IGymsRepository) {}
 
   private toGymDetailsDTO(gym: Gym): GymDetailsDTO {
@@ -37,16 +38,7 @@ export class GetGymDetailsUseCase {
       equipment: gym.equipment || [],
       schedule: gym.schedule || [],
       trainers: gym.trainers || [],
-      facilities: gym.facilities
-        ? {
-            hasPool: gym.facilities.hasPool || null,
-            hasSauna: gym.facilities.hasSauna || null,
-            hasParking: gym.facilities.hasParking || null,
-            hasLockerRooms: gym.facilities.hasLockerRooms || null,
-            hasWifi: gym.facilities.hasWifi || null,
-            hasShowers: gym.facilities.hasShowers || null,
-          }
-        : undefined,
+      facilities: gym.facilities || [],
       images: (gym.images || []).map((img) => ({
         url: img.url,
         uploadedAt: img.uploadedAt instanceof Date ? img.uploadedAt.toISOString() : img.uploadedAt,

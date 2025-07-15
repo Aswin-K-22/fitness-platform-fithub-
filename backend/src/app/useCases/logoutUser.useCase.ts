@@ -4,8 +4,9 @@ import { ILogoutUserResponseDTO } from '@/domain/dtos/logoutUserResponse.dto';
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { ILogoutUserUseCase } from './interfaces/ILogoutUserUseCase';
 
-export class LogoutUserUseCase {
+export class LogoutUserUseCase implements ILogoutUserUseCase {
   constructor(private userRepository: IUsersRepository) {}
 
   async execute(data: ILogoutRequestDTO): Promise<ILogoutUserResponseDTO> {

@@ -8,8 +8,9 @@ import { UserAuthResponseDTO } from '../../domain/dtos/userAuthResponse.dto';
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { ILoginUserUseCase } from './interfaces/ILoginUserUseCase';
 
-export class LoginUserUseCase {
+export class LoginUserUseCase implements ILoginUserUseCase {
   constructor(
     private userRepository: IUsersRepository,
     private passwordHasher: IPasswordHasher,

@@ -6,8 +6,9 @@ import { IGetAdminMembershipPlansResponseDTO } from '@/domain/dtos/getAdminMembe
 import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { MESSAGES } from '@/domain/constants/messages.constant';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
+import { IGetAdminMembershipPlansUseCase } from './interfaces/IGetAdminMembershipPlansUseCase';
 
-export class GetAdminMembershipPlansUseCase {
+export class GetAdminMembershipPlansUseCase implements IGetAdminMembershipPlansUseCase {
   constructor(private membershipsPlanRepository: IMembershipsPlanRepository) {}
 
   private toMembershipPlanDTO(plan: MembershipPlan): MembershipPlanDTO {
@@ -39,8 +40,8 @@ export class GetAdminMembershipPlansUseCase {
       }
 
       const skip = (page - 1) * limit;
-      const plans = await this.membershipsPlanRepository.findAllPlans(skip, limit);
-      const total = await this.membershipsPlanRepository.countPlans();
+      const plans = await this.membershipsPlanRepository.findAll(skip, limit);
+      const total = await this.membershipsPlanRepository.count();
       const pages = Math.ceil(total / limit);
 
       return {

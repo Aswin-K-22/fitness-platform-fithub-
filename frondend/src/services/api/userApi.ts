@@ -94,7 +94,7 @@ export { apiClient, refreshClient };
 // User Authentication
 export const login = async (email: string, password: string): Promise<{ user: UserAuth }> => {
   const response = await apiClient.post("/auth/login", { email, password });
-  return { user: response.data.user };
+  return { user: response.data.data.user };
 };
 
 export const signup = async (name: string, email: string, password: string): Promise<void> => {
@@ -105,12 +105,12 @@ export const googleAuth = async (data: IGoogleAuthRequestDTO): Promise<IGoogleAu
   console.log("Sending Google auth request with data:", data);
   const response = await apiClient.post("/auth/google", data);
   console.log("Google auth response:", response.data);
-  return response.data;
+  return response.data.data;
 };
 
 export const verifyOtp = async (data: IVerifyOtpRequestDTO): Promise<IVerifyOtpResponseDTO> => {
   const response = await apiClient.post("/auth/verify-otp", data);
-  return response.data;
+  return response.data.data;
 };
 
 export const resendOtp = async (data: IResendOtpRequestDTO): Promise<void> => {
@@ -123,12 +123,12 @@ export const logout = async (email: string): Promise<void> => {
 
 export const getUser = async (): Promise<{ user: UserAuth }> => {
   const response = await apiClient.get("/auth/get");
-  return { user: response.data.user };
+  return { user: response.data.data.user };
 };
 
 export const getUserProfile = async (): Promise<IUserProfileResponseDTO> => {
   const response = await apiClient.get("/profile");
-  return response.data;
+  return response.data.data;
 };
 
 export const updateUserProfile = async (data: { name?: string; profilePic?: File }): Promise<IUserProfileResponseDTO> => {
@@ -138,7 +138,7 @@ export const updateUserProfile = async (data: { name?: string; profilePic?: File
   const response = await apiClient.put("/profile", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  return response.data;
+  return response.data.data;
 };
 
 export const fetchGyms = async (
@@ -147,7 +147,7 @@ export const fetchGyms = async (
   filters: { search?: string; lat?: number; lng?: number; radius?: number; gymType?: string; rating?: string }
 ): Promise<{ gyms: Gym[]; totalPages: number; totalGyms: number }> => {
   const response = await apiClient.get("/gyms", { params: { page, limit, ...filters } });
-  return response.data;
+  return response.data.data;
 };
 
 export const forgotPassword = async (email: string): Promise<void> => {
@@ -169,7 +169,7 @@ export const getMembershipPlansUser = async (
   const response = await apiClient.get("/membership-plans", { 
     params: { page, limit } 
   });
-  return response.data;
+  return response.data.data;
 };
 
 export const getUserPaidMembership = async (userId: string): Promise<IMembershipPlansResponseDTO> => {
@@ -179,7 +179,7 @@ export const getUserPaidMembership = async (userId: string): Promise<IMembership
 
 export const subscribeToPlan = async (planId: string): Promise<{ orderId: string; amount: number; currency: string }> => {
   const response = await apiClient.post("/membership/payment", { planId });
-  return response.data;
+  return response.data.data;
 };
 
 export const verifyPayment = async (data: {
@@ -193,7 +193,7 @@ export const verifyPayment = async (data: {
 
 export const fetchGymDetails = async (gymId: string): Promise<IGymDetailsDTO> => {
   const response = await apiClient.get(`/gyms/${gymId}`);
-  return response.data.data;
+  return response.data.data.gym;
 };
 
 /////////////////////////////////////////////////////////////////////////////////

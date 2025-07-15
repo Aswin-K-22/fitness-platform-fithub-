@@ -177,15 +177,15 @@ model Gym {
   type                    String    // e.g., "Basic", "Premium", "Diamond"
   description             String?
   address                 GymAddress?
-  location    Json?
+  location    Json?   // GeoJSON Point  [lng, lat]
   contact                 Contact?
   equipment               Equipment[]
   schedule                GymSchedule[]
   trainers                GymTrainer[]
   suggestedPlan           String?       @db.ObjectId
-  facilities              Facilities?
+  facilities              String[]
   maxCapacity             Int
-  membershipCompatibility String[]   // e.g., ["Basic", "Premium", "Diamond"]
+  membershipCompatibility String[]   //  auto-filled by business rule  e.g., ["Basic", "Premium", "Diamond"]
   images                  GymImage[]
   ratings                 Ratings?
   createdAt               DateTime      @default(now())
@@ -230,14 +230,7 @@ type GymTrainer {
   active    Boolean
 }
 
-type Facilities {
-  hasPool        Boolean?
-  hasSauna       Boolean?
-  hasParking     Boolean?
-  hasLockerRooms Boolean?
-  hasWifi        Boolean?
-  hasShowers     Boolean?
-}
+
 
 type GymImage {
   url         String

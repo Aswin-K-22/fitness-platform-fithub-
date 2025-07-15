@@ -8,8 +8,9 @@ import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { generateOtp } from '../../infra/utils/otp';
 import { ICreateTrainerResponseDTO } from '@/domain/dtos/createTrainerResponse.dto';
+import { ICreateTrainerUseCase } from './interfaces/ICreateTrainerUseCase';
 
-export class CreateTrainerUseCase {
+export class CreateTrainerUseCase implements ICreateTrainerUseCase {
   constructor(
     private trainersRepository: ITrainersRepository,
     private passwordHasher: IPasswordHasher,
@@ -25,6 +26,7 @@ export class CreateTrainerUseCase {
         return {
           success: false,
           status: HttpStatus.CONFLICT,
+         message: ERRORMESSAGES.TRAINER_ALREADY_EXISTS.message,
           error: {
             code: ERRORMESSAGES.TRAINER_ALREADY_EXISTS.code,
             message: ERRORMESSAGES.TRAINER_ALREADY_EXISTS.message,
@@ -60,6 +62,7 @@ export class CreateTrainerUseCase {
     } catch (error) {
       return {
         success: false,
+        message: ERRORMESSAGES.GENERIC_ERROR.message,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         error: {
           code: ERRORMESSAGES.GENERIC_ERROR.code,

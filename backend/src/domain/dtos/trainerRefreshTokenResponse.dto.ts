@@ -1,13 +1,12 @@
 import { TrainerAuth } from './getTrainerResponse.dto';
+import { IResponseDTO } from './response.dto';
 
-export interface ITrainerRefreshTokenResponseDTO {
-  success: boolean;
-  status: number;
-  message?: string;
-  data?: {
+export interface ITrainerRefreshTokenResponseDTO extends IResponseDTO<IData>{  
+}
+interface IData{
+  
     trainer: TrainerAuth;
     accessToken: string;
     refreshToken: string;
-  };
-  error?: { code: string; message: string };
+  
 }

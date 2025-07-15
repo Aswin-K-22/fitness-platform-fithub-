@@ -3,8 +3,9 @@ import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { MESSAGES } from '@/domain/constants/messages.constant';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 import { IAdminGetResponseDTO } from '@/domain/dtos/adminGetResponse.dto';
+import { IGetAdminUseCase } from './interfaces/IGetAdminUseCase';
 
-export class GetAdminUseCase {
+export class GetAdminUseCase implements IGetAdminUseCase {
   constructor(private usersRepository: IUsersRepository) {}
 
   async execute(email: string): Promise<IAdminGetResponseDTO> {

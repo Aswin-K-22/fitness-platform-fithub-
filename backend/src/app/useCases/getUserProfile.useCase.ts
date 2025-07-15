@@ -4,8 +4,9 @@ import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { IGetUserProfileResponseDTO } from '@/domain/dtos/getUserProfile.dto';
 import { UserProfileDataDTO } from '@/domain/dtos/getUserProfileResoponse.dto';
+import { IGetUserProfileUseCase } from './interfaces/IGetUserProfileUseCase';
 
-export class GetUserProfileUseCase {
+export class GetUserProfileUseCase implements IGetUserProfileUseCase {
   constructor(private userRepository: IUsersRepository) {}
 
   async execute(email: string): Promise<IGetUserProfileResponseDTO> {

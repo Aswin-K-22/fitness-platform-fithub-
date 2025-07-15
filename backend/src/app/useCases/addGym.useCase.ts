@@ -7,10 +7,11 @@ import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { AddGymResponseDTO } from '@/domain/dtos/addGymResponse.dto';
 import { IGymsRepository } from '../repositories/gym.repository.';
+import { IAddGymUseCase } from './interfaces/IAddGymUseCase';
 
 
 
-export class AddGymUseCase {
+export class AddGymUseCase implements IAddGymUseCase {
   constructor(
     private gymsRepository: IGymsRepository,
     private trainersRepository: ITrainersRepository
@@ -136,7 +137,7 @@ export class AddGymUseCase {
       }
 
       // Prepare gym data for creation
-      const gymToCreate: Prisma.GymCreateInput = {
+      const gymToCreate: Gym =  new Gym({
         name: gymData.name,
         type: gymData.type,
         description: gymData.description,
@@ -164,19 +165,10 @@ export class AddGymUseCase {
         })),
         maxCapacity: gymData.maxCapacity,
         trainers: gymData.trainers || [],
-        facilities: gymData.facilities
-          ? {
-              hasPool: gymData.facilities.includes('Pool'),
-              hasSauna: gymData.facilities.includes('Sauna'),
-              hasParking: gymData.facilities.includes('Parking'),
-              hasLockerRooms: gymData.facilities.includes('Lockers'),
-              hasWifi: gymData.facilities.includes('Wifi'),
-              hasShowers: gymData.facilities.includes('Showers'),
-            }
-          : undefined,
+        facilities: gymData.facilities,
         images: imageUrls.map((url) => ({ url, uploadedAt: new Date() })),
         membershipCompatibility: this.getMembershipCompatibility(gymData.type),
-      };
+      });
 
       // Create gym
       const createdGym = await this.gymsRepository.create(gymToCreate);

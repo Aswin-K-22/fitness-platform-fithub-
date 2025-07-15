@@ -1,61 +1,35 @@
+// backend/src/infra/repositories/payment.repository.ts
 import { PrismaClient } from '@prisma/client';
 import { Payment } from '@/domain/entities/Payment.entity';
 import { IPaymentsRepository } from '@/app/repositories/payments.repository';
+import { BaseRepository } from './base.repository';
 
-export class PaymentsRepository implements IPaymentsRepository {
-  constructor(private prisma: PrismaClient) {}
+export class PaymentsRepository
+  extends BaseRepository<Payment>
+  implements IPaymentsRepository
+{
+  constructor(prisma: PrismaClient) {
+    super(prisma, 'payment');
+  }
 
-  async createPayment(data: {
-    type: string;
-    userId: string;
-    amount: number;
-    currency: string;
-    paymentGateway: string;
-    paymentId: string;
-    status: string;
-  }): Promise<Payment> {
-    const payment = await this.prisma.payment.create({
-      data: {
-        type: data.type,
-        userId: data.userId,
-        amount: data.amount,
-        currency: data.currency,
-        paymentGateway: data.paymentGateway,
-        paymentId: data.paymentId,
-        status: data.status,
-      },
-    });
+  protected toDomain(record: any): Payment {
     return new Payment({
-      id: payment.id,
-      type: payment.type,
-      userId: payment.userId,
-      amount: payment.amount,
-      currency: payment.currency,
-      paymentGateway: payment.paymentGateway,
-      paymentId: payment.paymentId,
-      status: payment.status,
-      createdAt: payment.createdAt,
-      updatedAt: payment.updatedAt,
+      id: record.id,
+      type: record.type,
+      userId: record.userId,
+      amount: record.amount,
+      currency: record.currency,
+      paymentGateway: record.paymentGateway,
+      paymentId: record.paymentId,
+      status: record.status,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
     });
   }
 
   async findPaymentByOrderId(orderId: string): Promise<Payment | null> {
-    const payment = await this.prisma.payment.findFirst({
-      where: { paymentId: orderId },
-    });
-    if (!payment) return null;
-    return new Payment({
-      id: payment.id,
-      type: payment.type,
-      userId: payment.userId,
-      amount: payment.amount,
-      currency: payment.currency,
-      paymentGateway: payment.paymentGateway,
-      paymentId: payment.paymentId,
-      status: payment.status,
-      createdAt: payment.createdAt,
-      updatedAt: payment.updatedAt,
-    });
+    const payment = await this.prisma.payment.findFirst({ where: { paymentId: orderId } });
+    return payment ? this.toDomain(payment) : null;
   }
 
   async updatePaymentStatus(paymentId: string, status: string): Promise<Payment> {
@@ -63,18 +37,7 @@ export class PaymentsRepository implements IPaymentsRepository {
       where: { id: paymentId },
       data: { status },
     });
-    return new Payment({
-      id: payment.id,
-      type: payment.type,
-      userId: payment.userId,
-      amount: payment.amount,
-      currency: payment.currency,
-      paymentGateway: payment.paymentGateway,
-      paymentId: payment.paymentId,
-      status: payment.status,
-      createdAt: payment.createdAt,
-      updatedAt: payment.updatedAt,
-    });
+    return this.toDomain(payment);
   }
 
   async updatePaymentId(paymentId: string, razorpayPaymentId: string): Promise<Payment> {
@@ -82,17 +45,6 @@ export class PaymentsRepository implements IPaymentsRepository {
       where: { id: paymentId },
       data: { paymentId: razorpayPaymentId },
     });
-    return new Payment({
-      id: payment.id,
-      type: payment.type,
-      userId: payment.userId,
-      amount: payment.amount,
-      currency: payment.currency,
-      paymentGateway: payment.paymentGateway,
-      paymentId: payment.paymentId,
-      status: payment.status,
-      createdAt: payment.createdAt,
-      updatedAt: payment.updatedAt,
-    });
+    return this.toDomain(payment);
   }
 }

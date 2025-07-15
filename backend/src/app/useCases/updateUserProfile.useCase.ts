@@ -4,8 +4,9 @@ import { IUpdateUserProfileResponseDTO } from '../../domain/dtos/updateUserProfi
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { IUpdateUserProfileUseCase } from './interfaces/IUpdateUserProfileUseCase';
 
-export class UpdateUserProfileUseCase {
+export class UpdateUserProfileUseCase implements IUpdateUserProfileUseCase {
   constructor(private usersRepository: IUsersRepository) {}
 
   async execute(email: string, data: IUpdateUserProfileRequestDTO): Promise<IUpdateUserProfileResponseDTO> {

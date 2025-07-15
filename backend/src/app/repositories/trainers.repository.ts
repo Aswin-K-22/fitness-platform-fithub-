@@ -1,12 +1,12 @@
 // backend/src/app/repositories/trainers.repository.ts
+import { IBaseRepository } from './base.repository';
+import { Trainer } from '@/domain/entities/Trainer.entity';
 import { IUpdateTrainerProfileRequestDTO } from '@/domain/dtos/updateTrainerProfileRequest.dto';
-import { Trainer } from '../../domain/entities/Trainer.entity';
 
-export interface ITrainersRepository {
+export interface ITrainersRepository extends IBaseRepository<Trainer> {
   findByEmail(email: string): Promise<Trainer | null>;
-  findById(id: string): Promise<Trainer | null>;
-  signupTrainer(trainer: Trainer): Promise<Trainer>;
   updateOtp(email: string, otp: string): Promise<void>;
+  signupTrainer(trainer: Trainer): Promise<Trainer>;
   verifyTrainer(email: string): Promise<void>;
   updateRefreshToken(email: string, refreshToken: string | null): Promise<void>;
   findAll(
@@ -16,7 +16,7 @@ export interface ITrainersRepository {
     status?: string,
     specialization?: string,
   ): Promise<Trainer[]>;
-    findAvailableTrainers(): Promise<{ id: string; name: string; active: boolean }[]>;
+  findAvailableTrainers(): Promise<{ id: string; name: string; active: boolean }[]>;
   checkTrainerAvailability(trainerIds: string[]): Promise<{ isValid: boolean; message?: string }>;
   assignTrainersToGym(trainerIds: string[], gymId: string): Promise<void>;
   toggleApproval(trainerId: string, verifiedByAdmin: boolean): Promise<Trainer>;
@@ -24,6 +24,5 @@ export interface ITrainersRepository {
   countPending(): Promise<number>;
   countApproved(): Promise<number>;
   countSuspended(): Promise<number>;
-  toggleApproval(trainerId: string, verifiedByAdmin: boolean): Promise<Trainer>;
   updateProfile(email: string, data: IUpdateTrainerProfileRequestDTO): Promise<Trainer>;
 }

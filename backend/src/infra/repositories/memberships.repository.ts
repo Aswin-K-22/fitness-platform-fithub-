@@ -1,22 +1,34 @@
+// backend/src/infra/repositories/memberships.repository.ts
 import { PrismaClient } from '@prisma/client';
 import { Membership } from '@/domain/entities/Membership.entity';
 import { IMembershipsRepository } from '@/app/repositories/memberships.repository';
+import { BaseRepository } from './base.repository';
 
-interface MembershipPlan {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  duration: number;
-  features: string[];
-  createdAt: Date;
-  updatedAt: Date;
-}
+export class MembershipsRepository
+  extends BaseRepository<Membership>
+  implements IMembershipsRepository
+{
+  constructor(prisma: PrismaClient) {
+    super(prisma, 'membership');
+  }
 
-export class MembershipsRepository implements IMembershipsRepository {
-  constructor(private prisma: PrismaClient) {}
-
-
+  protected toDomain(record: any): Membership {
+    return new Membership({
+      id: record.id,
+      userId: record.userId,
+      planId: record.planId,
+      status: record.status,
+      startDate: record.startDate,
+      endDate: record.endDate,
+      paymentId: record.paymentId,
+      price: record.price,
+      currency: record.currency,
+      paymentStatus: record.paymentStatus,
+      paymentDate: record.paymentDate,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    });
+  }
 
   async createMembership(data: {
     userId: string;
@@ -30,36 +42,7 @@ export class MembershipsRepository implements IMembershipsRepository {
     paymentStatus: string;
     paymentDate: Date;
   }): Promise<Membership> {
-    const membership = await this.prisma.membership.create({
-      data: {
-        userId: data.userId,
-        planId: data.planId,
-        status: data.status,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        paymentId: data.paymentId,
-        price: data.price,
-        currency: data.currency,
-        paymentStatus: data.paymentStatus,
-        paymentDate: data.paymentDate,
-      },
-    });
-    return new Membership({
-      id: membership.id,
-      userId: membership.userId,
-      planId: membership.planId,
-      status: membership.status,
-      startDate: membership.startDate,
-      endDate: membership.endDate,
-      paymentId: membership.paymentId,
-      price: membership.price,
-      currency: membership.currency,
-      paymentStatus: membership.paymentStatus,
-      paymentDate: membership.paymentDate,
-      createdAt: membership.createdAt,
-      updatedAt: membership.updatedAt,
-    });
+    const membership = await this.prisma.membership.create({ data });
+    return this.toDomain(membership);
   }
-
-  // Existing methods (e.g., findAllPlans, countPlans) remain unchanged
 }

@@ -1,9 +1,9 @@
-// backend/src/app/repositories/gyms.repository.ts
-
+// backend/src/app/repositories/gym.repository.ts
 import { Gym } from '@/domain/entities/Gym.entity';
+import { IBaseRepository } from './base.repository';
 import { Prisma } from '@prisma/client';
 
-export interface IGymsRepository {
+export interface IGymsRepository extends IBaseRepository<Gym> {
   findAllForUsers(
     skip: number,
     take: number,
@@ -24,13 +24,7 @@ export interface IGymsRepository {
     gymType?: string;
     rating?: string;
   }): Promise<number>;
-  findById(id: string): Promise<Gym | null>;
-  findAllForAdmin(
-    skip: number,
-    take: number,
-    search?: string
-  ): Promise<Gym[]>;
+  findByName(name: string): Promise<Gym | null>;
+  findAllForAdmin(skip: number, take: number, search?: string): Promise<Gym[]>;
   countForAdmin(search?: string): Promise<number>;
-   findByName(name: string): Promise<Gym | null>;
-  create(data: Prisma.GymCreateInput): Promise<Gym>;
 }

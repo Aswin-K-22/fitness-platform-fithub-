@@ -56,4 +56,19 @@ export class Payment {
   get status(): string { return this._status; }
   get createdAt(): Date { return this._createdAt; }
   get updatedAt(): Date { return this._updatedAt; }
+
+  toJSON(): any {
+    return {
+      id: this._id,
+      type: this._type,
+      userId: this._userId,
+      amount: this._amount,
+      currency: this._currency,
+      paymentGateway: this._paymentGateway,
+      paymentId: this._paymentId,
+      status: this._status,
+      createdAt: this._createdAt,
+      updatedAt: this._updatedAt,
+    };
+  }
 }

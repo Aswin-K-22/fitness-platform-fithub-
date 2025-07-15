@@ -1,6 +1,6 @@
 import { GymErrorType } from '../enums/gymErrorType.enums';
 
-interface GymAddress {
+export interface GymAddress {
   street?: string | null;
   city?: string | null;
   state?: string | null;
@@ -56,14 +56,7 @@ interface Trainer {
   active: boolean;
 }
 
-interface Facilities {
-  hasPool?: boolean | null;
-  hasSauna?: boolean | null;
-  hasParking?: boolean | null;
-  hasLockerRooms?: boolean | null;
-  hasWifi?: boolean | null;
-  hasShowers?: boolean | null;
-}
+
 
 interface Location {
   type: string;
@@ -74,7 +67,7 @@ interface GymProps {
   id?: string;
   name: string;
   type?: string | null;
-  description?: string | null;
+  description: string | null;
   maxCapacity?: number;
   membershipCompatibility?: string[];
   address?: GymAddress | null;
@@ -82,7 +75,7 @@ interface GymProps {
   equipment?: Equipment[];
   schedule?: Schedule[];
   trainers?: Trainer[];
-  facilities?: Facilities | null;
+  facilities?: String[];
   location?: Location | null;
   images?: GymImage[] | null;
   ratings?: Ratings | null;
@@ -102,7 +95,7 @@ export class Gym {
   private _equipment: Equipment[];
   private _schedule: Schedule[];
   private _trainers: Trainer[];
-  private _facilities: Facilities | null;
+  private _facilities: String[];
   private _location: Location | null;
   private _images: GymImage[] | null;
   private _ratings: Ratings | null;
@@ -124,7 +117,7 @@ export class Gym {
     this._equipment = props.equipment ?? [];
     this._schedule = props.schedule ?? [];
     this._trainers = props.trainers ?? [];
-    this._facilities = props.facilities ?? null;
+    this._facilities = props.facilities ?? [];
     this._location = props.location ?? null;
     this._images = props.images ?? null;
     this._ratings = props.ratings ?? null;
@@ -176,7 +169,7 @@ export class Gym {
     return this._trainers;
   }
 
-  get facilities(): Facilities | null {
+  get facilities(): String[] {
     return this._facilities;
   }
 

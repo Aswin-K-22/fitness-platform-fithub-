@@ -173,7 +173,7 @@ const GymSearchPage: React.FC = () => {
     }
   }, [page, searchQuery, filters, getLocationCoordinates, customLocationError, customLocation]);
 
-  const debouncedLoadGyms = useCallback(debounce(loadGyms, 300), [loadGyms]);
+  const debouncedLoadGyms = useCallback(debounce(loadGyms, 1000), [loadGyms]);
 
   useEffect(() => {
     debouncedLoadGyms();

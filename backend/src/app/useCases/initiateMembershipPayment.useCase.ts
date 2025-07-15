@@ -8,8 +8,9 @@ import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import Razorpay from 'razorpay';
+import { IInitiateMembershipPaymentUseCase } from './interfaces/IInitiateMembershipPaymentUseCase';
 
-export class InitiateMembershipPaymentUseCase {
+export class InitiateMembershipPaymentUseCase implements IInitiateMembershipPaymentUseCase {
   private razorpay: Razorpay;
 
   constructor(
@@ -18,9 +19,16 @@ export class InitiateMembershipPaymentUseCase {
     private usersRepository: IUsersRepository,
     private membershipsPlanRepository: IMembershipsPlanRepository
   ) {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      console.error('Razorpay credentials missing', {
+        keyId: process.env.RAZORPAY_KEY_ID,
+        keySecret: process.env.RAZORPAY_KEY_SECRET ? '****' : undefined,
+      });
+      throw new Error('Razorpay key ID or secret is not configured');
+    }
     this.razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID || '',
-      key_secret: process.env.RAZORPAY_KEY_SECRET || '',
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
     });
   }
 
@@ -28,9 +36,28 @@ export class InitiateMembershipPaymentUseCase {
     { planId }: InitiateMembershipPaymentRequestDTO,
     userId: string
   ): Promise<IInitiateMembershipPaymentResponseDTO> {
+    console.log('InitiateMembershipPaymentUseCase started', { planId, userId });
+
     try {
+      // Validate inputs
+      if (!planId || !userId) {
+        console.error('Invalid input', { planId, userId });
+        return {
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'planId or userId is missing',
+          },
+        };
+      }
+
+      // Fetch user
+      console.log('Fetching user with ID:', userId);
       const user = await this.usersRepository.findById(userId);
+      console.log('User fetch result:', user);
       if (!user) {
+        console.error('User not found', { userId });
         return {
           success: false,
           status: HttpStatus.NOT_FOUND,
@@ -41,8 +68,12 @@ export class InitiateMembershipPaymentUseCase {
         };
       }
 
-      const plan = await this.membershipsPlanRepository.findPlanById(planId);
+      // Fetch plan
+      console.log('Fetching plan with ID:', planId);
+      const plan = await this.membershipsPlanRepository.findById(planId);
+      console.log('Plan fetch result:', plan);
       if (!plan) {
+        console.error('Plan not found', { planId });
         return {
           success: false,
           status: HttpStatus.NOT_FOUND,
@@ -53,18 +84,42 @@ export class InitiateMembershipPaymentUseCase {
         };
       }
 
+      // Validate plan price
+      if (!plan.price || isNaN(plan.price)) {
+        console.error('Invalid plan price', { planId, price: plan.price });
+        return {
+          success: false,
+          status: HttpStatus.BAD_REQUEST,
+          error: {
+            code: 'INVALID_PLAN_PRICE',
+            message: 'Plan price is invalid or missing',
+          },
+        };
+      }
+
+      // Generate receipt
       const shortPlanId = planId.slice(-6);
       const shortUserId = userId.slice(-6);
       const receipt = `rcpt_${shortPlanId}_${shortUserId}`;
+      console.log('Generated receipt:', receipt);
 
+      // Create Razorpay order
       let order;
       try {
+        console.log('Creating Razorpay order', { amount: plan.price * 100, currency: 'INR', receipt });
         order = await this.razorpay.orders.create({
           amount: plan.price * 100, // Convert to paise
           currency: 'INR',
           receipt,
         });
-      } catch (error) {
+        console.log('Razorpay order created:', order);
+      } catch (error: any) {
+        console.error('Razorpay order creation failed', {
+          message: error.message,
+          status: error.status,
+          code: error.error?.code,
+          description: error.error?.description,
+        });
         return {
           success: false,
           status: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -75,7 +130,8 @@ export class InitiateMembershipPaymentUseCase {
         };
       }
 
-      const payment = await this.paymentsRepository.createPayment({
+      // Create payment record
+      const payment = new Payment({
         type: 'subscription',
         userId,
         amount: plan.price,
@@ -83,8 +139,25 @@ export class InitiateMembershipPaymentUseCase {
         paymentGateway: 'Razorpay',
         paymentId: order.id,
         status: 'Pending',
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
+      console.log('Creating payment record', { payment: payment.toJSON() });
 
+      try {
+        const savedPayment = await this.paymentsRepository.create(payment);
+        console.log('Payment record created:', savedPayment);
+      } catch (error: any) {
+        console.error('Payment creation failed', {
+          message: error.message,
+          stack: error.stack,
+          payment: payment.toJSON(),
+        });
+        throw error; // Re-throw to be caught by outer try-catch
+      }
+
+      // Return success response
+      console.log('Payment initiated successfully', { orderId: order.id });
       return {
         success: true,
         status: HttpStatus.OK,
@@ -95,7 +168,11 @@ export class InitiateMembershipPaymentUseCase {
           currency: 'INR',
         },
       };
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Unexpected error in InitiateMembershipPaymentUseCase', {
+        message: error.message,
+        stack: error.stack,
+      });
       return {
         success: false,
         status: HttpStatus.INTERNAL_SERVER_ERROR,

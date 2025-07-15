@@ -7,8 +7,9 @@ import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { IForgotPasswordResponseDTO } from '../../domain/dtos/forgotPasswordResponse.dto';
 import { Email } from '../../domain/valueObjects/email.valueObject';
 import { generateOtp } from '../../infra/utils/otp';
+import { IForgotPasswordUseCase } from './interfaces/IForgotPasswordUseCase';
 
-export class ForgotPasswordUseCase {
+export class ForgotPasswordUseCase implements IForgotPasswordUseCase {
   constructor(
     private userRepository: IUsersRepository,
     private emailService: IEmailService,

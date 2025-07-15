@@ -8,8 +8,9 @@ import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { UserAuthResponseDTO } from '../../domain/dtos/userAuthResponse.dto';
 import { IGoogleAuthResponseDTO } from '@/domain/dtos/googleAuthResponse.dto';
+import { IGoogleAuthUseCase } from './interfaces/IGoogleAuthUseCase';
 
-export class GoogleAuthUseCase {
+export class GoogleAuthUseCase implements IGoogleAuthUseCase {
   constructor(
     private userRepository: IUsersRepository,
     private googleAuthService: IGoogleAuthService,
