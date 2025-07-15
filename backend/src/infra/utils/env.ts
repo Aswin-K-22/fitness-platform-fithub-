@@ -15,6 +15,9 @@ const envSchema = z.object({
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
   AWS_REGION: z.string().optional(),
   OTP_EXPIRES_SECONDS: z.string().transform(Number),
+  ORIGIN: z.string().url(),
+  REDIS_HOST: z.string(),
+  REDIS_PORT:z.number(),
 });
 
 const env = envSchema.parse(process.env);

@@ -1,15 +1,20 @@
 import { IUsersRepository } from '../repositories/users.repository';
 import { IAdminLogoutRequestDTO } from '../../domain/dtos/logoutAdminRequest.dto';
+import { IAdminLogoutResponseDTO } from '../../domain/dtos/logoutAdminResponse.dto';
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
-import { IAdminLogoutResponseDTO } from '@/domain/dtos/logoutAdminResponse.dto';
 import { ILogoutAdminUseCase } from './interfaces/ILogoutAdminUseCase';
+import { ITokenService } from '../providers/token.service';
+import * as jwt from 'jsonwebtoken';
 
 export class LogoutAdminUseCase implements ILogoutAdminUseCase {
-  constructor(private usersRepository: IUsersRepository) {}
+  constructor(
+    private usersRepository: IUsersRepository,
+    private tokenService: ITokenService
+  ) {}
 
-  async execute(data: IAdminLogoutRequestDTO): Promise<IAdminLogoutResponseDTO> {
+  async execute(data: IAdminLogoutRequestDTO, accessToken?: string): Promise<IAdminLogoutResponseDTO> {
     try {
       const user = await this.usersRepository.findByEmail(data.email);
       if (!user) {
@@ -32,6 +37,13 @@ export class LogoutAdminUseCase implements ILogoutAdminUseCase {
             message: ERRORMESSAGES.USER_INVALID_ROLE.message,
           },
         };
+      }
+
+      if (accessToken) {
+        const decoded = jwt.decode(accessToken) as { jti?: string } | null;
+        if (decoded?.jti) {
+          await this.tokenService.blacklistAccessToken(decoded.jti);
+        }
       }
 
       await this.usersRepository.updateRefreshToken(data.email, null);

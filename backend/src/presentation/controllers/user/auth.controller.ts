@@ -70,19 +70,9 @@ export class UserAuthController {
   }
 
   async logout(req: Request, res: Response): Promise<void> {
-    const email = req.user?.email;
-    if (!email) {
-      return this.sendResponse(res, {
-        success: false,
-        status: HttpStatus.UNAUTHORIZED,
-        error: {
-          code: ERRORMESSAGES.AUTH_USER_NOT_AUTHENTICATED.code,
-          message: ERRORMESSAGES.AUTH_USER_NOT_AUTHENTICATED.message,
-        },
-      });
-    }
-    const data: ILogoutRequestDTO = { email };
-    const result = await this.logoutUserUseCase.execute(data);
+    const data: ILogoutRequestDTO = req.body;
+    const accessToken = req.cookies?.userAccessToken;
+    const result = await this.logoutUserUseCase.execute(data, accessToken);
     if (result.success) {
       res.clearCookie('userAccessToken');
       res.clearCookie('userRefreshToken');

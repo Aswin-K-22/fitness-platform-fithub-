@@ -1,5 +1,4 @@
 import { IUsersRepository } from '../repositories/users.repository';
-import { User } from '../../domain/entities/User.entity';
 import { ILoginRequestDTO } from '../../domain/dtos/loginRequest.dto';
 import { IPasswordHasher } from '../providers/passwordHasher.service';
 import { ITokenService } from '../providers/token.service';
@@ -76,7 +75,7 @@ export class LoginUserUseCase implements ILoginUserUseCase {
         };
       }
 
-      const accessToken = await this.tokenService.generateAccessToken({ email: user.email.address, id: user.id });
+      const { token: accessToken } = await this.tokenService.generateAccessToken({ email: user.email.address, id: user.id });
       const refreshToken = await this.tokenService.generateRefreshToken({ email: user.email.address, id: user.id });
       await this.userRepository.updateRefreshToken(data.email, refreshToken);
 

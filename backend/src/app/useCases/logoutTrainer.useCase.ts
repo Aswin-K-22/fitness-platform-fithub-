@@ -1,15 +1,20 @@
 import { ITrainersRepository } from '../repositories/trainers.repository';
 import { ILogoutRequestDTO } from '../../domain/dtos/logoutRequest.dto';
+import { ILogoutResponseDTO } from '../../domain/dtos/logoutResponse.dto';
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
-import { ILogoutResponseDTO } from '@/domain/dtos/logoutResponse.dto';
 import { ILogoutTrainerUseCase } from './interfaces/ILogoutTrainerUseCase';
+import { ITokenService } from '../providers/token.service';
+import * as jwt from 'jsonwebtoken';
 
 export class LogoutTrainerUseCase implements ILogoutTrainerUseCase {
-  constructor(private trainerRepository: ITrainersRepository) {}
+  constructor(
+    private trainerRepository: ITrainersRepository,
+    private tokenService: ITokenService
+  ) {}
 
-  async execute(data: ILogoutRequestDTO): Promise<ILogoutResponseDTO> {
+  async execute(data: ILogoutRequestDTO, accessToken?: string): Promise<ILogoutResponseDTO> {
     try {
       if (!data.email) {
         console.log('[DEBUG] Missing email in logout request');
@@ -35,6 +40,13 @@ export class LogoutTrainerUseCase implements ILogoutTrainerUseCase {
             message: ERRORMESSAGES.TRAINER_NOT_FOUND.message,
           },
         };
+      }
+
+      if (accessToken) {
+        const decoded = jwt.decode(accessToken) as { jti?: string } | null;
+        if (decoded?.jti) {
+          await this.tokenService.blacklistAccessToken(decoded.jti);
+        }
       }
 
       await this.trainerRepository.updateRefreshToken(data.email, null);

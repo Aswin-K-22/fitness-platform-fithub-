@@ -61,7 +61,7 @@ export class LoginTrainerUseCase implements ILoginTrainerUseCase {
         return {
           success: false,
           status: HttpStatus.FORBIDDEN,
-           message: ERRORMESSAGES.TRAINER_NOT_APPROVED_BY_ADMIN.message,
+          message: ERRORMESSAGES.TRAINER_NOT_APPROVED_BY_ADMIN.message,
           error: {
             code: ERRORMESSAGES.TRAINER_NOT_APPROVED_BY_ADMIN.code,
             message: ERRORMESSAGES.TRAINER_NOT_APPROVED_BY_ADMIN.message,
@@ -79,7 +79,7 @@ export class LoginTrainerUseCase implements ILoginTrainerUseCase {
         profilePic: trainer.profilePic || null,
       };
 
-      const accessToken = await this.tokenService.generateAccessToken({ email: trainer.email.address, id: trainer.id });
+      const { token: accessToken } = await this.tokenService.generateAccessToken({ email: trainer.email.address, id: trainer.id });
       const refreshToken = await this.tokenService.generateRefreshToken({ email: trainer.email.address, id: trainer.id });
 
       await this.trainersRepository.updateRefreshToken(dto.email, refreshToken);
@@ -94,7 +94,7 @@ export class LoginTrainerUseCase implements ILoginTrainerUseCase {
       return {
         success: false,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: ERRORMESSAGES.GENERIC_ERROR.message,
+        message: ERRORMESSAGES.GENERIC_ERROR.message,
         error: {
           code: ERRORMESSAGES.GENERIC_ERROR.code,
           message: ERRORMESSAGES.GENERIC_ERROR.message,

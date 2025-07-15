@@ -156,7 +156,7 @@ export class TrainerAuthController {
 
       if (result.success && result.data) {
         const { accessToken, refreshToken } = result.data;
-        this.setAuthCookies(res, accessToken, refreshToken);
+       this.setAuthCookies(res, accessToken, refreshToken)
       }
 
       this.sendResponse(res, result);

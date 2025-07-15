@@ -39,7 +39,7 @@ export class AdminAuthMiddleware {
       req.admin = { id: user.id!, email: user.email.address };
       next();
     } catch (error) {
-      res.status(401).json({ message: AuthErrorType.InvalidAccessToken });
+      res.status(401).json({ message: 'Invalid or blacklisted access token' });
     }
   }
 }

@@ -61,14 +61,14 @@ export class VerifyUserOtpUseCase implements IVerifyUserOtpUseCase {
         isVerified: true,
       };
 
-      const accessToken = await this.tokenService.generateAccessToken({ email: user.email.address, id: user.id });
+      const {token :accessToken} = await this.tokenService.generateAccessToken({ email: user.email.address, id: user.id });
       const refreshToken = await this.tokenService.generateRefreshToken({ email: user.email.address, id: user.id });
 
       return {
         success: true,
         status: HttpStatus.OK,
         message: MESSAGES.OTP_VERIFIED,
-        data: { user: userAuth, accessToken, refreshToken },
+        data: { user: userAuth, accessToken :accessToken, refreshToken },
       };
     } catch (error) {
       return {

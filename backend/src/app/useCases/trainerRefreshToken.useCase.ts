@@ -69,7 +69,7 @@ export class TrainerRefreshTokenUseCase implements ITrainerRefreshTokenUseCase {
         };
       }
 
-      const accessToken = await this.tokenService.generateAccessToken({
+      const{token : accessToken} = await this.tokenService.generateAccessToken({
         id: trainer.id!,
         email: trainer.email.address,
       });

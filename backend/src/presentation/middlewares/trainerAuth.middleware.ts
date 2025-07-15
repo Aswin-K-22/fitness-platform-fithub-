@@ -43,7 +43,7 @@ export class TrainerAuthMiddleware {
       next();
     } catch (error) {
       console.error('[ERROR] Trainer auth middleware error:', error);
-      res.status(401).json({ success: false, error: TrainerErrorType.InvalidAccessToken });
+      res.status(401).json({ success: false, error: 'Invalid or blacklisted access token' });
     }
   }
 }

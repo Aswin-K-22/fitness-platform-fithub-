@@ -3,7 +3,6 @@ import { IPasswordHasher } from '../providers/passwordHasher.service';
 import { ITokenService } from '../providers/token.service';
 import { IAdminLoginRequestDTO } from '../../domain/dtos/adminLoginRequest.dto';
 import { IAdminLoginResponseDTO } from '../../domain/dtos/adminLoginResponse.dto';
-import { User } from '../../domain/entities/User.entity';
 import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
@@ -86,7 +85,7 @@ export class LoginAdminUseCase implements ILoginAdminUseCase {
         };
       }
 
-      const accessToken = await this.tokenService.generateAccessToken({ email: user.email.address, id: user.id! });
+      const { token: accessToken } = await this.tokenService.generateAccessToken({ email: user.email.address, id: user.id! });
       const refreshToken = await this.tokenService.generateRefreshToken({ email: user.email.address, id: user.id! });
       await this.usersRepository.updateRefreshToken(user.email.address, refreshToken);
 

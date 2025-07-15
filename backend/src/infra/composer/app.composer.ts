@@ -1,5 +1,3 @@
-//src/infra/composer/app.composer.ts
-// src/infra/composer/app.composer.ts
 import { UsersRepository } from '@/infra/repositories/users.repository';
 import { TrainersRepository } from '@/infra/repositories/trainers.repository';
 import { GymsRepository } from '@/infra/repositories/gyms.repository';
@@ -9,6 +7,7 @@ import { PaymentsRepository } from '@/infra/repositories/payments.repository';
 import { BcryptPasswordHasher } from '@/infra/providers/bcryptPasswordHasher';
 import { GoogleAuthService } from '@/infra/providers/googleAuthService';
 import { JwtTokenService } from '@/infra/providers/jwtTokenService';
+import { RedisService } from '@/infra/providers/redis.service';
 import { NodemailerEmailService } from '@/infra/providers/nodemailerEmailService';
 import prisma from '@/infra/databases/prismaClient';
 
@@ -84,13 +83,14 @@ export function composeApp() {
   // Providers
   const passwordHasher = new BcryptPasswordHasher();
   const emailService = new NodemailerEmailService();
-  const tokenService = new JwtTokenService();
+  const redisService = new RedisService();
+  const tokenService = new JwtTokenService(redisService);
   const googleAuthService = new GoogleAuthService();
 
   // User Use Cases
   const createUserUseCase = new CreateUserUseCase(usersRepository, passwordHasher, emailService);
   const loginUserUseCase = new LoginUserUseCase(usersRepository, passwordHasher, tokenService);
-  const logoutUserUseCase = new LogoutUserUseCase(usersRepository);
+  const logoutUserUseCase = new LogoutUserUseCase(usersRepository, tokenService);
   const googleAuthUseCase = new GoogleAuthUseCase(usersRepository, googleAuthService, tokenService);
   const refreshTokenUseCase = new RefreshTokenUseCase(usersRepository, tokenService);
   const resendOtpUseCase = new ResendOtpUseCase(usersRepository, emailService);
@@ -129,7 +129,7 @@ export function composeApp() {
   // Trainer Use Cases
   const createTrainerUseCase = new CreateTrainerUseCase(trainersRepository, passwordHasher, emailService);
   const loginTrainerUseCase = new LoginTrainerUseCase(trainersRepository, passwordHasher, tokenService);
-  const logoutTrainerUseCase = new LogoutTrainerUseCase(trainersRepository);
+  const logoutTrainerUseCase = new LogoutTrainerUseCase(trainersRepository, tokenService);
   const verifyTrainerOtpUseCase = new VerifyTrainerOtpUseCase(trainersRepository);
   const resendTrainerOtpUseCase = new ResendTrainerOtpUseCase(trainersRepository, emailService);
   const getTrainerUseCase = new GetTrainerUseCase(trainersRepository);
@@ -141,7 +141,7 @@ export function composeApp() {
   const loginAdminUseCase = new LoginAdminUseCase(usersRepository, passwordHasher, tokenService);
   const getAdminUseCase = new GetAdminUseCase(usersRepository);
   const adminRefreshTokenUseCase = new AdminRefreshTokenUseCase(usersRepository, tokenService);
-  const logoutAdminUseCase = new LogoutAdminUseCase(usersRepository);
+  const logoutAdminUseCase = new LogoutAdminUseCase(usersRepository, tokenService);
 
   // Middlewares
   const authMiddleware = new AuthMiddleware(usersRepository, tokenService);

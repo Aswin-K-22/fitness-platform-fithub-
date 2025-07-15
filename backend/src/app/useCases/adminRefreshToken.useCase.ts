@@ -52,7 +52,7 @@ export class AdminRefreshTokenUseCase implements IAdminRefreshTokenUseCase {
         };
       }
 
-      const newAccessToken = await this.tokenService.generateAccessToken({ email: admin.email.address, id: admin.id! });
+      const { token: newAccessToken} = await this.tokenService.generateAccessToken({ email: admin.email.address, id: admin.id! });
       const newRefreshToken = await this.tokenService.generateRefreshToken({ email: admin.email.address, id: admin.id! });
       await this.usersRepository.updateRefreshToken(admin.email.address, newRefreshToken);
 

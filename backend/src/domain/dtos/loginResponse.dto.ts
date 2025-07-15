@@ -6,7 +6,7 @@ export interface ILoginResponseDTO {
   message?: string;
   data?: {
     user: UserAuthResponseDTO;
-    accessToken: string;
+    accessToken:  string ;
     refreshToken: string;
   };
   error?: { code: string; message: string };

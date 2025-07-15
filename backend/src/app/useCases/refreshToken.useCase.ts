@@ -60,7 +60,7 @@ export class RefreshTokenUseCase implements IRefreshTokenUseCase {
         };
       }
 
-      const accessToken = await this.tokenService.generateAccessToken({ email: user.email.address, id: user.id });
+      const { token: accessToken } = await this.tokenService.generateAccessToken({ email: user.email.address, id: user.id });
       const refreshToken = await this.tokenService.generateRefreshToken({ email: user.email.address, id: user.id });
       await this.userRepository.updateRefreshToken(user.email.address, refreshToken);
 
