@@ -48,5 +48,21 @@ export class UserRoutes {
   upload.single('profilePic'),
   this.userController.updateUserProfile.bind(this.userController)
 );
+
+this.router.get(
+      '/notifications',
+      this.authMiddleware.auth.bind(this.authMiddleware),
+      this.userController.getNotifications.bind(this.userController)
+    );
+    this.router.post(
+      '/notifications/:notificationId/read',
+      this.authMiddleware.auth.bind(this.authMiddleware),
+      this.userController.markNotificationRead.bind(this.userController)
+    );
+    this.router.post(
+      '/membership/verify-payment',
+      this.authMiddleware.auth.bind(this.authMiddleware),
+      this.userController.verifyMembershipPayment.bind(this.userController)
+    );
   }
 }

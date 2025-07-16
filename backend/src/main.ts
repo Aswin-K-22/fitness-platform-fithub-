@@ -54,6 +54,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 // Socket.io
 io.on('connection', (socket) => {
   console.log('User connected');
+  
 });
 
 const PORT = process.env.PORT || 3000;

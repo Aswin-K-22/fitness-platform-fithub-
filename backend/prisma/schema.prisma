@@ -30,6 +30,7 @@ model User {
   memberships    Membership[]    @relation
   Bookings       Booking[]       @relation
   payments       Payment[]       @relation
+  notifications  Notification[]  @relation
 }
 
 type FitnessProfile {
@@ -99,10 +100,10 @@ model Trainer {
 }
 
 type Certification {
-  name          String // e.g., "Certified Personal Trainer"
-  issuer        String // e.g., "NASM"
-  dateEarned    DateTime
-  filePath      String // e.g., "/uploads/123456789-cert1.jpg"
+  name       String // e.g., "Certified Personal Trainer"
+  issuer     String // e.g., "NASM"
+  dateEarned DateTime
+  filePath   String // e.g., "/uploads/123456789-cert1.jpg"
 }
 
 type Client {
@@ -137,6 +138,7 @@ type Availability {
   startTime String
   endTime   String
 }
+
 // WorkoutPlan Model
 model WorkoutPlan {
   id            String         @id @default(auto()) @map("_id") @db.ObjectId
@@ -174,10 +176,10 @@ type Exercise {
 model Gym {
   id                      String        @id @default(auto()) @map("_id") @db.ObjectId
   name                    String        @unique
-  type                    String    // e.g., "Basic", "Premium", "Diamond"
+  type                    String // e.g., "Basic", "Premium", "Diamond"
   description             String?
   address                 GymAddress?
-  location    Json?   // GeoJSON Point  [lng, lat]
+  location                Json? // GeoJSON Point  [lng, lat]
   contact                 Contact?
   equipment               Equipment[]
   schedule                GymSchedule[]
@@ -185,7 +187,7 @@ model Gym {
   suggestedPlan           String?       @db.ObjectId
   facilities              String[]
   maxCapacity             Int
-  membershipCompatibility String[]   //  auto-filled by business rule  e.g., ["Basic", "Premium", "Diamond"]
+  membershipCompatibility String[] //  auto-filled by business rule  e.g., ["Basic", "Premium", "Diamond"]
   images                  GymImage[]
   ratings                 Ratings?
   createdAt               DateTime      @default(now())
@@ -230,8 +232,6 @@ type GymTrainer {
   active    Boolean
 }
 
-
-
 type GymImage {
   url         String
   description String?
@@ -252,7 +252,6 @@ type Review {
 }
 
 // Membership Model (Updated)
-
 
 model Membership {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -281,16 +280,16 @@ enum MembershipPlanType {
 }
 
 model MembershipPlan {
-  id                     String       @id @default(auto()) @map("_id") @db.ObjectId
-  name        String            @unique
+  id          String             @id @default(auto()) @map("_id") @db.ObjectId
+  name        String             @unique
   type        MembershipPlanType
-  description            String    // e.g., "Access to basic gyms"
-  price                  Float        // e.g., 49.00 (in dollars or your currency)
-  duration               Int          // Duration in months (1, 3, 6, 12)
-  features               String[]     // e.g., ["24/7-access", "group-classes"]
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
-  memberships            Membership[] // Link to user memberships
+  description String // e.g., "Access to basic gyms"
+  price       Float // e.g., 49.00 (in dollars or your currency)
+  duration    Int // Duration in months (1, 3, 6, 12)
+  features    String[] // e.g., ["24/7-access", "group-classes"]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  memberships Membership[] // Link to user memberships
 }
 
 //----Booking
@@ -336,3 +335,12 @@ model Payment {
   membership Membership? @relation(fields: [membershipId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 }
 
+model Notification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  message   String
+  type      String
+  createdAt DateTime
+  read      Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id])
+}

@@ -16,5 +16,7 @@ export const MESSAGES = {
   MEMBERSHIP_CREATED: 'Membership created successfully',
   PAYMENT_INITIATED: 'Payment initiated successfully',
   PAYMENT_VERIFIED: 'Payment verified successfully',
+  NOTIFICATIONS_FETCHED: 'Notifications fetched successfully',
+  NOTIFICATION_MARKED_READ: 'Notification marked as read',
   // Add other success messages
 };

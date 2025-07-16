@@ -9,8 +9,9 @@ import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import crypto from 'crypto';
 import { Membership } from '@/domain/entities/Membership.entity';
 import { IVerifyMembershipPaymentUseCase } from './interfaces/IVerifyMembershipPaymentUseCase';
+import { NotificationService } from '@/infra/providers/notification.service';
+import { Notification } from '@/domain/entities/Notification.entity';
 
-// Utility function to log errors with context
 const logError = (context: string, error: unknown) => {
   console.error(`[VerifyMembershipPaymentUseCase] ${context}:`, {
     message: error instanceof Error ? error.message : 'Unknown error',
@@ -23,7 +24,8 @@ export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentU
     private membershipsRepository: IMembershipsRepository,
     private paymentsRepository: IPaymentsRepository,
     private usersRepository: IUsersRepository,
-    private membershipsPlanRepository: IMembershipsPlanRepository
+    private membershipsPlanRepository: IMembershipsPlanRepository,
+    private notificationService: NotificationService
   ) {}
 
   async execute(
@@ -31,7 +33,6 @@ export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentU
     userId: string
   ): Promise<IVerifyMembershipPaymentResponseDTO> {
     try {
-      // Log input parameters
       console.log('[VerifyMembershipPaymentUseCase] Input:', {
         razorpay_payment_id,
         razorpay_order_id,
@@ -40,7 +41,6 @@ export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentU
         userId,
       });
 
-      // Step 1: Verify user
       console.log('[VerifyMembershipPaymentUseCase] Finding user by ID:', userId);
       const user = await this.usersRepository.findById(userId);
       if (!user) {
@@ -56,7 +56,6 @@ export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentU
       }
       console.log('[VerifyMembershipPaymentUseCase] User found:', user);
 
-      // Step 2: Verify plan
       console.log('[VerifyMembershipPaymentUseCase] Finding plan by ID:', planId);
       const plan = await this.membershipsPlanRepository.findById(planId);
       if (!plan) {
@@ -72,7 +71,6 @@ export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentU
       }
       console.log('[VerifyMembershipPaymentUseCase] Plan found:', plan);
 
-      // Step 3: Verify payment
       console.log('[VerifyMembershipPaymentUseCase] Finding payment by order ID:', razorpay_order_id);
       const payment = await this.paymentsRepository.findPaymentByOrderId(razorpay_order_id);
       if (!payment) {
@@ -88,7 +86,6 @@ export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentU
       }
       console.log('[VerifyMembershipPaymentUseCase] Payment found:', payment);
 
-      // Step 4: Verify Razorpay signature
       console.log('[VerifyMembershipPaymentUseCase] Generating signature');
       if (!process.env.RAZORPAY_KEY_SECRET) {
         logError('Razorpay key secret missing', new Error('Environment variable RAZORPAY_KEY_SECRET not set'));
@@ -124,7 +121,6 @@ export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentU
         };
       }
 
-      // Step 5: Update payment status and ID
       console.log('[VerifyMembershipPaymentUseCase] Updating payment status for ID:', payment.id);
       if (!payment.id) {
         logError('Payment ID missing', new Error(`Payment ID is undefined for order ID: ${razorpay_order_id}`));
@@ -144,7 +140,6 @@ export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentU
       await this.paymentsRepository.updatePaymentId(payment.id, razorpay_payment_id);
       console.log('[VerifyMembershipPaymentUseCase] Payment ID updated');
 
-      // Step 6: Create membership
       const startDate = new Date();
       const endDate = new Date();
       endDate.setMonth(endDate.getMonth() + plan.duration);
@@ -174,7 +169,16 @@ export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentU
       );
       console.log('[VerifyMembershipPaymentUseCase] Membership created:', membership);
 
-      // Step 7: Update user membership
+      const notification = new Notification({
+        userId,
+        message: `Your purchase of ${plan.name} membership is successful!`,
+        type: 'success',
+        createdAt: new Date(),
+        read: false,
+      });
+      await this.notificationService.sendNotification(notification);
+      console.log('[VerifyMembershipPaymentUseCase] Notification sent:', notification.toJSON());
+
       console.log('[VerifyMembershipPaymentUseCase] Updating user membership for user ID:', userId);
       if (!membership.id) {
         logError('Membership ID missing', new Error('Membership ID is undefined after creation'));

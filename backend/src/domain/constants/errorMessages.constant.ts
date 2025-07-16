@@ -114,4 +114,8 @@ export const ERRORMESSAGES = {
   USER_FAILED_TO_TOGGLE_VERIFICATION: { code: 'USER_017', message: 'Failed to toggle verification status' },
   USER_FAILED_TO_FETCH_USERS: { code: 'USER_018', message: 'Failed to fetch users' },
   GENERIC_ERROR: { code: 'APP_001', message: 'An unexpected error occurred' },
+  NOTIFICATIONS_NOT_FOUND: { code: 'NOTIFICATION_001', message: 'No notifications found for user' },
+  NOTIFICATION_INVALID_ID: { code: 'NOTIFICATION_002', message: 'Invalid notification ID' },
+  NOTIFICATION_MARK_READ_FAILED: { code: 'NOTIFICATION_003', message: 'Failed to mark notification as read' },
+  NOTIFICATION_UNAUTHORIZED: { code: 'NOTIFICATION_004', message: 'Unauthorized to access notifications' },
 } as const;

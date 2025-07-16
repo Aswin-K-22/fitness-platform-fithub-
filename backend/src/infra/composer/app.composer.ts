@@ -10,6 +10,7 @@ import { JwtTokenService } from '@/infra/providers/jwtTokenService';
 import { RedisService } from '@/infra/providers/redis.service';
 import { NodemailerEmailService } from '@/infra/providers/nodemailerEmailService';
 import prisma from '@/infra/databases/prismaClient';
+import { io } from '@/main';
 
 // User Use Cases
 import { CreateUserUseCase } from '@/app/useCases/createUser.useCase';
@@ -70,6 +71,10 @@ import { AdminAuthMiddleware } from '@/presentation/middlewares/adminAuth.middle
 import { UserRoutes } from '@/presentation/routes/user.routes';
 import { TrainerRoutes } from '@/presentation/routes/trainer.routes';
 import { AdminRoutes } from '@/presentation/routes/admin.routes';
+import { NotificationsRepository } from '../repositories/notifications.repository';
+import { NotificationService } from '../providers/notification.service';
+import { GetNotificationsUseCase } from '@/app/useCases/getNotifications.useCase';
+import { MarkNotificationReadUseCase } from '@/app/useCases/markNotificationRead.useCase';
 
 export function composeApp() {
   // Repositories
@@ -79,6 +84,7 @@ export function composeApp() {
   const membershipsPlanRepository = new MembershipsPlanRepository(prisma);
   const membershipsRepository = new MembershipsRepository(prisma);
   const paymentsRepository = new PaymentsRepository(prisma);
+  const notificationsRepository = new NotificationsRepository(prisma);
 
   // Providers
   const passwordHasher = new BcryptPasswordHasher();
@@ -86,6 +92,7 @@ export function composeApp() {
   const redisService = new RedisService();
   const tokenService = new JwtTokenService(redisService);
   const googleAuthService = new GoogleAuthService();
+ const notificationService = new NotificationService(io, notificationsRepository, tokenService);
 
   // User Use Cases
   const createUserUseCase = new CreateUserUseCase(usersRepository, passwordHasher, emailService);
@@ -114,7 +121,8 @@ export function composeApp() {
     membershipsRepository,
     paymentsRepository,
     usersRepository,
-    membershipsPlanRepository
+    membershipsPlanRepository,
+    notificationService
   );
   const updateUserProfileUseCase = new UpdateUserProfileUseCase(usersRepository);
   const getUsersUseCase = new GetUsersUseCase(usersRepository);
@@ -125,6 +133,9 @@ export function composeApp() {
   const addMembershipPlanUseCase = new AddMembershipPlanUseCase(membershipsPlanRepository);
   const getTrainerProfileUseCase = new GetTrainerProfileUseCase(trainersRepository);
   const updateTrainerProfileUseCase = new UpdateTrainerProfileUseCase(trainersRepository);
+
+  const getNotificationsUseCase = new GetNotificationsUseCase(notificationsRepository);
+  const markNotificationReadUseCase = new MarkNotificationReadUseCase(notificationsRepository)
 
   // Trainer Use Cases
   const createTrainerUseCase = new CreateTrainerUseCase(trainersRepository, passwordHasher, emailService);
@@ -169,7 +180,9 @@ export function composeApp() {
     initiateMembershipPaymentUseCase,
     verifyMembershipPaymentUseCase,
     getUserProfileUseCase,
-    updateUserProfileUseCase
+    updateUserProfileUseCase,
+    getNotificationsUseCase,
+    markNotificationReadUseCase
   );
   const trainerAuthController = new TrainerAuthController(
     createTrainerUseCase,

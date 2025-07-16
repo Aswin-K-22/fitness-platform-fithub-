@@ -18,6 +18,9 @@ import { IResponseDTO } from '@/domain/dtos/response.dto';
 import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 import { MESSAGES } from '@/domain/constants/messages.constant';
+import { INotificationsRepository } from '@/app/repositories/notifications.repository';
+import { IGetNotificationsUseCase } from '@/app/useCases/interfaces/IGetNotificationsUseCase';
+import { IMarkNotificationReadUseCase } from '@/app/useCases/interfaces/IMarkNotificationReadUseCase';
 
 export class UserController {
   constructor(
@@ -28,7 +31,9 @@ export class UserController {
     private initiateMembershipPaymentUseCase: IInitiateMembershipPaymentUseCase,
     private verifyMembershipPaymentUseCase: IVerifyMembershipPaymentUseCase,
     private getUserProfileUseCase: IGetUserProfileUseCase,
-    private updateUserProfileUseCase: IUpdateUserProfileUseCase
+    private updateUserProfileUseCase: IUpdateUserProfileUseCase,
+    private getNotificationsUseCase: IGetNotificationsUseCase,
+    private markNotificationReadUseCase: IMarkNotificationReadUseCase
   ) {}
 
   private sendResponse<T>(res: Response, result: IResponseDTO<T>): void {
@@ -37,6 +42,41 @@ export class UserController {
       message: result.message,
       ...(result.success ? { data: result.data } : { error: result.error }),
     });
+  }
+
+  async getNotifications(req: Request, res: Response): Promise<void> {
+    const userId = req.user?.id;
+     if (!userId) {
+      return this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.UNAUTHORIZED,
+        error: {
+          code: ERRORMESSAGES.NOTIFICATION_UNAUTHORIZED.code,
+          message: ERRORMESSAGES.NOTIFICATION_UNAUTHORIZED.message,
+        },
+      });
+    }
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const response = await this.getNotificationsUseCase.execute(userId, page, limit);
+    this.sendResponse(res, response);
+  }
+
+  async markNotificationRead(req: Request, res: Response): Promise<void> {
+    const userId = req.user?.id;
+     if (!userId) {
+      return this.sendResponse(res, {
+        success: false,
+        status: HttpStatus.UNAUTHORIZED,
+        error: {
+          code: ERRORMESSAGES.NOTIFICATION_UNAUTHORIZED.code,
+          message: ERRORMESSAGES.NOTIFICATION_UNAUTHORIZED.message,
+        },
+      });
+    }
+    const notificationId = req.params.notificationId;
+    const response = await this.markNotificationReadUseCase.execute(userId, notificationId);
+    this.sendResponse(res, response);
   }
 
   async updateUserProfile(req: Request, res: Response): Promise<void> {

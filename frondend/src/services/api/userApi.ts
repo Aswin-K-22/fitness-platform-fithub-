@@ -11,6 +11,7 @@ import type { IResendOtpRequestDTO } from "../../types/dtos/IResendOtpRequestDTO
 import type { IVerifyOtpResponseDTO } from "../../types/dtos/IVerifyOtpResponseDTO";
 import type { Gym } from "../../types/gym.types";
 import type { IMembershipPlansResponseDTO } from "../../types/dtos/IMembershipPlansResponseDTO";
+import type { INotification } from "../../components/common/user/Navbar";
 
 
 
@@ -194,6 +195,15 @@ export const verifyPayment = async (data: {
 export const fetchGymDetails = async (gymId: string): Promise<IGymDetailsDTO> => {
   const response = await apiClient.get(`/gyms/${gymId}`);
   return response.data.data.gym;
+};
+
+export const getNotifications = async (page: number = 1, limit: number = 10): Promise<{ notifications: INotification[] }> => {
+  const response = await apiClient.get("/notifications", { params: { page, limit } });
+  return response.data.data;
+};
+
+export const markNotificationRead = async (notificationId: string): Promise<void> => {
+  await apiClient.post(`/notifications/${notificationId}/read`);
 };
 
 /////////////////////////////////////////////////////////////////////////////////

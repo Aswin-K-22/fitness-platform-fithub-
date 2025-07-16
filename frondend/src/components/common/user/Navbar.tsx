@@ -4,8 +4,19 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import type { AppDispatch, RootState } from "../../../store/store";
 import { logoutThunk } from "../../../store/slices/userAuthSlice";
-
+import { getNotifications, markNotificationRead } from "../../../services/api/userApi";
 const backendUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
+export interface INotification {
+  id: string;
+  userId: string;
+  message: string;
+  type: 'success' | 'error' | 'info';
+  createdAt: string;
+  read: boolean;
+}
+
+
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user } = useSelector((state: RootState) => state.userAuth);
@@ -15,9 +26,12 @@ const Navbar: React.FC = () => {
   const isAuthPage = location.pathname === "/auth";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<INotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
   const defaultProfilePic = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=32&h=32";
-
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "Services", path: "#" },
@@ -60,17 +74,62 @@ const Navbar: React.FC = () => {
     },
   ];
 
-  // Close dropdown when clicking outside
+
+  // Fetch notifications on mount and after payment verification
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      const fetchNotifications = async () => {
+        try {
+          const { notifications } = await getNotifications(1, 10);
+          setNotifications(notifications);
+          setUnreadCount(notifications.filter((n) => !n.read).length);
+        } catch (error) {
+          console.error('[Navbar] Failed to fetch notifications:', error);
+          //toast.error("Failed to load notifications");
+        }
+      };
+      fetchNotifications();
+
+      // Poll for new notifications every 30 seconds
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, user?.id]);
+
+
+
+// Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target as Node)
+      ) {
         setIsProfileOpen(false);
+        setIsNotificationsOpen(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+
+  const handleMarkNotificationRead = async (notificationId: string) => {
+    try {
+      await markNotificationRead(notificationId);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+      );
+      setUnreadCount((prev) => prev - 1);
+    } catch (error) {
+      console.error('[Navbar] Failed to mark notification as read:', error);
+      toast.error("Failed to mark notification as read");
+    }
+  };
+
 
   const handleLogout = async () => {
     try {
@@ -83,14 +142,16 @@ const Navbar: React.FC = () => {
       console.error("Logout failed:", error);
       toast.error("Logout failed—try again!");
     }
-    setIsMenuOpen(false);
+  setIsMenuOpen(false);
     setIsProfileOpen(false);
+    setIsNotificationsOpen(false);
   };
 
-  const handleMenuItemClick = (action: () => void) => {
+const handleMenuItemClick = (action: () => void) => {
     action();
     setIsMenuOpen(false);
     setIsProfileOpen(false);
+    setIsNotificationsOpen(false);
   };
 
   return (
@@ -128,17 +189,57 @@ const Navbar: React.FC = () => {
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
-                {/* Notifications */}
-                <button
-                  type="button"
-                  className="relative p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-full transition-all duration-200"
-                  aria-label="View notifications"
-                >
-                  <i className="fas fa-bell text-lg"></i>
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                    3
-                  </span>
-                </button>
+                {/* Notifications Dropdown */}
+                <div className="relative" ref={notificationsRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                    className="relative p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-full transition-all duration-200"
+                    aria-label="View notifications"
+                    aria-expanded={isNotificationsOpen}
+                  >
+                    <i className="fas fa-bell text-lg"></i>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+                  {isNotificationsOpen && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in slide-in-from-top-2 fade-in-0 duration-200">
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-900">Notifications</p>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <p className="px-4 py-2 text-sm text-gray-500">No notifications</p>
+                        ) : (
+                          notifications.map((notification) => (
+                            <button
+                              key={notification.id}
+                              onClick={() => !notification.read && handleMarkNotificationRead(notification.id)}
+                              className={`w-full flex items-center space-x-3 px-4 py-2.5 text-sm transition-all duration-200 ${
+                                notification.read
+                                  ? "text-gray-500"
+                                  : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                              }`}
+                            >
+                              <i
+                                className={`fas fa-${notification.type === 'success' ? 'check-circle' : notification.type === 'error' ? 'exclamation-circle' : 'info-circle'} text-base w-5`}
+                              ></i>
+                              <div className="text-left">
+                                <p className="font-medium">{notification.message}</p>
+                                <p className="text-xs text-gray-400">
+                                  {new Date(notification.createdAt).toLocaleString()}
+                                </p>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* Messages */}
                 <button
