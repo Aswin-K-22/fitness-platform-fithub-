@@ -1,4 +1,4 @@
-//src/app/useCases/interfaces/IPTPlansTrainerGetUseCase.ts
+//src/app/useCases/trainer/interfaces/IPTPlansTrainerGetUseCase.ts
 import { IPTPlansRequestDTO } from '@/domain/dtos/pTPlanRequestDTO';
 import { IGetPTPlansResponseDTO } from '@/domain/dtos/getPTPlansResponse.dto';
 

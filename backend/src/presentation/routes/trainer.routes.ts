@@ -1,19 +1,24 @@
+//src/presentation/rotes/trainer.rotes.ts
+
 import { Router } from 'express';
 import { TrainerAuthController } from '../controllers/trainer/auth.controller';
 import { TrainerController } from '../controllers/trainer/trainer.controller';
 import { TrainerAuthMiddleware } from '../middlewares/trainer/trainerAuth.middleware';
 import { validateMiddleware } from '../middlewares/trainer/trainer.validate.middleware';
 import { refreshTokenMiddleware } from '../middlewares/trainer/trainerRefreshToken.middleware';
-import { ITrainerValidationMiddleware } from '@/app/middlewares/interfaces/ITrainerValidationMiddleware';
+import { ITrainerValidationMiddleware } from '@/app/middlewares/interfaces/trainer/ITrainerValidationMiddleware';
 import { upload } from '@/infra/config/multerS3';
+import { ITrainerAuthController } from '@/app/controllers/interfaces/trainer/ITrainerAuthController';
+import { ITrainerController } from '@/app/controllers/interfaces/trainer/ITrainerController';
+import { ITrainerAuthMiddleware } from '@/app/middlewares/interfaces/trainer/ITrainerAuthMiddleware';
 
 export class TrainerRoutes {
   public router: Router;
 
   constructor(
-    private trainerAuthController: TrainerAuthController,
-    private trainerController: TrainerController,
-    private trainerAuthMiddleware: TrainerAuthMiddleware,
+    private trainerAuthController: ITrainerAuthController,
+    private trainerController: ITrainerController,
+    private trainerAuthMiddleware: ITrainerAuthMiddleware,
    private trainerValidationMiddleware: ITrainerValidationMiddleware
 
   ) {

@@ -1,6 +1,6 @@
 // src/presentation/middlewares/trainer/trainerValidation.middleware.ts
-import { Request, Response, NextFunction } from 'express';
-import { ITrainerValidationMiddleware } from '@/app/middlewares/interfaces/ITrainerValidationMiddleware';
+import {  Response, NextFunction } from 'express';
+import { ITrainerValidationMiddleware } from '@/app/middlewares/interfaces/trainer/ITrainerValidationMiddleware';
 import { CreatePTPlanRequestDTO } from '@/domain/dtos/createPTPlanRequest.dto';
 import { IResponseDTO } from '@/domain/dtos/response.dto';
 import { HttpStatus } from '@/domain/enums/httpStatus.enum';
@@ -12,6 +12,8 @@ import { ResumePTPlanRequestDTO, StopPTPlanRequestDTO } from '@/domain/dtos/stop
 import { EditPTPlanRequestDTO } from '@/domain/dtos/editPTPlanRequest.dto';
 import { z } from 'zod';
 import { UpdateTrainerProfileRequestDTO } from '@/domain/dtos/updateTrainerProfileResponse.dto';
+import { CustomRequest } from '@/types/customRequest'
+
 
 export class TrainerValidationMiddleware implements ITrainerValidationMiddleware {
 
@@ -24,7 +26,7 @@ export class TrainerValidationMiddleware implements ITrainerValidationMiddleware
     }
 
 
-  async validateUpdateTrainerProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async validateUpdateTrainerProfile(req:CustomRequest, res: Response, next: NextFunction): Promise<void> {
     try {
         // Ensure trainer is authenticated
         if (!req.trainer?.id) {
@@ -52,7 +54,7 @@ export class TrainerValidationMiddleware implements ITrainerValidationMiddleware
     }
 }
 
-  async validateCreatePTPlan(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async validateCreatePTPlan(req:CustomRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       // Ensure trainer is authenticated
       if (!req.trainer?.id) {
@@ -82,7 +84,7 @@ export class TrainerValidationMiddleware implements ITrainerValidationMiddleware
       res.status(response.status).json(response);
     }
   }
-  async validateSignupTrainer(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async validateSignupTrainer(req:CustomRequest, res: Response, next: NextFunction): Promise<void> {
       try {
 
     if (!req.trainer?.id) {
@@ -106,7 +108,7 @@ export class TrainerValidationMiddleware implements ITrainerValidationMiddleware
     }
   }
 
- async validateGetPTPlans(req: Request, res: Response, next: NextFunction): Promise<void> {
+ async validateGetPTPlans(req:CustomRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.trainer?.id) {
         throw new Error(ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.message);
@@ -144,7 +146,7 @@ export class TrainerValidationMiddleware implements ITrainerValidationMiddleware
 
 
 
-async validateStopPTPlan(req: Request, res: Response, next: NextFunction): Promise<void> {
+async validateStopPTPlan(req:CustomRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.trainer?.id) {
         throw new Error(ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.message);
@@ -170,7 +172,7 @@ async validateStopPTPlan(req: Request, res: Response, next: NextFunction): Promi
     }
   }
 
-  async validateResumePTPlan(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async validateResumePTPlan(req:CustomRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.trainer?.id) {
         throw new Error(ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.message);
@@ -197,7 +199,7 @@ async validateStopPTPlan(req: Request, res: Response, next: NextFunction): Promi
   }
 
 
-  async validateEditPTPlan(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async validateEditPTPlan(req:CustomRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.trainer?.id) {
         throw new Error(ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.message);
@@ -230,10 +232,3 @@ async validateStopPTPlan(req: Request, res: Response, next: NextFunction): Promi
 }
 
 
-declare module 'express' {
-  interface Request {
-    validatedData?: CreatePTPlanRequestDTO | StopPTPlanRequestDTO | ResumePTPlanRequestDTO|UpdateTrainerProfileRequestDTO; // Add ResumePTPlanRequestDTO
-    PTPlansGetRequestDTO?: PTPlansRequestDTO;
-    editPTPlanRequestDTO?: EditPTPlanRequestDTO;
-  }
-}

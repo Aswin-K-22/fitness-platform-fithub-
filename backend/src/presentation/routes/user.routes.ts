@@ -1,18 +1,18 @@
+//src/presentation/rotes/user.tores
 import { Router } from 'express';
-import { UserAuthController } from '../controllers/user/auth.controller';
-import { UserController } from '../controllers/user/user.controller';
-import { AuthMiddleware } from '../middlewares/user/userAuth.middleware';
 import { validateMiddleware } from '../middlewares/user/validate.middleware';
-import { JwtTokenService } from '@/infra/providers/jwtTokenService';
 import { refreshTokenMiddleware } from '../middlewares/user/userRefreshToken.middleware';
 import { upload } from '@/infra/config/multer';
+import { IUserController } from '@/app/controllers/interfaces/user/IUserController';
+import { IUserAuthController } from '@/app/controllers/interfaces/user/IUserAuthController';
+import { IUserAuthMiddleware } from '@/app/middlewares/interfaces/user/IUserAuthMiddleware';
 export class UserRoutes {
   public router: Router;
 
   constructor(
-    private userAuthController: UserAuthController,
-    private userController: UserController,
-    private authMiddleware: AuthMiddleware,
+    private userAuthController: IUserAuthController,
+    private userController: IUserController,
+    private authMiddleware: IUserAuthMiddleware,
   ) {
     this.router = Router();
     this.setupRoutes();

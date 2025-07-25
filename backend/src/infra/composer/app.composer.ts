@@ -81,9 +81,13 @@ import { PTPlanRepository } from '@/infra/repositories/ptPlan.repository';
 import { S3Service } from '@/infra/providers/s3.service';
 import { CreatePTPlanUseCase } from '@/app/useCases/createPTPlan.useCase';
 import { TrainerValidationMiddleware } from '@/presentation/middlewares/trainer/trainerValidation.middleware';
-import { PTPlansTrainerGetUseCase } from '@/app/useCases/ptPlansTrainerGet.useCase';
+import { PTPlansTrainerGetUseCase } from '@/app/useCases/trainer/ptPlansTrainerGet.useCase';
 import { EditPTPlanUseCase } from '@/app/useCases/editPTPlan.useCase';
 import { StopPTPlanUseCase } from '@/app/useCases/stopPTPlan.useCase';
+import { AdminValidationMiddleware } from '@/presentation/middlewares/admin/adminValidation.middleware';
+import { AdminPTPlansGetUseCase } from '@/app/useCases/admin/adminPTPlansGetUseCase';
+import { VerifyPTPlanUseCase } from '@/app/useCases/admin/verifyPTPlanUseCase';
+import { UpdatePTPlanAdminPriceUseCase } from '@/app/useCases/admin/updatePTPlanAdminPriceUseCase';
 
 export function composeApp() {
   // Repositories
@@ -168,16 +172,21 @@ export function composeApp() {
   const resumePTPlanUseCase = new ResumePTPlanUseCase(ptPlanRepository);
 
   // Admin Use Cases
-  const loginAdminUseCase = new LoginAdminUseCase(usersRepository, passwordHasher, tokenService);
-  const getAdminUseCase = new GetAdminUseCase(usersRepository);
-  const adminRefreshTokenUseCase = new AdminRefreshTokenUseCase(usersRepository, tokenService);
-  const logoutAdminUseCase = new LogoutAdminUseCase(usersRepository, tokenService);
+const loginAdminUseCase = new LoginAdminUseCase(usersRepository, passwordHasher, tokenService);
+const getAdminUseCase = new GetAdminUseCase(usersRepository);
+const adminRefreshTokenUseCase = new AdminRefreshTokenUseCase(usersRepository, tokenService);
+const logoutAdminUseCase = new LogoutAdminUseCase(usersRepository, tokenService);
+const adminPTPlansGetUseCase = new AdminPTPlansGetUseCase(ptPlanRepository, s3Service);
+const verifyPTPlanUseCase = new VerifyPTPlanUseCase(ptPlanRepository);
+const updatePTPlanAdminPriceUseCase = new UpdatePTPlanAdminPriceUseCase(ptPlanRepository);
+
 
   // Middlewares
   const authMiddleware = new AuthMiddleware(usersRepository, tokenService);
   const trainerAuthMiddleware = new TrainerAuthMiddleware(trainersRepository, tokenService);
   const trainerValidationMiddleware = new TrainerValidationMiddleware();
   const adminAuthMiddleware = new AdminAuthMiddleware(usersRepository, tokenService);
+  const adminValidationMiddleware = new AdminValidationMiddleware();
 
   // Controllers
   const userAuthController = new UserAuthController(
@@ -224,23 +233,26 @@ export function composeApp() {
   resumePTPlanUseCase
 );
   const adminAuthController = new AdminAuthController(loginAdminUseCase, adminRefreshTokenUseCase, logoutAdminUseCase);
-  const adminController = new AdminController(
-    getAdminUseCase,
-    getUsersUseCase,
-    toggleUserVerificationUseCase,
-    getTrainersUseCase,
-    approveTrainerUseCase,
-    getAdminGymsUseCase,
-    addGymUseCase,
-    getAvailableTrainersUseCase,
-    getAdminMembershipPlansUseCase,
-    addMembershipPlanUseCase
-  );
+const adminController = new AdminController(
+  getAdminUseCase,
+  getUsersUseCase,
+  toggleUserVerificationUseCase,
+  getTrainersUseCase,
+  approveTrainerUseCase,
+  getAdminGymsUseCase,
+  addGymUseCase,
+  getAvailableTrainersUseCase,
+  getAdminMembershipPlansUseCase,
+  addMembershipPlanUseCase,
+  adminPTPlansGetUseCase,
+  verifyPTPlanUseCase,
+  updatePTPlanAdminPriceUseCase
+);
 
   // Routes
   const userRoutes = new UserRoutes(userAuthController, userController, authMiddleware);
   const trainerRoutes = new TrainerRoutes(trainerAuthController, trainerController, trainerAuthMiddleware,trainerValidationMiddleware);
-  const adminRoutes = new AdminRoutes(adminAuthController, adminController, adminAuthMiddleware, usersRepository, tokenService);
+  const adminRoutes = new AdminRoutes(adminAuthController, adminController, adminAuthMiddleware,adminValidationMiddleware);
 
   return {
     userRoutes,

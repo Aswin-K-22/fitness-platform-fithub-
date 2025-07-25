@@ -88,4 +88,58 @@ async update(id: string, data: Partial<IPTPlanRequestToEntity>): Promise<PTPlan>
       throw new Error(ERRORMESSAGES.PTPLAN_NOT_FOUND.message);
     }
   }
+
+  async findAllByAdminVerification(skip: number, take: number, verifiedByAdmin?: boolean): Promise<PTPlan[]> {
+    const where: any = {};
+    if (verifiedByAdmin !== undefined) {
+      where.verifiedByAdmin = verifiedByAdmin;
+    }
+    const records = await this.prisma.pTPlan.findMany({
+      where,
+      skip,
+      take,
+      orderBy: { createdAt: 'desc' },
+    });
+    return records.map(this.toDomain);
+  }
+
+  async countByAdminVerification(verifiedByAdmin?: boolean): Promise<number> {
+    const where: any = {};
+    if (verifiedByAdmin !== undefined) {
+      where.verifiedByAdmin = verifiedByAdmin;
+    }
+    return this.prisma.pTPlan.count({ where });
+  }
+
+
+
+  async adminVerifyPTPlan(id: string, verifiedByAdmin: boolean): Promise<PTPlan> {
+  const record = await this.prisma.pTPlan.update({
+    where: { id },
+    data: {
+      verifiedByAdmin,
+      updatedAt: new Date(),
+    },
+  });
+  if (!record) {
+    throw new Error(ERRORMESSAGES.PTPLAN_NOT_FOUND.message);
+  }
+  return this.toDomain(record);
+}
+
+async updateAdminPrice(id: string, adminPrice: number, totalPrice: number): Promise<PTPlan> {
+  const record = await this.prisma.pTPlan.update({
+    where: { id },
+    data: {
+      adminPrice,
+      totalPrice,
+      updatedAt: new Date(),
+    },
+  });
+  if (!record) {
+    throw new Error(ERRORMESSAGES.PTPLAN_NOT_FOUND.message);
+  }
+  return this.toDomain(record);
+}
+
 }

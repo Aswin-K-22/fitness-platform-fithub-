@@ -1,4 +1,6 @@
-import { IPTPlansTrainerGetUseCase } from './interfaces/IPTPlansTrainerGetUseCase';
+//src/app/useCases/trainer/PTPlansTrainerGetUseCase.ts
+
+import { IPTPlansTrainerGetUseCase } from './interfeces/IPTPlansTrainerGetUseCase';
 import { IPTPlansRequestDTO } from '@/domain/dtos/pTPlanRequestDTO';
 import { IGetPTPlansResponseDTO } from '@/domain/dtos/getPTPlansResponse.dto';
 import { PTPlan } from '@/domain/entities/PTPlan.entity';

@@ -7,6 +7,7 @@ import type { IGetMembershipPlansResponseDTO } from "../../types/dtos/IGetMember
 import type { IAddMembershipPlanRequestDTO } from "../../types/dtos/IAddMembershipPlanRequestDTO";
 import type { IGetPendingTrainersResponseDTO } from "../../types/trainer.type";
 import type { IGetTrainersResponseDTO } from "../../types/dtos/IGetTrainersResponseDTO";
+import type { FetchPTPlansResponse } from "../../types/pTPlan";
 
 const apiClient = axios.create({
   baseURL: "/api/admin",
@@ -277,3 +278,38 @@ export const getTrainers = async (
    export const approveTrainer =   async (trainerId: string): Promise<void>=> {
     await apiClient.put(`/trainers/${trainerId}/toggle-approval`);
   }
+
+export const fetchTrainerPTPlans = async (
+  page: number,
+  limit: number,
+  verifiedByAdmin: boolean | null = null,
+): Promise<FetchPTPlansResponse> => {
+  try {
+    const response = await apiClient.get('/plans', {
+      params: { page, limit, verifiedByAdmin },
+      withCredentials: true,
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Failed to fetch PT plans:', error);
+    throw error;
+  }
+};
+
+export const verifyPTPlan = async (planId: string): Promise<void> => {
+  try {
+    await apiClient.patch(`/plans/${planId}/verify`, { verifiedByAdmin: true });
+  } catch (error: any) {
+    console.error('Failed to verify PT plan:', error);
+    throw new Error(error.response?.data?.message || 'Failed to verify PT plan');
+  }
+};
+
+export const updatePTPlanAdminPrice = async (planId: string, adminPrice: number): Promise<void> => {
+  try {
+    await apiClient.patch(`/plans/${planId}`, { adminPrice });
+  } catch (error: any) {
+    console.error('Failed to update PT plan admin price:', error);
+    throw new Error(error.response?.data?.message || 'Failed to update PT plan admin price');
+  }
+};

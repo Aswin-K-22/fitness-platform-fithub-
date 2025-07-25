@@ -34,7 +34,8 @@ const PendingApproval = lazy(() => import("./pages/trainer/PendingApproval"));
 const CreatePTPlan = lazy(() => import("./pages/trainer/CreatePTPlan"));
 const ClientInteraction = lazy(() => import("./pages/trainer/ClientInteraction"));
 const ClientPlan = lazy(() => import("./pages/trainer/ClientPlan"));
-const PTPlanList = lazy(() => import("./pages/trainer/PTPlanList")); // New import
+const PTPlanList = lazy(() => import("./pages/trainer/PTPlanList")); 
+const PTPlanManagement = lazy(() => import("./pages/admin/PTPlanManagement"));
 
 const DashboardView = lazy(() => import("./pages/admin/DashboardView"));
 const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
@@ -184,6 +185,7 @@ const App: React.FC = () => {
                 <Route path="/admin/gym/add" element={<ProtectedRoute element={<AddGymForm />} allowedRole="admin" />} />
                 <Route path="/admin/membership-plans" element={<ProtectedRoute element={<MembershipPlans />} allowedRole="admin" />} />
                 <Route path="/admin/membership/add" element={<ProtectedRoute element={<AddMembershipPlan />} allowedRole="admin" />} />
+                <Route path="/admin/pt-plans" element={<ProtectedRoute element={<PTPlanManagement />} allowedRole="admin" />} /> 
                 <Route path="/admin/forbidden" element={<AdminForbiddenPage />} />
               </Route>
 

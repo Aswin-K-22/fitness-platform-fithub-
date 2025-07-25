@@ -1,22 +1,21 @@
+//src/presentation/rotes/admin.rotes.ts
+
 import { Router } from 'express';
-import { AdminAuthController } from '@/presentation/controllers/admin/adminAuth.controller';
-import { AdminController } from '@/presentation/controllers/admin/admin.controller';
-import { AdminAuthMiddleware } from '@/presentation/middlewares/admin/adminAuth.middleware';
 import { validateMiddleware } from '@/presentation/middlewares/admin/admin.validate.middleware';
-import { adminRefreshTokenMiddleware } from '@/presentation/middlewares/admin/adminRefreshToken.middleware';
-import { UsersRepository } from '@/infra/repositories/users.repository';
-import { JwtTokenService } from '@/infra/providers/jwtTokenService';
 import { upload } from '@/infra/config/multer';
+import { IAdminValidationMiddleware } from '@/app/middlewares/interfaces/admin/IAdminValidationMiddleware';
+import { IAdminAuthController } from '@/app/controllers/interfaces/admin/IAdminAuthController';
+import { IAdminController } from '@/app/controllers/interfaces/admin/IAdminController';
+import { IAdminAuthMiddleware } from '@/app/middlewares/interfaces/admin/IAdminAuthMiddleware';
 
 export class AdminRoutes {
   public router: Router;
 
   constructor(
-    private adminAuthController: AdminAuthController,
-    private adminController: AdminController,
-    private adminAuthMiddleware: AdminAuthMiddleware,
-    private usersRepository: UsersRepository,
-    private tokenService: JwtTokenService,
+    private adminAuthController: IAdminAuthController,
+    private adminController: IAdminController,
+    private adminAuthMiddleware: IAdminAuthMiddleware,
+     private adminValidationMiddleware: IAdminValidationMiddleware
   ) {
     this.router = Router();
     this.setupRoutes();
@@ -73,8 +72,29 @@ export class AdminRoutes {
       validateMiddleware('addMembershipPlan'),
       this.adminController.addMembershipPlan.bind(this.adminController)
     );
+
+    this.router.get(
+  '/plans',
+  this.adminAuthMiddleware.auth.bind(this.adminAuthMiddleware),
+  this.adminValidationMiddleware.validateGetTrainerPTPlans.bind(this.adminValidationMiddleware),
+  this.adminController.getTrainerPTPlans.bind(this.adminController)
+);
+
+this.router.patch(
+  '/plans/:planId/verify',
+  this.adminAuthMiddleware.auth.bind(this.adminAuthMiddleware),
+  this.adminValidationMiddleware.validateVerifyPlanInput.bind(this.adminValidationMiddleware),
+  this.adminController.verifyPTPlan.bind(this.adminController)
+);
+
+this.router.patch(
+  '/plans/:planId',
+  this.adminAuthMiddleware.auth.bind(this.adminAuthMiddleware),
+  this.adminValidationMiddleware.validateAdminPriceInput.bind(this.adminValidationMiddleware),
+  this.adminController.updatePTPlanAdminPrice.bind(this.adminController)
+);
+
+
 }
-
-
 
 }

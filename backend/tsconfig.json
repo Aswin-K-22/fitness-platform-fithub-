@@ -16,6 +16,8 @@
     },
     "sourceMap": true // Generate source maps for debugging
   },
-  "include": ["src/**/*"], // Include all TypeScript files in src/
+
+  "include": ["src/**/*", "src/types/**/*"]
+,
   "exclude": ["node_modules", "dist"] // Exclude node_modules and output directory
 }

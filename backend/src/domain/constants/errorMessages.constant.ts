@@ -1,5 +1,6 @@
 // backend/src/domain/constants/errorMessages.constant.ts
 export const ERRORMESSAGES = {
+  ADMIN_NOT_AUTHENTICATED:{ code: 'ADMIN_001', message: 'Admin not authenticated' },
   AUTH_MISSING_REFRESH_TOKEN: { code: 'AUTH_001', message: 'No refresh token provided' },
   AUTH_INVALID_REFRESH_TOKEN: { code: 'AUTH_002', message: 'Invalid refresh token' },
   AUTH_INVALID_REFRESH_TOKEN_STRUCTURE: { code: 'AUTH_003', message: 'Invalid refresh token structure' },
@@ -142,6 +143,7 @@ export const ERRORMESSAGES = {
   PTPLAN_INVALID_ID :{ code: 'PTPLAN_015', message: 'Invalid plan Id' },
   PTPLAN_NOT_FOUND : { code: 'PTPLAN_016', message:  'Plan  not found' },
   PTPLAN_ALREADY_STOPPED: { code: 'PTPLAN_017', message: 'PT plan is already stopped' },
-  PTPLAN_ALREADY_ACTIVE: { code: 'PTPLAN_018', message: 'PT plan is already active' }
+  PTPLAN_ALREADY_ACTIVE: { code: 'PTPLAN_018', message: 'PT plan is already active' },
+  PTPLAN_INVALID_VERIFICATION_STATUS: { code: 'PTPLAN_019', message: ' PTPLAN_INVALID_VERIFICATION_STATUS' }
   
 } as const;

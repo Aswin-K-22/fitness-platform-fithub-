@@ -1,5 +1,5 @@
 // backend/src/presentation/controllers/trainer/trainer.controller.ts
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { IGetTrainerUseCase } from '@/app/useCases/interfaces/IGetTrainerUseCase';
 import { IGetTrainerProfileUseCase } from '@/app/useCases/interfaces/IGetTrainerProfileUseCase';
 import { IUpdateTrainerProfileUseCase } from '@/app/useCases/interfaces/IUpdateTrainerProfileUseCase';
@@ -11,14 +11,14 @@ import { ICreatePTPlanUseCase } from '@/app/useCases/interfaces/ICreatePTPlanUse
 import { CreatePTPlanRequestDTO, ICreatePTPlanRequestDTO } from '@/domain/dtos/createPTPlanRequest.dto';
 import { S3Service } from '@/infra/providers/s3.service';
 import { PTPlansRequestDTO } from '@/domain/dtos/pTPlanRequestDTO';
-import { IPTPlansTrainerGetUseCase } from '@/app/useCases/interfaces/IPTPlansTrainerGetUseCase';
+import { IPTPlansTrainerGetUseCase } from '@/app/useCases/trainer/interfeces/IPTPlansTrainerGetUseCase';
 import { IGetPTPlansResponseDTO } from '@/domain/dtos/getPTPlansResponse.dto';
 import { IEditPTPlanUseCase } from '@/app/useCases/interfaces/IEditPTPlanUseCase';
 import { EditPTPlanRequestDTO } from '@/domain/dtos/editPTPlanRequest.dto';
 import { StopPTPlanRequestDTO } from '@/domain/dtos/stopResumePTPlanRequest.dto';
 import { IResumePTPlanUseCase, IStopPTPlanUseCase } from '@/app/useCases/interfaces/IStopResumePTPlanUseCase';
 import { UpdateTrainerProfileRequestDTO } from '@/domain/dtos/updateTrainerProfileResponse.dto';
-
+import { CustomRequest } from '@/types/customRequest'
 
 export class TrainerController {
   constructor(
@@ -41,7 +41,7 @@ export class TrainerController {
     });
   }
 
-  async getTrainer(req: Request, res: Response): Promise<void> {
+  async getTrainer(req:CustomRequest, res: Response): Promise<void> {
     if (!req.trainer?.email) {
       this.sendResponse(res, {
         success: false,
@@ -70,7 +70,7 @@ export class TrainerController {
     }
   }
 
-  async getTrainerProfile(req: Request, res: Response): Promise<void> {
+  async getTrainerProfile(req:CustomRequest, res: Response): Promise<void> {
     if (!req.trainer?.email) {
       this.sendResponse(res, {
         success: false,
@@ -99,7 +99,7 @@ export class TrainerController {
     }
   }
 
-async updateTrainerProfile(req: Request, res: Response): Promise<void> {
+async updateTrainerProfile(req:CustomRequest, res: Response): Promise<void> {
     try {
         const validatedData = req.validatedData as UpdateTrainerProfileRequestDTO;
         const trainerId = req.trainer?.id;
@@ -136,7 +136,7 @@ async updateTrainerProfile(req: Request, res: Response): Promise<void> {
     }
 }
 
-  async createPTPlan(req: Request, res: Response): Promise<void> {
+  async createPTPlan(req:CustomRequest, res: Response): Promise<void> {
 
 try {
     const validatedData = req?.validatedData as CreatePTPlanRequestDTO;
@@ -167,7 +167,7 @@ try {
     }
 
   }
-async getPTPlans(req: Request, res: Response): Promise<void> {
+async getPTPlans(req:CustomRequest, res: Response): Promise<void> {
     try {
       const validatedData = req.PTPlansGetRequestDTO as PTPlansRequestDTO;
       const trainerId = req.trainer?.id;
@@ -200,7 +200,7 @@ async getPTPlans(req: Request, res: Response): Promise<void> {
       this.sendResponse(res, response);
     }
   }
-  async editPTPlan(req: Request, res: Response): Promise<void> {
+  async editPTPlan(req:CustomRequest, res: Response): Promise<void> {
     try {
       const validatedData = req.editPTPlanRequestDTO as EditPTPlanRequestDTO;
       const trainerId = req.trainer?.id;
@@ -239,7 +239,7 @@ async getPTPlans(req: Request, res: Response): Promise<void> {
     }
   }
 
-async stopPTPlan(req: Request, res: Response): Promise<void> {
+async stopPTPlan(req:CustomRequest, res: Response): Promise<void> {
     try {
       const validatedData = req.validatedData as StopPTPlanRequestDTO;
       const trainerId = req.trainer?.id;
@@ -264,7 +264,7 @@ async stopPTPlan(req: Request, res: Response): Promise<void> {
     }
   }
 
-  async resumePTPlan(req: Request, res: Response): Promise<void> {
+  async resumePTPlan(req:CustomRequest, res: Response): Promise<void> {
     try {
       const validatedData = req.validatedData as StopPTPlanRequestDTO;
       const trainerId = req.trainer?.id;

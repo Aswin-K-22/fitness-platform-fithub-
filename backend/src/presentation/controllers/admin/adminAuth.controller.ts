@@ -10,8 +10,9 @@ import { IAdminLogoutRequestDTO } from '@/domain/dtos/logoutAdminRequest.dto';
 import { IResponseDTO } from '@/domain/dtos/response.dto';
 import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
+import { IAdminAuthController } from '@/app/controllers/interfaces/admin/IAdminAuthController';
 
-export class AdminAuthController {
+export class AdminAuthController implements IAdminAuthController {
   constructor(
     private readonly loginAdminUseCase: ILoginAdminUseCase,
     private readonly adminRefreshTokenUseCase: IAdminRefreshTokenUseCase,

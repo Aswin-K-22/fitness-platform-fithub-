@@ -7,4 +7,8 @@ export interface IPTPlanRepository extends IBaseRepository<PTPlan, string> {
   countByTrainerId(trainerId: string): Promise<number> ;
   stop(id: string): Promise<void>;
   resume(id: string): Promise<void>;
+findAllByAdminVerification(skip: number, take: number, verifiedByAdmin?: boolean): Promise<PTPlan[]>;
+  countByAdminVerification(verifiedByAdmin?: boolean): Promise<number>;
+  adminVerifyPTPlan(id: string, verifiedByAdmin: boolean): Promise<PTPlan>;
+  updateAdminPrice(id: string, adminPrice: number, totalPrice: number): Promise<PTPlan>;
 }

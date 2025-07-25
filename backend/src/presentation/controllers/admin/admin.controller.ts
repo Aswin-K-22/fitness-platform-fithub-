@@ -18,8 +18,17 @@ import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 import { MulterError } from 'multer';
 import { GymErrorType } from '@/domain/enums/gymErrorType.enums';
+import { IAdminController } from '@/app/controllers/interfaces/admin/IAdminController';
+import { AdminPTPlansRequestDTO } from '@/domain/dtos/adminPTPlansRequestDTO';
+import { IAdminPTPlansGetUseCase } from '@/app/useCases/admin/interfeces/IAdminPTPlansGetUseCase';
+import { IGetPTPlansResponseDTO } from '@/domain/dtos/getPTPlansResponse.dto';
+import { CustomRequest } from '@/types/customRequest'
+import { UpdateAdminPriceRequestDTO } from '@/domain/dtos/updateAdminPriceRequestDTO';
+import { VerifyPTPlanRequestDTO } from '@/domain/dtos/verifyPTPlanRequestDTO';
+import { IVerifyPTPlanUseCase } from '@/app/useCases/admin/interfeces/IVerifyPTPlanUseCase';
+import { IUpdatePTPlanAdminPriceUseCase } from '@/app/useCases/admin/interfeces/IUpdatePTPlanAdminPriceUseCase';
 
-export class AdminController {
+export class AdminController implements IAdminController {
   constructor(
     private readonly getAdminUseCase: IGetAdminUseCase,
     private readonly getUsersUseCase: IGetUsersUseCase,
@@ -30,7 +39,10 @@ export class AdminController {
     private readonly addGymUseCase: IAddGymUseCase,
     private readonly getAvailableTrainersUseCase: IGetAvailableTrainersUseCase,
     private readonly getAdminMembershipPlansUseCase: IGetAdminMembershipPlansUseCase,
-    private readonly addMembershipPlanUseCase: IAddMembershipPlanUseCase
+    private readonly addMembershipPlanUseCase: IAddMembershipPlanUseCase,
+    private readonly adminPTPlansGetUseCase : IAdminPTPlansGetUseCase,
+    private readonly verifyPTPlanUseCase: IVerifyPTPlanUseCase,
+    private readonly updatePTPlanAdminPriceUseCase: IUpdatePTPlanAdminPriceUseCase,
   ) {}
 
 
@@ -172,4 +184,93 @@ export class AdminController {
     const result = await this.addMembershipPlanUseCase.execute(req.body);
     this.sendResponse(res, result);
   }
+
+  
+async getTrainerPTPlans(req:CustomRequest, res: Response): Promise<void> {
+  try {
+    const validatedData = req.validatedData as AdminPTPlansRequestDTO;
+    const adminId = req.admin?.id;
+
+    if (!adminId) {
+      throw new Error(ERRORMESSAGES.ADMIN_NOT_AUTHENTICATED.message);
+    }
+
+    const result = await this.adminPTPlansGetUseCase.execute(validatedData.toEntity());
+    this.sendResponse(res, result);
+  } catch (error: any) {
+    console.error('[ERROR] Get Trainer PTPlans error: from admin.controller.ts', error);
+    const response: IGetPTPlansResponseDTO = {
+      success: false,
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      data: {
+        plans: [],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0,
+        },
+      },
+      error: {
+        code: ERRORMESSAGES.GENERIC_ERROR.code,
+        message: ERRORMESSAGES.GENERIC_ERROR.message,
+      },
+    };
+    this.sendResponse(res, response);
+  }
+}
+
+// presentation/controllers/admin/admin.controller.ts
+
+async verifyPTPlan(req: CustomRequest, res: Response): Promise<void> {
+  try {
+    const validatedData = req.validatedData as VerifyPTPlanRequestDTO;
+    const adminId = req.admin?.id;
+
+    if (!adminId) {
+      throw new Error(ERRORMESSAGES.ADMIN_NOT_AUTHENTICATED.message);
+    }
+
+    const result = await this.verifyPTPlanUseCase.execute(validatedData.toEntity());
+    this.sendResponse(res, result);
+  } catch (error: any) {
+    console.error('[ERROR] Verify PT Plan error: from admin.controller.ts', error);
+    const response: IResponseDTO<null> = {
+      success: false,
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Failed to verify PT plan',
+      error: {
+        code: error.message.includes('PTPLAN') ? error.message : ERRORMESSAGES.GENERIC_ERROR.code,
+        message: error.message || ERRORMESSAGES.GENERIC_ERROR.message,
+      },
+    };
+    this.sendResponse(res, response);
+  }
+}
+
+async updatePTPlanAdminPrice(req: CustomRequest, res: Response): Promise<void> {
+  try {
+    const validatedData = req.validatedData as UpdateAdminPriceRequestDTO;
+    const adminId = req.admin?.id;
+
+    if (!adminId) {
+      throw new Error(ERRORMESSAGES.ADMIN_NOT_AUTHENTICATED.message);
+    }
+
+    const result = await this.updatePTPlanAdminPriceUseCase.execute(validatedData.toEntity());
+    this.sendResponse(res, result);
+  } catch (error: any) {
+    console.error('[ERROR] Update PT Plan Admin Price error: from admin.controller.ts', error);
+    const response: IResponseDTO<null> = {
+      success: false,
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Failed to update PT plan admin price',
+      error: {
+        code: error.message.includes('PTPLAN') ? error.message : ERRORMESSAGES.GENERIC_ERROR.code,
+        message: error.message || ERRORMESSAGES.GENERIC_ERROR.message,
+      },
+    };
+    this.sendResponse(res, response);
+  }
+}
 }
