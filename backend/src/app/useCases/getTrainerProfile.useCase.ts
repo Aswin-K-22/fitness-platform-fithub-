@@ -4,17 +4,22 @@ import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { IGetTrainerProfileResponseDTO, TrainerProfile } from '../../domain/dtos/getTrainerProfileResponse.dto';
 import { IGetTrainerProfileUseCase } from './interfaces/IGetTrainerProfileUseCase';
+import { S3Service } from '@/infra/providers/s3.service';
+import { Trainer } from '@/domain/entities/Trainer.entity';
 
 export class GetTrainerProfileUseCase implements IGetTrainerProfileUseCase {
-  constructor(private trainersRepository: ITrainersRepository) {}
+  constructor(
+    private trainersRepository: ITrainersRepository,
+    private readonly s3Service: S3Service
+  ) {}
 
-  private toTrainerProfileDTO(trainer: any): TrainerProfile {
+  private toTrainerProfileDTO(trainer: Trainer, profilePicUrl: string | null): TrainerProfile {
     return {
       id: trainer.id ?? '',
       name: trainer.name,
       email: trainer.email.address,
       role: trainer.role,
-      profilePic: trainer.profilePic,
+      profilePic: profilePicUrl ?? trainer.profilePic, // Use provided profilePicUrl or fallback to trainer.profilePic
       bio: trainer.bio,
       specialties: trainer.specialties,
       experienceLevel: trainer.experienceLevel,
@@ -34,15 +39,15 @@ export class GetTrainerProfileUseCase implements IGetTrainerProfileUseCase {
               periodEnd: history.periodEnd?.toISOString() ?? null,
               clientCount: history.clientCount,
               hoursWorked: history.hoursWorked,
-            })),
+            })) ?? [],
           }
         : null,
       availability: trainer.availability?.map((avail: any) => ({
         day: avail.day,
         startTime: avail.startTime,
         endTime: avail.endTime,
-      })),
-      gyms: trainer.gyms,
+      })) ?? [],
+      gyms: trainer.gyms ?? [],
       createdAt: trainer.createdAt?.toISOString(),
       updatedAt: trainer.updatedAt?.toISOString(),
       verifiedByAdmin: trainer.verifiedByAdmin,
@@ -51,13 +56,13 @@ export class GetTrainerProfileUseCase implements IGetTrainerProfileUseCase {
         issuer: cert.issuer,
         dateEarned: cert.dateEarned.toISOString(),
         filePath: cert.filePath,
-      })),
+      })) ?? [],
       clients: trainer.clients?.map((client: any) => ({
         userId: client.userId,
         membershipId: client.membershipId,
         startDate: client.startDate.toISOString(),
         active: client.active,
-      })),
+      })) ?? [],
     };
   }
 
@@ -75,6 +80,7 @@ export class GetTrainerProfileUseCase implements IGetTrainerProfileUseCase {
       }
 
       const trainer = await this.trainersRepository.findByEmail(email);
+      console.log(trainer?.email.address, 'This is trainer email address [trainer.email.address]');
       if (!trainer) {
         return {
           success: false,
@@ -86,21 +92,26 @@ export class GetTrainerProfileUseCase implements IGetTrainerProfileUseCase {
         };
       }
 
-      const trainerProfile = this.toTrainerProfileDTO(trainer);
+      let profilePicUrl = trainer.profilePic;
+      if (profilePicUrl && profilePicUrl.startsWith('trainer-profiles/')) {
+        profilePicUrl = await this.s3Service.getPresignedUrl(profilePicUrl) || trainer.profilePic;
+      }
+
+      const trainerProfile = this.toTrainerProfileDTO(trainer, profilePicUrl);
       return {
         success: true,
         status: HttpStatus.OK,
         message: MESSAGES.SUCCESS,
         data: { trainer: trainerProfile },
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('[ERROR] Get trainer profile error:', error);
       return {
         success: false,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         error: {
           code: ERRORMESSAGES.GENERIC_ERROR.code,
-          message: ERRORMESSAGES.GENERIC_ERROR.message,
+          message: error.message || ERRORMESSAGES.GENERIC_ERROR.message,
         },
       };
     }

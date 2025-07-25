@@ -7,6 +7,7 @@ import { logoutThunk } from "../../../store/slices/userAuthSlice";
 import { getNotifications, markNotificationRead } from "../../../services/api/userApi";
 const backendUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
+
 export interface INotification {
   id: string;
   userId: string;
@@ -91,8 +92,8 @@ const Navbar: React.FC = () => {
       fetchNotifications();
 
       // Poll for new notifications every 30 seconds
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
+      // const interval = setInterval(fetchNotifications, 30000);
+      // return () => clearInterval(interval);
     }
   }, [isAuthenticated, user?.id]);
 

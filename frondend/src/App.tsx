@@ -1,3 +1,4 @@
+
 import React, { useEffect, Suspense, lazy } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -30,6 +31,11 @@ const TrainerLogin = lazy(() => import("./pages/trainer/TrainerLogin"));
 const TrainerSignup = lazy(() => import("./pages/trainer/TrainerSignup"));
 const TrainerVerifyOtp = lazy(() => import("./pages/trainer/TrainerVerifyOtp"));
 const PendingApproval = lazy(() => import("./pages/trainer/PendingApproval"));
+const CreatePTPlan = lazy(() => import("./pages/trainer/CreatePTPlan"));
+const ClientInteraction = lazy(() => import("./pages/trainer/ClientInteraction"));
+const ClientPlan = lazy(() => import("./pages/trainer/ClientPlan"));
+const PTPlanList = lazy(() => import("./pages/trainer/PTPlanList")); // New import
+
 const DashboardView = lazy(() => import("./pages/admin/DashboardView"));
 const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
 const Reports = lazy(() => import("./pages/admin/Reports"));
@@ -40,11 +46,13 @@ const MembershipPlans = lazy(() => import("./pages/admin/MembershipPlans"));
 const AddMembershipPlan = lazy(() => import("./pages/admin/AddMembershipPlan"));
 const TrainerManagement = lazy(() => import("./pages/admin/TrainersManagement"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminForbiddenPage = lazy(() => import("./pages/admin/ForbiddenPage"));
+
 const UserLayout = lazy(() => import("./components/layout/UserLayout/UserLayout"));
 const TrainerLayout = lazy(() => import("./components/layout/TrainerLayout/TrainerLayout"));
 const AdminLayout = lazy(() => import("./components/layout/AdminLayout/AdminLayout"));
+
 const ErrorBoundary = lazy(() => import("./components/common/ErrorBoundary"));
-const AdminForbiddenPage =  lazy(()=>import("./pages/admin/ForbiddenPage")) 
 
 interface ProtectedRouteProps {
   element: React.ReactElement;
@@ -97,26 +105,20 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   const getForbiddenPath = () => {
     const currentPath = location.pathname;
-  if (currentPath.startsWith("/trainer")) {
-    return "/trainer/forbidden"; 
-  }else if(currentPath.startsWith("/admin")){
-    return "/admin/forbidden"; 
-  }else{
-     return "/forbidden"; 
-  }
-    // if (isTrainerAuthenticated) return "/trainer/forbidden";
-    // if (isUserAuthenticated) return "/forbidden";
-    // if (isAdminAuthenticated) return "/forbidden"; // Admins could have their own forbidden page if needed
-   // return getRedirectPath(); // Default to login path if no role is authenticated
+    if (currentPath.startsWith("/trainer")) {
+      return "/trainer/forbidden";
+    } else if (currentPath.startsWith("/admin")) {
+      return "/admin/forbidden";
+    } else {
+      return "/forbidden";
+    }
   };
 
   useEffect(() => {
     if (!isRoleAuthenticated && !isPublic && !location.pathname.includes("auth") && !isRoleLoading) {
       navigate(getRedirectPath(), { replace: true, state: { from: location } });
-    } else if (isAdminAuthenticated || isTrainerAuthenticated || isUserAuthenticated) {
-      if (!isRoleAuthenticated && !isPublic) {
-        navigate(getForbiddenPath(), { replace: true, state: { from: location.pathname } });
-      }
+    } else if (isAnyAuthenticated && !isRoleAuthenticated && !isPublic) {
+      navigate(getForbiddenPath(), { replace: true, state: { from: location.pathname } });
     }
   }, [isRoleAuthenticated, isAnyAuthenticated, location, navigate, isPublic, isRoleLoading]);
 
@@ -159,6 +161,11 @@ const App: React.FC = () => {
               <Route element={<TrainerLayout />}>
                 <Route path="/trainer/dashboard" element={<ProtectedRoute element={<TrainerDashboard />} allowedRole="trainer" />} />
                 <Route path="/trainer/profile" element={<ProtectedRoute element={<TrainerProfile />} allowedRole="trainer" />} />
+                <Route path="/trainer/create-pt-plan" element={<ProtectedRoute element={<CreatePTPlan />} allowedRole="trainer" />} />
+                <Route path="/trainer/create-pt-plan/:planId" element={<ProtectedRoute element={<CreatePTPlan />} allowedRole="trainer" />} />
+                <Route path="/trainer/client-interaction" element={<ProtectedRoute element={<ClientInteraction />} allowedRole="trainer" />} />
+                <Route path="/trainer/client-plan/:clientId" element={<ProtectedRoute element={<ClientPlan />} allowedRole="trainer" />} />
+                <Route path="/trainer/pt-plans" element={<ProtectedRoute element={<PTPlanList />} allowedRole="trainer" />} /> {/* New route */}
               </Route>
 
               <Route path="/trainer/login" element={<TrainerLogin />} />

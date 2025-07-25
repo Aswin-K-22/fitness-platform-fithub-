@@ -1,5 +1,5 @@
 // backend/src/infra/repositories/users.repository.ts
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { User } from '@/domain/entities/User.entity';
 import { IUsersRepository } from '@/app/repositories/users.repository';
 import { BaseRepository } from './base.repository';
@@ -33,7 +33,7 @@ export class UsersRepository extends BaseRepository<User> implements IUsersRepos
   }
 
   async createWithOtp(user: User, otp: string): Promise<User> {
-    return this.prisma.$transaction(async (tx) => {
+ return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.user.create({
         data: {
           name: user.name,

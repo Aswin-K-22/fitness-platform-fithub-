@@ -94,7 +94,7 @@ export class LoginAdminUseCase implements ILoginAdminUseCase {
         status: HttpStatus.OK,
         message: MESSAGES.USER_LOGGED_IN,
         data: {
-          user: {
+          admin: {
             id: user.id!,
             email: user.email.address,
             name: user.name,

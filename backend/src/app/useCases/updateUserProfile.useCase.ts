@@ -67,7 +67,7 @@ export class UpdateUserProfileUseCase implements IUpdateUserProfileUseCase {
         success: true,
         status: HttpStatus.OK,
         message: MESSAGES.PROFILE_UPDATED,
-        data: { user: updatedUser },
+        data: { user: updatedUser.toJSON() },
       };
     } catch (error) {
       return {

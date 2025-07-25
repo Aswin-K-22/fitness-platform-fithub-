@@ -1,3 +1,4 @@
+//src/infra/composer/app.composer.ts
 import { UsersRepository } from '@/infra/repositories/users.repository';
 import { TrainersRepository } from '@/infra/repositories/trainers.repository';
 import { GymsRepository } from '@/infra/repositories/gyms.repository';
@@ -51,6 +52,7 @@ import { VerifyTrainerOtpUseCase } from '@/app/useCases/verifyTrainerOtp.useCase
 import { TrainerRefreshTokenUseCase } from '@/app/useCases/trainerRefreshToken.useCase';
 import { GetTrainersUseCase } from '@/app/useCases/getTrainers.useCase';
 import { ApproveTrainerUseCase } from '@/app/useCases/approveTrainer.useCase';
+import { ResumePTPlanUseCase } from '@/app/useCases/resumePTPlan.useCase';
 
 // Admin Use Cases
 import { LoginAdminUseCase } from '@/app/useCases/loginAdmin.useCase';
@@ -65,9 +67,9 @@ import { TrainerAuthController } from '@/presentation/controllers/trainer/auth.c
 import { TrainerController } from '@/presentation/controllers/trainer/trainer.controller';
 import { AdminAuthController } from '@/presentation/controllers/admin/adminAuth.controller';
 import { AdminController } from '@/presentation/controllers/admin/admin.controller';
-import { AuthMiddleware } from '@/presentation/middlewares/userAuth.middleware';
-import { TrainerAuthMiddleware } from '@/presentation/middlewares/trainerAuth.middleware';
-import { AdminAuthMiddleware } from '@/presentation/middlewares/adminAuth.middleware';
+import { AuthMiddleware } from '@/presentation/middlewares/user/userAuth.middleware';
+import { TrainerAuthMiddleware } from '@/presentation/middlewares/trainer/trainerAuth.middleware';
+import { AdminAuthMiddleware } from '@/presentation/middlewares/admin/adminAuth.middleware';
 import { UserRoutes } from '@/presentation/routes/user.routes';
 import { TrainerRoutes } from '@/presentation/routes/trainer.routes';
 import { AdminRoutes } from '@/presentation/routes/admin.routes';
@@ -75,6 +77,13 @@ import { NotificationsRepository } from '../repositories/notifications.repositor
 import { NotificationService } from '../providers/notification.service';
 import { GetNotificationsUseCase } from '@/app/useCases/getNotifications.useCase';
 import { MarkNotificationReadUseCase } from '@/app/useCases/markNotificationRead.useCase';
+import { PTPlanRepository } from '@/infra/repositories/ptPlan.repository';
+import { S3Service } from '@/infra/providers/s3.service';
+import { CreatePTPlanUseCase } from '@/app/useCases/createPTPlan.useCase';
+import { TrainerValidationMiddleware } from '@/presentation/middlewares/trainer/trainerValidation.middleware';
+import { PTPlansTrainerGetUseCase } from '@/app/useCases/ptPlansTrainerGet.useCase';
+import { EditPTPlanUseCase } from '@/app/useCases/editPTPlan.useCase';
+import { StopPTPlanUseCase } from '@/app/useCases/stopPTPlan.useCase';
 
 export function composeApp() {
   // Repositories
@@ -85,6 +94,7 @@ export function composeApp() {
   const membershipsRepository = new MembershipsRepository(prisma);
   const paymentsRepository = new PaymentsRepository(prisma);
   const notificationsRepository = new NotificationsRepository(prisma);
+  const ptPlanRepository = new PTPlanRepository(prisma);
 
   // Providers
   const passwordHasher = new BcryptPasswordHasher();
@@ -93,6 +103,7 @@ export function composeApp() {
   const tokenService = new JwtTokenService(redisService);
   const googleAuthService = new GoogleAuthService();
  const notificationService = new NotificationService(io, notificationsRepository, tokenService);
+ const s3Service = new S3Service();
 
   // User Use Cases
   const createUserUseCase = new CreateUserUseCase(usersRepository, passwordHasher, emailService);
@@ -122,7 +133,7 @@ export function composeApp() {
     paymentsRepository,
     usersRepository,
     membershipsPlanRepository,
-    notificationService
+    notificationService 
   );
   const updateUserProfileUseCase = new UpdateUserProfileUseCase(usersRepository);
   const getUsersUseCase = new GetUsersUseCase(usersRepository);
@@ -131,22 +142,30 @@ export function composeApp() {
   const addGymUseCase = new AddGymUseCase(gymsRepository, trainersRepository);
   const getAvailableTrainersUseCase = new GetAvailableTrainersUseCase(trainersRepository);
   const addMembershipPlanUseCase = new AddMembershipPlanUseCase(membershipsPlanRepository);
-  const getTrainerProfileUseCase = new GetTrainerProfileUseCase(trainersRepository);
-  const updateTrainerProfileUseCase = new UpdateTrainerProfileUseCase(trainersRepository);
+
+
+
 
   const getNotificationsUseCase = new GetNotificationsUseCase(notificationsRepository);
   const markNotificationReadUseCase = new MarkNotificationReadUseCase(notificationsRepository)
 
   // Trainer Use Cases
   const createTrainerUseCase = new CreateTrainerUseCase(trainersRepository, passwordHasher, emailService);
-  const loginTrainerUseCase = new LoginTrainerUseCase(trainersRepository, passwordHasher, tokenService);
+  const loginTrainerUseCase = new LoginTrainerUseCase(trainersRepository, passwordHasher, tokenService,s3Service);
   const logoutTrainerUseCase = new LogoutTrainerUseCase(trainersRepository, tokenService);
   const verifyTrainerOtpUseCase = new VerifyTrainerOtpUseCase(trainersRepository);
   const resendTrainerOtpUseCase = new ResendTrainerOtpUseCase(trainersRepository, emailService);
-  const getTrainerUseCase = new GetTrainerUseCase(trainersRepository);
+  const getTrainerUseCase = new GetTrainerUseCase(trainersRepository,s3Service);
   const trainerRefreshTokenUseCase = new TrainerRefreshTokenUseCase(trainersRepository, tokenService);
   const getTrainersUseCase = new GetTrainersUseCase(trainersRepository);
   const approveTrainerUseCase = new ApproveTrainerUseCase(trainersRepository);
+  const getTrainerProfileUseCase = new GetTrainerProfileUseCase(trainersRepository,s3Service);
+  const updateTrainerProfileUseCase = new UpdateTrainerProfileUseCase(trainersRepository,s3Service);
+  const createPTPlanUseCase = new CreatePTPlanUseCase(ptPlanRepository);
+  const ptPlansTrainerGetUseCase = new PTPlansTrainerGetUseCase(ptPlanRepository, s3Service);
+  const editPTPlanUseCase = new EditPTPlanUseCase(ptPlanRepository, s3Service);
+  const stopPTPlanUseCase = new StopPTPlanUseCase(ptPlanRepository);
+  const resumePTPlanUseCase = new ResumePTPlanUseCase(ptPlanRepository);
 
   // Admin Use Cases
   const loginAdminUseCase = new LoginAdminUseCase(usersRepository, passwordHasher, tokenService);
@@ -157,6 +176,7 @@ export function composeApp() {
   // Middlewares
   const authMiddleware = new AuthMiddleware(usersRepository, tokenService);
   const trainerAuthMiddleware = new TrainerAuthMiddleware(trainersRepository, tokenService);
+  const trainerValidationMiddleware = new TrainerValidationMiddleware();
   const adminAuthMiddleware = new AdminAuthMiddleware(usersRepository, tokenService);
 
   // Controllers
@@ -192,7 +212,17 @@ export function composeApp() {
     resendTrainerOtpUseCase,
     trainerRefreshTokenUseCase
   );
-  const trainerController = new TrainerController(getTrainerUseCase, getTrainerProfileUseCase, updateTrainerProfileUseCase);
+  const trainerController = new TrainerController(
+    getTrainerUseCase, 
+    getTrainerProfileUseCase, 
+    updateTrainerProfileUseCase,
+    createPTPlanUseCase,
+    s3Service,
+    ptPlansTrainerGetUseCase,
+    editPTPlanUseCase,
+    stopPTPlanUseCase,
+  resumePTPlanUseCase
+);
   const adminAuthController = new AdminAuthController(loginAdminUseCase, adminRefreshTokenUseCase, logoutAdminUseCase);
   const adminController = new AdminController(
     getAdminUseCase,
@@ -209,7 +239,7 @@ export function composeApp() {
 
   // Routes
   const userRoutes = new UserRoutes(userAuthController, userController, authMiddleware);
-  const trainerRoutes = new TrainerRoutes(trainerAuthController, trainerController, trainerAuthMiddleware);
+  const trainerRoutes = new TrainerRoutes(trainerAuthController, trainerController, trainerAuthMiddleware,trainerValidationMiddleware);
   const adminRoutes = new AdminRoutes(adminAuthController, adminController, adminAuthMiddleware, usersRepository, tokenService);
 
   return {

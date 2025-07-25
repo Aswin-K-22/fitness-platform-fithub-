@@ -3,7 +3,7 @@ import React, { useState, type FormEvent, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import { AxiosError } from "axios";
+//import { AxiosError } from "axios";
 import type { AppDispatch, RootState } from "../../store/store";
 import { loginThunk } from "../../store/slices/trainerAuthSlice";
 
@@ -77,10 +77,11 @@ useEffect(() => {
       await dispatch(loginThunk(loginData)).unwrap(); // Dispatch without storing result
       // Navigation is handled by useEffect
     } catch (err) {
-      const axiosError = err as AxiosError<{ message?: string }>;
-      const errorMessage = axiosError.response?.data?.message || "Login failed—check credentials";
-      setError(errorMessage);
-      toast.error(errorMessage);
+     // const axiosError = err as AxiosError<{ message?: string }>;
+      console.log(err)
+      const errorMessage =err || "Login failed—check credentials";
+      setError(errorMessage as string);
+      toast.error(errorMessage as string);
     } finally {
       setLoading(false);
     }

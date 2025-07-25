@@ -23,7 +23,7 @@ export const initializeAuth = () => async (dispatch: AppDispatch, getState: () =
 
   const results = await Promise.allSettled([
    dispatch(fetchAuthAdmin()),
-   dispatch(fetchAuthTrainer()),
+  dispatch(fetchAuthTrainer()),
    dispatch(fetchAuthUser()),
   ]);
 
@@ -31,11 +31,11 @@ export const initializeAuth = () => async (dispatch: AppDispatch, getState: () =
     if (result.status === "rejected") {
       const errorMessage = result.reason?.payload || "Failed to verify session";
       if (index === 0) {
-        dispatch(setAdminError(errorMessage));
+         dispatch(setAdminError(errorMessage));
       } else if (index === 1) {
-        dispatch(setTrainerError(errorMessage));
+       dispatch(setTrainerError(errorMessage));
       } else {
-        dispatch(setError(errorMessage));
+       dispatch(setError(errorMessage));
       }
       console.error(`Auth check failed for ${index === 0 ? "admin" : index === 1 ? "trainer" : "user"}:`, errorMessage);
     }

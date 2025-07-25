@@ -69,27 +69,26 @@ export class TrainerRefreshTokenUseCase implements ITrainerRefreshTokenUseCase {
         };
       }
 
-      const{token : accessToken} = await this.tokenService.generateAccessToken({
-        id: trainer.id!,
-        email: trainer.email.address,
-      });
-      const refreshToken = await this.tokenService.generateRefreshToken({
-        id: trainer.id!,
-        email: trainer.email.address,
-      });
+      const { token: accessToken } = await this.tokenService.generateAccessToken({
+      id: trainer.id!,
+      email: trainer.email.address,
+    });
+    const refreshToken = await this.tokenService.generateRefreshToken({
+      id: trainer.id!,
+      email: trainer.email.address,
+    });
+    await this.trainersRepository.updateRefreshToken(trainer.email.address, refreshToken);
+    const trainerResponse: TrainerAuth = {
+      id: trainer.id!,
+      email: trainer.email.address,
+      name: trainer.name,
+      role: trainer.role,
+      profilePic: trainer.profilePic || null,
+      isVerified: trainer.isVerified || false,
+      verifiedByAdmin: trainer.verifiedByAdmin || false,
+    };
 
-      await this.trainersRepository.updateRefreshToken(trainer.email.address, refreshToken);
-
-      const trainerResponse: TrainerAuth = {
-        id: trainer.id!,
-        email: trainer.email.address,
-        name: trainer.name,
-        role: trainer.role,
-        profilePic: trainer.profilePic || null,
-        isVerified: trainer.isVerified || false,
-        verifiedByAdmin: trainer.verifiedByAdmin || false,
-      };
-
+    
       return {
         success: true,
         status: HttpStatus.OK,

@@ -325,14 +325,14 @@ const GymDetailsPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             {/* Booking Section */}
-            <div className="bg-white shadow rounded-lg p-6">
+            {/* <div className="bg-white shadow rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-6 flex items-center">
                 <i className="fas fa-calendar-alt mr-2 text-blue-600"></i>
                 Book Your Session
-              </h2>
+              </h2> */}
               
               {/* Date Selection */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-6">
+              {/* <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-6">
                 {dates.map((date, index) => (
                   <button
                     key={index}
@@ -351,10 +351,10 @@ const GymDetailsPage: React.FC = () => {
                     </span>
                   </button>
                 ))}
-              </div>
+              </div> */}
 
               {/* Time Slots */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {/* <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {gym.schedule
                   .filter(s => !s.isClosed)
                   .slice(0, 8)
@@ -367,7 +367,7 @@ const GymDetailsPage: React.FC = () => {
                     </button>
                   ))}
               </div>
-            </div>
+            </div> */}
 
             {/* Operating Hours */}
             <div className="bg-white shadow rounded-lg p-6">

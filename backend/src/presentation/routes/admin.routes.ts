@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { AdminAuthController } from '@/presentation/controllers/admin/adminAuth.controller';
 import { AdminController } from '@/presentation/controllers/admin/admin.controller';
-import { AdminAuthMiddleware } from '@/presentation/middlewares/adminAuth.middleware';
-import { validateMiddleware } from '@/presentation/middlewares/admin.validate.middleware';
-import { adminRefreshTokenMiddleware } from '@/presentation/middlewares/adminRefreshToken.middleware';
+import { AdminAuthMiddleware } from '@/presentation/middlewares/admin/adminAuth.middleware';
+import { validateMiddleware } from '@/presentation/middlewares/admin/admin.validate.middleware';
+import { adminRefreshTokenMiddleware } from '@/presentation/middlewares/admin/adminRefreshToken.middleware';
 import { UsersRepository } from '@/infra/repositories/users.repository';
 import { JwtTokenService } from '@/infra/providers/jwtTokenService';
 import { upload } from '@/infra/config/multer';

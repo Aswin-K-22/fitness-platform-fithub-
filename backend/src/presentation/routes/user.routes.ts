@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { UserAuthController } from '../controllers/user/auth.controller';
 import { UserController } from '../controllers/user/user.controller';
-import { AuthMiddleware } from '../middlewares/userAuth.middleware';
-import { validateMiddleware } from '../middlewares/validate.middleware';
+import { AuthMiddleware } from '../middlewares/user/userAuth.middleware';
+import { validateMiddleware } from '../middlewares/user/validate.middleware';
 import { JwtTokenService } from '@/infra/providers/jwtTokenService';
-import { refreshTokenMiddleware } from '../middlewares/refreshToken.middleware';
+import { refreshTokenMiddleware } from '../middlewares/user/userRefreshToken.middleware';
 import { upload } from '@/infra/config/multer';
 export class UserRoutes {
   public router: Router;
@@ -39,7 +39,7 @@ export class UserRoutes {
     this.router.post('/membership/verify-payment', this.authMiddleware.auth.bind(this.authMiddleware),this.userController.verifyMembershipPayment.bind(this.userController));
     // Protected routes
     this.router.post('/logout', this.authMiddleware.auth.bind(this.authMiddleware), validateMiddleware('logout'), this.userAuthController.logout.bind(this.userAuthController));
-    this.router.post('/auth/refresh-token',  refreshTokenMiddleware,validateMiddleware('refreshToken'), this.userAuthController.refreshToken.bind(this.userAuthController));
+    this.router.post('/auth/refresh-token',  refreshTokenMiddleware, this.userAuthController.refreshToken.bind(this.userAuthController));
     this.router.get('/auth/get', this.authMiddleware.auth.bind(this.authMiddleware), this.userController.getUser.bind(this.userController));
    this.router.get('/profile', this.authMiddleware.auth.bind(this.authMiddleware), this.userController.getUserProfile.bind(this.userController));
   this.router.put(

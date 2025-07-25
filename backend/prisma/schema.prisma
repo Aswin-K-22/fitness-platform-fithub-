@@ -31,6 +31,7 @@ model User {
   Bookings       Booking[]       @relation
   payments       Payment[]       @relation
   notifications  Notification[]  @relation
+  ptPlanPurchases PTPlanPurchase[] @relation
 }
 
 type FitnessProfile {
@@ -97,6 +98,7 @@ model Trainer {
   payments        Payment[]       @relation
   phone           String?
   ratings         Ratings?
+  ptPlans         PTPlan[]        @relation
 }
 
 type Certification {
@@ -333,6 +335,7 @@ model Payment {
   user       User?       @relation(fields: [userId], references: [id])
   trainer    Trainer?    @relation(fields: [trainerId], references: [id])
   membership Membership? @relation(fields: [membershipId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  ptPlanPurchase PTPlanPurchase[] @relation
 }
 
 model Notification {
@@ -343,4 +346,69 @@ model Notification {
   createdAt DateTime
   read      Boolean  @default(false)
   user      User     @relation(fields: [userId], references: [id])
+}
+
+
+model PTPlan {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  category PTPlanCategory
+  mode PTPlanMode         
+  description     String
+  goal            String           
+  features        String[]         
+  duration        Int              
+  image           String?          
+  trainerPrice    Float           
+  adminPrice      Float?           
+  totalPrice      Float?           
+  verifiedByAdmin Boolean          @default(false) // Admin verification status
+  createdBy       String           @db.ObjectId   // Reference to Trainer
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  isActive        Boolean          @default(true)
+  purchases       PTPlanPurchase[] @relation      // Link to purchased plans
+  trainer         Trainer?         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([createdBy]) // Index for faster queries by trainer
+}
+
+model PTPlanPurchase {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String    @db.ObjectId
+  ptPlanId      String    @db.ObjectId
+  status PTPlanPurchaseStatus
+  startDate     DateTime  // Purchase date
+  endDate       DateTime  // Calculated as startDate + duration (in months)
+  paymentId     String?   @db.ObjectId // Link to Payment model
+  price         Float?    // Price paid for this purchase
+  currency      String    @default("INR") // Always Indian Rupees
+  paymentStatus String?   // e.g., "Paid", "Pending"
+  paymentDate   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ptPlan         PTPlan?   @relation(fields: [ptPlanId], references: [id], onDelete: Cascade)
+  payment        Payment?  @relation(fields: [paymentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([userId, ptPlanId]) // Index for faster queries by user and plan
+}
+
+enum PTPlanCategory {
+  beginner
+  intermediate
+  advanced
+}
+
+enum PTPlanMode {
+  online
+}
+
+
+
+enum PTPlanPurchaseStatus {
+  Active
+  Expired
+  Pending
 }

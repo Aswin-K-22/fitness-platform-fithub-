@@ -61,7 +61,7 @@ export class AdminRefreshTokenUseCase implements IAdminRefreshTokenUseCase {
         status: HttpStatus.OK,
         message: MESSAGES.SUCCESS,
         data: {
-          user: {
+          admin: {
             id: admin.id!,
             email: admin.email.address,
             name: admin.name,

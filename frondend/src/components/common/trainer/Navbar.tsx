@@ -1,7 +1,6 @@
-// src/presentation/features/trainer/components/Navbar.tsx
 import React, { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom"; // Add Link
 import { toast } from "react-toastify";
 import type { AppDispatch, RootState } from "../../../store/store";
 import { logoutThunk } from "../../../store/slices/trainerAuthSlice";
@@ -10,6 +9,7 @@ const Navbar: React.FC = () => {
   const { trainer } = useSelector((state: RootState) => state.trainerAuth);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -22,12 +22,13 @@ const Navbar: React.FC = () => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
     try {
+      console.log("log out button clicked", trainer);
       if (trainer?.email) {
         await dispatch(logoutThunk(trainer.email));
         toast.success("Logged out successfully!");
@@ -45,12 +46,32 @@ const Navbar: React.FC = () => {
     setIsOpen(false);
   };
 
+  // Navigation items
   const navItems = [
-    { name: "Dashboard", href: "/trainer/dashboard", current: true },
-    { name: "Clients", href: "#", current: false },
-    { name: "Schedule", href: "#", current: false },
-    { name: "Analytics", href: "#", current: false },
+    { name: "Dashboard", to: "/trainer/dashboard" },
+    { name: "Clients", to: "/trainer/client-interaction" },
+     { name: "PT Plans", to: "/trainer/pt-plans" }, 
+    { name: "Analytics", to: "#" }, // Note: Handle '#' separately if needed
   ];
+
+  // Placeholder component for profile image
+  const ProfileImagePlaceholder = () => (
+    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center ring-2 ring-gray-200">
+      <svg
+        className="h-5 w-5 text-gray-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+        />
+      </svg>
+    </div>
+  );
 
   return (
     <nav className="bg-white border-b border-gray-200 fixed w-full z-50 shadow-sm">
@@ -73,18 +94,18 @@ const Navbar: React.FC = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:ml-8 md:flex md:space-x-1">
               {navItems.map((item) => (
-                <a
+                <Link
                   key={item.name}
-                  href={item.href}
+                  to={item.to}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                    item.current
+                    location.pathname === item.to
                       ? "bg-indigo-50 text-indigo-700 border-b-2 border-indigo-500"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                   }`}
-                  aria-current={item.current ? "page" : undefined}
+                  aria-current={location.pathname === item.to ? "page" : undefined}
                 >
                   {item.name}
-                </a>
+                </Link>
               ))}
             </div>
           </div>
@@ -114,22 +135,34 @@ const Navbar: React.FC = () => {
             </button>
 
             {/* Profile Dropdown */}
-            <div className="relative" ref={dropdownRef}>
+           <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 aria-expanded={isOpen}
                 aria-haspopup="true"
               >
-                <img
-                  className="h-8 w-8 rounded-full object-cover ring-2 ring-gray-200"
-                  src={
-                    trainer?.profilePic
-                      ? `${import.meta.env.VITE_API_BASE_URL}${trainer.profilePic}`
-                      : "/images/trainer.png"
-                  }
-                  alt="Trainer profile"
-                />
+                {trainer?.profilePic ? (
+                  <img
+                    className="h-8 w-8 rounded-full object-cover ring-2 ring-gray-200"
+                    src={`${trainer.profilePic}`} // Assume profilePic is a presigned URL or full URL
+                    alt="Trainer profile"
+                    onError={(e) => {
+                      const parent = e.currentTarget.parentElement;
+                      if (parent) {
+                        parent.innerHTML = `
+                          <div class="h-8 w-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center ring-2 ring-gray-200">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"></path>
+                            </svg>
+                          </div>
+                        `;
+                      }
+                    }}
+                  />
+                ) : (
+                  <ProfileImagePlaceholder />
+                )}
                 <div className="hidden sm:block text-left">
                   <p className="text-sm font-medium text-gray-900">
                     {trainer?.name || "Trainer"}
@@ -164,7 +197,7 @@ const Navbar: React.FC = () => {
                       {trainer?.email || "trainer@example.com"}
                     </p>
                   </div>
-                  
+
                   <div className="py-2">
                     <button
                       onClick={handleProfileClick}
@@ -185,7 +218,7 @@ const Navbar: React.FC = () => {
                       </svg>
                       Profile
                     </button>
-                    
+
                     <button
                       onClick={() => setIsOpen(false)}
                       className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
@@ -211,7 +244,7 @@ const Navbar: React.FC = () => {
                       Settings
                     </button>
                   </div>
-                  
+
                   <div className="border-t border-gray-100 pt-2">
                     <button
                       onClick={handleLogout}
@@ -275,18 +308,18 @@ const Navbar: React.FC = () => {
         <div className="md:hidden bg-white border-t border-gray-200 shadow-lg">
           <div className="px-2 pt-2 pb-3 space-y-1">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.name}
-                href={item.href}
+                to={item.to}
                 className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
-                  item.current
+                  location.pathname === item.to
                     ? "bg-indigo-50 text-indigo-700 border-l-4 border-indigo-500"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
-                aria-current={item.current ? "page" : undefined}
+                aria-current={location.pathname === item.to ? "page" : undefined}
               >
                 {item.name}
-              </a>
+              </Link>
             ))}
           </div>
         </div>

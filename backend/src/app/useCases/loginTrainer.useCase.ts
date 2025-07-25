@@ -1,3 +1,5 @@
+
+//src/app/useCases/loginTrainer.useCase.ts
 import { ITrainersRepository } from '../repositories/trainers.repository';
 import { IPasswordHasher } from '../providers/passwordHasher.service';
 import { ITokenService } from '../providers/token.service';
@@ -7,12 +9,14 @@ import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { ILoginTrainerUseCase } from './interfaces/ILoginTrainerUseCase';
+import { S3Service } from '@/infra/providers/s3.service';
 
 export class LoginTrainerUseCase implements ILoginTrainerUseCase {
   constructor(
     private trainersRepository: ITrainersRepository,
     private passwordHasher: IPasswordHasher,
-    private tokenService: ITokenService
+    private tokenService: ITokenService,
+     private readonly s3Service: S3Service
   ) {}
 
   async execute(data: ILoginRequestDTO): Promise<ILoginTrainerResponseDTO> {
@@ -69,20 +73,25 @@ export class LoginTrainerUseCase implements ILoginTrainerUseCase {
         };
       }
 
+    let profilePicUrl = trainer.profilePic;
+      if (profilePicUrl && profilePicUrl.startsWith('trainer-profiles/')) {
+        profilePicUrl = await this.s3Service.getPresignedUrl(profilePicUrl) || trainer.profilePic;
+      }
+
       const responseTrainer = {
         id: trainer.id,
-        email: trainer.email.address,
+        email: trainer.email.address, // Use email.address directly
         name: trainer.name,
         role: 'trainer' as const,
         isVerified: trainer.isVerified,
         verifiedByAdmin: trainer.verifiedByAdmin,
-        profilePic: trainer.profilePic || null,
+        profilePic: profilePicUrl, // Use the updated profilePicUrl
       };
-
-      const { token: accessToken } = await this.tokenService.generateAccessToken({ email: trainer.email.address, id: trainer.id });
-      const refreshToken = await this.tokenService.generateRefreshToken({ email: trainer.email.address, id: trainer.id });
-
-      await this.trainersRepository.updateRefreshToken(dto.email, refreshToken);
+   console.log('[DEBUG] Trainer email before token generation:', trainer.email.address);
+    const { token: accessToken } = await this.tokenService.generateAccessToken({ email: trainer.email.address, id: trainer.id });
+    const refreshToken = await this.tokenService.generateRefreshToken({ email: trainer.email.address, id: trainer.id });
+    console.log('[DEBUG] Generated refresh token payload:', { email: trainer.email.address, id: trainer.id });
+    await this.trainersRepository.updateRefreshToken(trainer.email.address, refreshToken)
 
       return {
         success: true,

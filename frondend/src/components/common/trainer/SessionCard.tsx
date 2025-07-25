@@ -1,21 +1,25 @@
-import React from "react";
+// src/components/common/trainer/SessionCard.tsx
+import React from 'react';
+import type { IClientSession } from '../../../types/dtos/IClientInteractionDTO';
 
 interface SessionCardProps {
-  name: string;
-  type: string;
-  time: string;
-  avatar: string;
+  session: IClientSession;
 }
 
-const SessionCard: React.FC<SessionCardProps> = ({ name, type, time, avatar }) => (
-  <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-    <img className="h-12 w-12 rounded-full object-cover" src={avatar} alt={name} />
-    <div className="ml-4 flex-1">
-      <h3 className="text-sm font-medium text-gray-900">{name}</h3>
-      <p className="text-sm text-gray-500">{`${type} • ${time}`}</p>
+const SessionCard: React.FC<SessionCardProps> = ({ session }) => {
+  return (
+    <div className="bg-gray-50 rounded-lg p-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-900">{session.title}</p>
+          <p className="text-xs text-gray-500">{session.time}</p>
+        </div>
+        <button className="!rounded-button p-2 text-gray-400 hover:text-custom">
+          <i className="fas fa-edit"></i>
+        </button>
+      </div>
     </div>
-    <button className="bg-indigo-600 text-white px-4 py-2 rounded-md">Start</button>
-  </div>
-);
+  );
+};
 
 export default SessionCard;

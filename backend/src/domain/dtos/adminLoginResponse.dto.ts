@@ -3,7 +3,7 @@ export interface IAdminLoginResponseDTO {
   status: number;
   message?: string;
   data?: {
-    user: {
+    admin: {
       id: string;
       email: string;
       name: string;

@@ -6,9 +6,9 @@ import Navbar from "../../common/trainer/Navbar";
 import Footer from "../../common/Footer";
 
  const TrainerLayout: React.FC<{ children?: React.ReactNode }> = () => (
-  <div className="min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen">
     <Navbar />
-    <main>
+     <main className="flex-grow  pt-16">
       <Outlet /> {/* Render nested routes here */}
     </main>
     <Footer />

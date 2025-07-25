@@ -4,9 +4,13 @@ import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import { IGetTrainerUseCase } from './interfaces/IGetTrainerUseCase';
+import { S3Service } from '@/infra/providers/s3.service';
 
 export class GetTrainerUseCase implements IGetTrainerUseCase {
-  constructor(private trainersRepository: ITrainersRepository) {}
+  constructor(
+    private trainersRepository: ITrainersRepository,
+    private readonly s3Service: S3Service
+  ) {}
 
   async execute(email: string): Promise<IGetTrainerResponseDTO> {
     try {
@@ -22,12 +26,19 @@ export class GetTrainerUseCase implements IGetTrainerUseCase {
         };
       }
 
+      let profilePicUrl = trainer.profilePic;
+      if (profilePicUrl) {
+        if (profilePicUrl && profilePicUrl.startsWith('trainer-profiles/')) {
+           profilePicUrl = await this.s3Service.getPresignedUrl(profilePicUrl) || trainer.profilePic;
+        }
+      }
+
       const trainerResponse: TrainerAuth = {
         id: trainer.id!,
-        email: trainer.email.address,
+        email: email,
         name: trainer.name,
         role: trainer.role,
-        profilePic: trainer.profilePic || null,
+        profilePic: profilePicUrl || null,
         isVerified: trainer.isVerified,
         verifiedByAdmin: trainer.verifiedByAdmin,
       };

@@ -18,5 +18,11 @@ export const MESSAGES = {
   PAYMENT_VERIFIED: 'Payment verified successfully',
   NOTIFICATIONS_FETCHED: 'Notifications fetched successfully',
   NOTIFICATION_MARKED_READ: 'Notification marked as read',
-  // Add other success messages
+  PTPLAN_ADDED: 'PT plan created successfully',
+  PTPLAN_FETCHED: 'PT plans fetched successfully',
+  PTPLAN_NO_PLANS_FOUND: 'No PT plans found for this trainer',
+  PTPLAN_UPDATED:'Plan updated succesfully ',
+  PTPLAN_STOPPED: 'PT plan stopped successfully',
+  PTPLAN_RESUMED: 'PT plan resumed successfully',
+  TRAINER_PROFILE_UPDATED:'TRAINER_PROFILE_UPDATED',
 };

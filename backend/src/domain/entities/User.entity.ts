@@ -1,16 +1,16 @@
+// backend/src/domain/entities/user.entity.ts
 import { Email } from '../valueObjects/email.valueObject';
-import { UserErrorType } from '../enums/userErrorType.enum';
 import { ICreateUserRequestDTO } from '../dtos/createUserRequest.dto';
-import { AuthErrorType } from '../enums/authErrorType.enum';
+import { ERRORMESSAGES } from '../constants/errorMessages.constant';
 
 // Interface for FitnessProfile as per Prisma schema
 interface FitnessProfile {
   goals: string[];
-  weight?: number | null; 
-  height?: number | null; 
-  level?: string | null; 
-  calorieGoal?: number | null; 
-  updatedAt?: Date | null; 
+  weight?: number | null;
+  height?: number | null;
+  level?: string | null;
+  calorieGoal?: number | null;
+  updatedAt?: Date | null;
 }
 
 // Interface for Progress as per Prisma schema
@@ -18,38 +18,32 @@ interface Progress {
   workoutDate: Date;
   planId: string;
   exercisesCompleted: ExerciseCompleted[];
-  totalDuration?: number | null; // Changed from number | undefined
-  totalCaloriesBurned?: number | null; // Changed from number | undefined
-  dailyDifficulty?: string | null; // Changed from string | undefined
+  totalDuration?: number | null;
+  totalCaloriesBurned?: number | null;
+  dailyDifficulty?: string | null;
 }
 
 // Interface for ExerciseCompleted as per Prisma schema
 interface ExerciseCompleted {
-  exerciseId: string; // String @db.ObjectId in Prisma, non-optional
-  name: string; // String in Prisma, non-optional
-  sets?: number | null; // Changed from number | undefined
-  reps?: number | null; // Changed from number | undefined
-  weight?: number | null; // Changed from number | undefined
-  duration?: number | null; // Changed from number | undefined
-  difficulty?: string | null; // Changed from string | undefined
-  caloriesBurned?: number | null; // Changed from number | undefined
+  exerciseId: string;
+  name: string;
+  sets?: number | null;
+  reps?: number | null;
+  weight?: number | null;
+  duration?: number | null;
+  difficulty?: string | null;
+  caloriesBurned?: number | null;
 }
 
 // Interface for WeeklySummary as per Prisma schema
 interface WeeklySummary {
   weekStart: Date;
   weekEnd: Date;
-  totalCaloriesBurned?: number | null; // Changed from number | undefined
-  weeklyDifficulty?: string | null; // Changed from string | undefined
+  totalCaloriesBurned?: number | null;
+  weeklyDifficulty?: string | null;
 }
 
 // Interface for Membership, Booking, and Payment to match Prisma relations
-interface Membership {
-  id: string; // String @db.ObjectId in Prisma
-}
-
-// ... other imports and interfaces
-
 interface Membership {
   id: string;
   plan?: { name: string } | null;
@@ -58,11 +52,11 @@ interface Membership {
 }
 
 interface Booking {
-  id: string; // String @db.ObjectId in Prisma
+  id: string;
 }
 
 interface Payment {
-  id: string; // String @db.ObjectId in Prisma
+  id: string;
 }
 
 interface UserProps {
@@ -79,13 +73,13 @@ interface UserProps {
   refreshToken?: string | null;
   profilePic?: string | null;
   membershipId?: string | null;
-  fitnessProfile?: FitnessProfile | null; 
+  fitnessProfile?: FitnessProfile | null;
   workoutPlanId?: string | null;
-  progress?: Progress[] | null; 
-  weeklySummary?: WeeklySummary[] | null; 
-  memberships?: Membership[] | null; 
-  Bookings?: Booking[] | null; 
-  payments?: Payment[] | null; 
+  progress?: Progress[] | null;
+  weeklySummary?: WeeklySummary[] | null;
+  memberships?: Membership[] | null;
+  Bookings?: Booking[] | null;
+  payments?: Payment[] | null;
 }
 
 export class User {
@@ -104,16 +98,16 @@ export class User {
   private _membershipId: string | null;
   private _fitnessProfile: FitnessProfile | null;
   private _workoutPlanId: string | null;
-  private _progress: Progress[] | null; // Updated to align with null
-  private _weeklySummary: WeeklySummary[] | null; // Updated to align with null
-  private _memberships: Membership[] | null; // Updated to align with null
-  private _Bookings: Booking[] | null; // Updated to align with null
-  private _payments: Payment[] | null; // Updated to align with null
+  private _progress: Progress[] | null;
+  private _weeklySummary: WeeklySummary[] | null;
+  private _memberships: Membership[] | null;
+  private _Bookings: Booking[] | null;
+  private _payments: Payment[] | null;
 
   // Static method to create a new user
   static create({ name, email, password }: ICreateUserRequestDTO): User {
     if (!name || !email) {
-      throw new Error(UserErrorType.MissingRequiredFields);
+      throw new Error(JSON.stringify(ERRORMESSAGES.USER_MISSING_REQUIRED_FIELDS));
     }
 
     try {
@@ -133,14 +127,14 @@ export class User {
         membershipId: null,
         fitnessProfile: null,
         workoutPlanId: null,
-        progress: null, // Updated to align with null
-        weeklySummary: null, // Updated to align with null
-        memberships: null, // Updated to align with null
-        Bookings: null, // Updated to align with null
-        payments: null, // Updated to align with null
+        progress: null,
+        weeklySummary: null,
+        memberships: null,
+        Bookings: null,
+        payments: null,
       });
     } catch (error) {
-      throw new Error(UserErrorType.InvalidCredentials);
+      throw new Error(JSON.stringify(ERRORMESSAGES.USER_INVALID_CREDENTIALS));
     }
   }
 
@@ -234,10 +228,10 @@ export class User {
 
   verify(): void {
     if (this._isVerified) {
-      throw new Error(UserErrorType.UserAlreadyVerified);
+      throw new Error(JSON.stringify(ERRORMESSAGES.USER_ALREADY_VERIFIED));
     }
     if (this._otpExpires && this._otpExpires < new Date()) {
-      throw new Error(AuthErrorType.OtpExpired);
+      throw new Error(JSON.stringify(ERRORMESSAGES.AUTH_OTP_EXPIRED));
     }
     this._isVerified = true;
     this._otp = null;
@@ -266,10 +260,63 @@ export class User {
     this._membershipId = props.membershipId ?? null;
     this._fitnessProfile = props.fitnessProfile ?? null;
     this._workoutPlanId = props.workoutPlanId ?? null;
-    this._progress = props.progress ?? null; // Updated to align with null
-    this._weeklySummary = props.weeklySummary ?? null; // Updated to align with null
-    this._memberships = props.memberships ?? null; // Updated to align with null
-    this._Bookings = props.Bookings ?? null; // Updated to align with null
-    this._payments = props.payments ?? null; // Updated to align with null
+    this._progress = props.progress ?? null;
+    this._weeklySummary = props.weeklySummary ?? null;
+    this._memberships = props.memberships ?? null;
+    this._Bookings = props.Bookings ?? null;
+    this._payments = props.payments ?? null;
+  }
+
+  toJSON(): any {
+    return {
+      id: this._id,
+      name: this._name,
+      email: this._email.address,
+      role: this._role,
+      createdAt: this._createdAt.toISOString(),
+      updatedAt: this._updatedAt.toISOString(),
+      isVerified: this._isVerified,
+      profilePic: this._profilePic,
+      fitnessProfile: this._fitnessProfile
+        ? {
+            goals: this._fitnessProfile.goals,
+            weight: this._fitnessProfile.weight,
+            height: this._fitnessProfile.height,
+            level: this._fitnessProfile.level,
+            calorieGoal: this._fitnessProfile.calorieGoal,
+            updatedAt: this._fitnessProfile.updatedAt
+              ? this._fitnessProfile.updatedAt.toISOString()
+              : null,
+          }
+        : null,
+      workoutPlanId: this._workoutPlanId,
+      progress: this._progress
+        ? this._progress.map((p) => ({
+            workoutDate: p.workoutDate.toISOString(),
+            planId: p.planId,
+            exercisesCompleted: p.exercisesCompleted.map((e) => ({
+              exerciseId: e.exerciseId,
+              name: e.name,
+              sets: e.sets,
+              reps: e.reps,
+              weight: e.weight,
+              duration: e.duration,
+              difficulty: e.difficulty,
+              caloriesBurned: e.caloriesBurned,
+            })),
+            totalDuration: p.totalDuration,
+            totalCaloriesBurned: p.totalCaloriesBurned,
+            dailyDifficulty: p.dailyDifficulty,
+          }))
+        : null,
+      weeklySummary: this._weeklySummary
+        ? this._weeklySummary.map((ws) => ({
+            weekStart: ws.weekStart.toISOString(),
+            weekEnd: ws.weekEnd.toISOString(),
+            totalCaloriesBurned: ws.totalCaloriesBurned,
+            weeklyDifficulty: ws.weeklyDifficulty,
+          }))
+        : null,
+    };
   }
 }

@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import { Trainer } from '@/domain/entities/Trainer.entity';
 import { ITrainersRepository } from '@/app/repositories/trainers.repository';
 import { BaseRepository } from './base.repository';
+import { Email } from '@/domain/valueObjects/email.valueObject';
+import { IUpdateTrainerProfileUseCaseDTO } from '@/domain/dtos/updateTrainerProfileResponse.dto';
 
 export class TrainersRepository
   extends BaseRepository<Trainer>
@@ -16,7 +18,7 @@ export class TrainersRepository
     return new Trainer({
       id: record.id,
       name: record.name,
-      email: record.email,
+      email:new Email({ address: record.email }),
       password: record.password,
       role: record.role,
       profilePic: record.profilePic,
@@ -45,6 +47,7 @@ export class TrainersRepository
 
   async findByEmail(email: string): Promise<Trainer | null> {
     const trainer = await this.prisma.trainer.findUnique({ where: { email } });
+    console.log('[DEBUG] Trainer email from DB:infra/repostry/traienerrepo - findByEmail', trainer?.email);
     return trainer ? this.toDomain(trainer) : null;
   }
 
@@ -110,7 +113,11 @@ export class TrainersRepository
       where: { gyms: { isEmpty: true }, verifiedByAdmin: true },
       select: { id: true, name: true, verifiedByAdmin: true },
     });
-    return trainers.map((t) => ({ id: t.id, name: t.name, active: t.verifiedByAdmin }));
+   return trainers.map((t: { id: string; name: string; verifiedByAdmin: boolean }) => ({
+    id: t.id,
+    name: t.name,
+    active: t.verifiedByAdmin,
+  }));
   }
 
   async checkTrainerAvailability(trainerIds: string[]) {
@@ -118,7 +125,8 @@ export class TrainersRepository
       where: { id: { in: trainerIds }, verifiedByAdmin: true, gyms: { isEmpty: true } },
       select: { id: true },
     });
-    const validIds = trainers.map((t) => t.id);
+const validIds = trainers.map((t: { id: string }) => t.id);
+
     const invalid = trainerIds.filter((id) => !validIds.includes(id));
     return { isValid: invalid.length === 0, message: invalid.length ? `Invalid IDs: ${invalid.join(',')}` : undefined };
   }
@@ -148,8 +156,35 @@ export class TrainersRepository
     return this.prisma.trainer.count({ where: { role: 'trainer', isVerified: false } });
   }
 
-  async updateProfile(email: string, data: any): Promise<Trainer> {
-    const updated = await this.prisma.trainer.update({ where: { email }, data });
+ async updateProfile(trainerId: string, data: IUpdateTrainerProfileUseCaseDTO): Promise<Trainer> {
+  const existingTrainer = await this.prisma.trainer.findUnique({
+      where: { id: trainerId },
+      select: { paymentDetails: true },
+    });
+
+    // Merge existing paymentDetails (if any) with new values
+    const updatedPaymentDetails = {
+      method: existingTrainer?.paymentDetails?.method ?? null,
+      rate: existingTrainer?.paymentDetails?.rate ?? null,
+      currency: existingTrainer?.paymentDetails?.currency ?? null,
+      paymentHistory: existingTrainer?.paymentDetails?.paymentHistory ?? [],
+      upiId: data.upiId,
+      bankAccount: data.bankAccount,
+      ifscCode: data.ifscCode,
+    };
+
+    const updated = await this.prisma.trainer.update({
+      where: { id: trainerId },
+      data: {
+        name: data.name,
+        bio: data.bio,
+        specialties: data.specialties,
+        profilePic: data.profilePic,
+        paymentDetails: updatedPaymentDetails,
+        updatedAt: new Date(),
+      },
+    });
+
     return this.toDomain(updated);
   }
 }

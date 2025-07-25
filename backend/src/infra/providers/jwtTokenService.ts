@@ -1,3 +1,4 @@
+//src/infra/providers/jwtTokenService.ts
 import { ITokenService } from '@/app/providers/token.service';
 import { IRedisService } from '@/app/providers/redis.service';
 import * as jwt from 'jsonwebtoken';
@@ -17,9 +18,13 @@ export class JwtTokenService implements ITokenService {
     return { token, jti };
   }
 
-  async generateRefreshToken(payload: { email: string; id: string | null }): Promise<string> {
-    return jwt.sign(payload, this.refreshSecret, { expiresIn: '7d' });
+ async generateRefreshToken(payload: { email: string; id: string | null }): Promise<string> {
+  if (!payload.email || !payload.id) {
+    throw new Error(`Invalid payload: email=${payload.email}, id=${payload.id}`);
   }
+  console.log('[DEBUG] Refresh token payload:', payload);
+  return jwt.sign(payload, this.refreshSecret, { expiresIn: '7d' });
+}
 
   async verifyAccessToken(token: string): Promise<{ email: string; id: string; jti: string }> {
     const decoded = jwt.verify(token, this.accessSecret) as { email: string; id: string; jti: string };
@@ -31,7 +36,9 @@ export class JwtTokenService implements ITokenService {
   }
 
   async verifyRefreshToken(token: string): Promise<{ email: string; id: string }> {
-    return jwt.verify(token, this.refreshSecret) as { email: string; id: string };
+    const decoded = jwt.verify(token, this.refreshSecret);
+    console.log('Decoded token:-infra/provide/jwtTokenServie -verify fresher Token', decoded); 
+    return decoded as { email: string; id: string };
   }
 
   async blacklistAccessToken(jti: string): Promise<void> {

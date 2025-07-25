@@ -1,6 +1,7 @@
-import { IUpdateTrainerProfileRequestDTO } from '@/domain/dtos/updateTrainerProfileRequest.dto';
-import { IUpdateTrainerProfileResponseDTO } from '@/domain/dtos/updateTrainerProfileResponse.dto';
+import { TrainerResponseDTO } from '@/domain/dtos/getTrainersResponse.dto';
+import { IResponseDTO } from '@/domain/dtos/response.dto';
+import { IUpdateTrainerProfileResponseDTO, IUpdateTrainerProfileUseCaseDTO } from '@/domain/dtos/updateTrainerProfileResponse.dto';
 
 export interface IUpdateTrainerProfileUseCase {
-  execute(email: string, data: IUpdateTrainerProfileRequestDTO): Promise<IUpdateTrainerProfileResponseDTO>;
+  execute( data: IUpdateTrainerProfileUseCaseDTO,trainerId: string): Promise<IResponseDTO<TrainerResponseDTO>>;
 }

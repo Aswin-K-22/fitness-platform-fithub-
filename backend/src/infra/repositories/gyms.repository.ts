@@ -113,7 +113,7 @@ async findAllForUsers(
         aggregate: 'Gym',
         pipeline: aggregationPipeline,
         cursor: {},
-      }).catch((error) => {
+      }).catch((error  :any) => {
         console.error('Error executing geoNear aggregation:', error);
         throw new Error(`GeoNear query failed: ${error.message}`);
       });
@@ -154,7 +154,7 @@ async findAllForUsers(
       const startsWithGyms = await this.prisma.gym.findMany({
         where: { ...whereBase, name: { startsWith: search, mode: 'insensitive' } },
         orderBy: { name: 'asc' },
-      }).catch((error) => {
+      }).catch((error: { message: any; }) => {
         console.error('Error fetching startsWith gyms:', error);
         throw new Error(`StartsWith query failed: ${error.message}`);
       });
@@ -165,10 +165,10 @@ async findAllForUsers(
         where: {
           ...whereBase,
           name: { contains: search, mode: 'insensitive' },
-          NOT: startsWithGyms.map((gym) => ({ id: gym.id })),
+          NOT: startsWithGyms.map((gym: { id: any; }) => ({ id: gym.id })),
         },
         orderBy: { name: 'asc' },
-      }).catch((error) => {
+      }).catch((error: { message: any; }) => {
         console.error('Error fetching contains gyms:', error);
         throw new Error(`Contains query failed: ${error.message}`);
       });
@@ -179,7 +179,7 @@ async findAllForUsers(
       gyms = await this.prisma.gym.findMany({
         where: whereBase,
         orderBy: { name: 'asc' },
-      }).catch((error) => {
+      }).catch((error: { message: any; }) => {
         console.error('Error fetching all gyms:', error);
         throw new Error(`Prisma query failed: ${error.message}`);
       });

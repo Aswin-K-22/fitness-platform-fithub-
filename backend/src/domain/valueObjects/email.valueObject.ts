@@ -1,3 +1,4 @@
+//src/domain/valueObjects/email.valueObject.ts
 import { EmailErrorType } from '../enums/emailErrorType.enum';
 
 interface EmailProps {

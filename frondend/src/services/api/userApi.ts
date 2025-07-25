@@ -13,6 +13,8 @@ import type { Gym } from "../../types/gym.types";
 import type { IMembershipPlansResponseDTO } from "../../types/dtos/IMembershipPlansResponseDTO";
 import type { INotification } from "../../components/common/user/Navbar";
 
+import { io, Socket } from "socket.io-client";
+import Cookies from "js-cookie";
 
 
 
@@ -91,6 +93,46 @@ apiClient.interceptors.response.use(
 );
 
 export { apiClient, refreshClient };
+
+
+// Initialize Socket.IO
+let socket: Socket | null = null;
+
+export const initializeSocket = (): Socket | null => {
+  const token = Cookies.get("userAccessToken"); // Read access token from cookies
+  if (!token) {
+    console.error("No access token found in cookies");
+    return null;
+  }
+
+  if (!socket) {
+    socket = io("/api/user", {
+      transports: ["websocket"],
+      withCredentials: true,
+    });
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket?.id);
+      socket?.emit("authenticate", token); // Send access token
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Socket disconnected");
+    });
+  }
+  return socket;
+};
+
+export const disconnectSocket = () => {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+};
+
+export const getSocket = (): Socket | null => socket;
+
+
 
 // User Authentication
 export const login = async (email: string, password: string): Promise<{ user: UserAuth }> => {

@@ -17,6 +17,7 @@ import { IResponseDTO } from '@/domain/dtos/response.dto';
 import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 import { MulterError } from 'multer';
+import { GymErrorType } from '@/domain/enums/gymErrorType.enums';
 
 export class AdminController {
   constructor(
@@ -109,52 +110,47 @@ export class AdminController {
     this.sendResponse(res, result);
   }
 
-  async addGym(req: Request, res: Response): Promise<void> {
+ async addGym(req: Request, res: Response): Promise<void> {
     try {
       const imageFiles = req.files as Express.Multer.File[] | undefined;
       const imageUrls = imageFiles?.map((file) => `/Uploads/${file.filename}`) || [];
 
       if (!req.body.gymData) {
-        return this.sendResponse(res, {
-          success: false,
-          status: HttpStatus.BAD_REQUEST,
-          error: {
-            code: ERRORMESSAGES.GYM_MISSING_REQUIRED_FIELDS.code,
-            message: ERRORMESSAGES.GYM_MISSING_REQUIRED_FIELDS.message,
-          },
-        });
+        throw new Error(GymErrorType.MissingRequiredFields);
       }
 
       const gymData: AddGymRequestDTO = JSON.parse(req.body.gymData);
-      const result = await this.addGymUseCase.execute(gymData, imageUrls);
-      this.sendResponse(res, result);
+
+      const response = await this.addGymUseCase.execute(gymData, imageUrls);
+
+      res.status(201).json(response);
     } catch (error) {
+      console.error('Error creating gym:', error);
       if (error instanceof MulterError) {
-        const status = error.code === 'LIMIT_FILE_SIZE' ? HttpStatus.BAD_REQUEST : HttpStatus.BAD_REQUEST;
-        return this.sendResponse(res, {
+        console.error('Error creating gym:', error);
+        if (error.code === 'LIMIT_FILE_SIZE') {
+          res.status(400).json({
+            success: false,
+            message: 'Uploaded file is too large. Maximum size allowed is 10MB.',
+            error: error.code,
+          });
+          return;
+        }
+        res.status(400).json({
           success: false,
-          status,
-          error: {
-            code: error.code,
-            message: error.code === 'LIMIT_FILE_SIZE'
-              ? 'Uploaded file is too large. Maximum size allowed is 10MB.'
-              : `Multer error: ${error.message}`,
-          },
+          message: `Multer error: ${error.message}`,
+          error: error.code,
         });
+        return;
       }
-      const status = error instanceof Error && error.message.includes(ERRORMESSAGES.GYM_DUPLICATE_GYM_NAME.code)
-        ? HttpStatus.CONFLICT
-        : HttpStatus.INTERNAL_SERVER_ERROR;
-      this.sendResponse(res, {
+      const message = error instanceof Error ? error.message : 'Internal server error while creating gym';
+      res.status(message.includes(GymErrorType.DuplicateGymName) ? 409 : 400).json({
         success: false,
-        status,
-        error: {
-          code: ERRORMESSAGES.GENERIC_ERROR.code,
-          message: error instanceof Error ? error.message : ERRORMESSAGES.GENERIC_ERROR.message,
-        },
+        message,
       });
     }
   }
+
 
   async getAvailableTrainers(req: Request, res: Response): Promise<void> {
     const result = await this.getAvailableTrainersUseCase.execute();

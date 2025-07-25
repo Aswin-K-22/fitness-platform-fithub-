@@ -43,6 +43,7 @@ const TrainerManagement: React.FC = () => {
           statusFilter || undefined,
           specializationFilter || undefined
         );
+        console.log('get trianer sdata ',response)
         setTrainers(response.trainers);
         setStats(response.stats);
         setTotalPages(response.totalPages);
@@ -213,7 +214,7 @@ const TrainerManagement: React.FC = () => {
           />
         </div>
       </div>
-
+{/* 
       <div className="bg-white shadow rounded-lg mb-8">
         <div className="px-4 py-5 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
@@ -245,7 +246,7 @@ const TrainerManagement: React.FC = () => {
             </select>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="overflow-x-auto">

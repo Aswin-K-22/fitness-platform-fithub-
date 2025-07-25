@@ -2,6 +2,7 @@
 import { IBaseRepository } from './base.repository';
 import { Trainer } from '@/domain/entities/Trainer.entity';
 import { IUpdateTrainerProfileRequestDTO } from '@/domain/dtos/updateTrainerProfileRequest.dto';
+import { IUpdateTrainerProfileUseCaseDTO } from '@/domain/dtos/updateTrainerProfileResponse.dto';
 
 export interface ITrainersRepository extends IBaseRepository<Trainer> {
   findByEmail(email: string): Promise<Trainer | null>;
@@ -24,5 +25,5 @@ export interface ITrainersRepository extends IBaseRepository<Trainer> {
   countPending(): Promise<number>;
   countApproved(): Promise<number>;
   countSuspended(): Promise<number>;
-  updateProfile(email: string, data: IUpdateTrainerProfileRequestDTO): Promise<Trainer>;
+updateProfile(trainerId: string, data: IUpdateTrainerProfileUseCaseDTO): Promise<Trainer>;
 }

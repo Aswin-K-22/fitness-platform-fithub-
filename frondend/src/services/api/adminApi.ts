@@ -91,10 +91,10 @@ export const adminLogin = async (email: string, password: string) => {
     const response = await apiClient.post("/auth/login", { email, password });
     console.log("adminApi: Login response:", {
       status: response.status,
-      data: response.data,
-      admin: response.data.admin,
+      data: response.data.data,
+      admin: response.data.data.admin,
     });
-    return { admin: response.data.user };
+    return { admin: response.data.data.admin };
   } catch (error: any) {
     console.error("adminApi: Login error:", {
       message: error.message,
@@ -112,7 +112,8 @@ export const adminLogout = async (email: string): Promise<void> => {
 
 export const getAdmin = async () => {
   const response = await apiClient.get("/auth/get");
-  return { admin: response.data.user };
+  console.log('get admin response ',response)
+  return { admin: response.data.data.user };
 };
 
 export const getUsers = async (
@@ -133,9 +134,9 @@ export const getUsers = async (
   });
   console.log("API response for params:", { search, membership, isVerified }, "Users:", response.data.users);
  return {
-    users: response.data.users, // Backend already maps to simplified structure
-    totalPages: response.data.totalPages,
-    totalUsers: response.data.totalUsers,
+    users: response.data.data.users, // Backend already maps to simplified structure
+    totalPages: response.data.data.totalPages,
+    totalUsers: response.data.data.totalUsers,
   };
 };
 
@@ -145,12 +146,12 @@ export const addGym = async (data: FormData): Promise<any> => {
   const response = await apiClient.post("/addGym", data, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  return response.data;
+  return response.data.data;
 };
 
 export const getAvailableTrainers = async (): Promise<{ id: string; name: string; active: boolean }[]> => {
   const response = await apiClient.get("/available-trainers");
-  return response.data.trainers; 
+  return response.data.data.trainers; 
 };
 
 export const getGyms = async (page: number, limit: number, search?: string): Promise<IGetGymsResponseDTO> => {
@@ -169,7 +170,7 @@ export const getGyms = async (page: number, limit: number, search?: string): Pro
   });
   console.log("API response for gyms:", { search }, "Gyms:", response.data.gyms);
   return {
-    gyms: response.data.gyms.map((gym: any) => ({
+    gyms: response.data.data.gyms.map((gym: any) => ({
       id: gym.id,
       name: gym.name || "N/A",
       description: gym.description || "N/A",
@@ -179,21 +180,21 @@ export const getGyms = async (page: number, limit: number, search?: string): Pro
       ratings: gym.ratings || {},
       facilities: gym.facilities || {},
     })),
-    total: response.data.total || 0,
-    totalPages: response.data.totalPages || 1,
+    total: response.data.data.total || 0,
+    totalPages: response.data.data.totalPages || 1,
   };
 };
 
 export const trainersList = async (page: number, limit: number) => {
   const response = await apiClient.get(`/admin/trainers?page=${page}&limit=${limit}`);
-  return response.data;
+  return response.data.data;
 };
 
 export const toggleUserVerification = async (id: string): Promise<User> => {
   const response = await apiClient.put(`/users/${id}/toggle-verification`);
   console.log("Raw backend response:", response.data); 
   console.log('Raw backend response:', response.data);
-  return response.data.user;
+  return response.data.data.user;
 };
 
 export const getMembershipPlans = async (page: number, limit: number): Promise<IGetMembershipPlansResponseDTO> => {
@@ -201,7 +202,7 @@ export const getMembershipPlans = async (page: number, limit: number): Promise<I
   const response = await apiClient.get("/membership-plans", {
     params: { page, limit },
   });
- return response.data;
+ return response.data.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to fetch membership plans');
   }
@@ -245,9 +246,9 @@ export const getTrainers = async (
       Expires: "0",
     },
   });
-  console.log("API response for trainers:", { search, status, specialization }, "Trainers:", response.data.trainers);
+  console.log("API response for trainers:", { search, status, specialization }, "Trainers:", response.data);
   return {
-    trainers: response.data.trainers.map((trainer: any) => ({
+    trainers: response.data.data.trainers.map((trainer: any) => ({
       id: trainer.id,
       name: trainer.name || "N/A",
       email: trainer.email,
@@ -258,12 +259,12 @@ export const getTrainers = async (
       profilePic: trainer.profilePic || null,
     })),
     stats: {
-      totalTrainers: response.data.stats.totalTrainers || 0,
-      pendingApproval: response.data.stats.pendingApproval || 0,
-      activeTrainers: response.data.stats.activeTrainers || 0,
-      suspended: response.data.stats.suspended || 0,
+      totalTrainers: response.data.data.stats.totalTrainers || 0,
+      pendingApproval: response.data.data.stats.pendingApproval || 0,
+      activeTrainers: response.data.data.stats.activeTrainers || 0,
+      suspended: response.data.data.stats.suspended || 0,
     },
-    totalPages: response.data.totalPages || 1,
+    totalPages: response.data.data.totalPages || 1,
   };
 };
 

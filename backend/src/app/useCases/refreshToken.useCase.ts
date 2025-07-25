@@ -16,7 +16,7 @@ export class RefreshTokenUseCase implements IRefreshTokenUseCase {
 
   async execute(data: IRefreshTokenRequestDTO): Promise<IRefreshTokenResponseDTO> {
     try {
-      console.log('Verifying refresh token:', data.refreshToken);
+      console.log('Verifying refresh token:[app/useCase/refershToken.ts]', data.refreshToken[0]);
       if (!data.refreshToken) {
         return {
           success: false,

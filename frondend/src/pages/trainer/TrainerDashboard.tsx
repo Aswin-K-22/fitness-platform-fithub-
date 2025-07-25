@@ -1,17 +1,16 @@
 // src/presentation/features/trainer/pages/TrainerDashboard.tsx
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import Navbar from "../../components/common/trainer/Navbar";
 import StatCard from "../../components/common/trainer/StatCard";
-import SessionCard from "../../components/common/trainer/SessionCard";
 import NotificationCard from "../../components/common/trainer/NotificationCard";
 //import ChatCard from "../components/ChatCard";
 import ReactECharts from "echarts-for-react";
 import type { EChartsOption } from "echarts";
 import type { ITrainerDashboardResponseDTO } from "../../types/dtos/ITrainerDashboardResponseDTO";
 import { getTrainerDashboardData } from "../../services/api/trainerApi";
-import ChatCard from "../../components/common/trainer/ChatCard";
 import type { RootState } from "../../store/store";
+import DashboardChatCard from "../../components/common/trainer/DashboardChatCard";
+import DashboardSessionCard from "../../components/common/trainer/DashboardSessionCard";
 
 
 
@@ -98,18 +97,12 @@ const TrainerDashboard: React.FC = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen font-[Inter]">
-      <Navbar />
-      <main className="pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
             <div className="flex items-center">
               <img
                 className="h-20 w-20 rounded-full object-cover mr-6"
-                src={
-                  trainer?.profilePic
-                    ? `${import.meta.env.VITE_API_BASE_URL}${trainer.profilePic}`
-                    : " /images/trainer.png"
-                }
+               src={trainer?.profilePic || "/images/trainer.png"}
                 alt="Trainer"
                 onError={(e) => (e.currentTarget.src = "/images/user.jpg")}
               />
@@ -141,7 +134,7 @@ const TrainerDashboard: React.FC = () => {
                 <div className="space-y-4">
                   {dashboardData.sessions.length > 0 ? (
                     dashboardData.sessions.map((session, index) => (
-                      <SessionCard key={index} {...session} />
+                      <DashboardSessionCard key={index} {...session} />
                     ))
                   ) : (
                     <p className="text-gray-500">No upcoming sessions</p>
@@ -192,7 +185,7 @@ const TrainerDashboard: React.FC = () => {
                 <div className="space-y-4">
                   {dashboardData.chats.length > 0 ? (
                     dashboardData.chats.map((chat, index) => (
-                      <ChatCard key={index} {...chat} />
+                      <DashboardChatCard key={index} {...chat} />
                     ))
                   ) : (
                     <p className="text-gray-500">No chats available</p>
@@ -202,7 +195,6 @@ const TrainerDashboard: React.FC = () => {
             </div>
           </div>
         </div>
-      </main>
     </div>
   );
 };
