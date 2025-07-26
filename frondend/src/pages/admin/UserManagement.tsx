@@ -17,30 +17,42 @@ const UserManagement: React.FC = () => {
   const [search, setSearch] = useState("");
   const [membershipFilter, setMembershipFilter] = useState("");
   const [isVerifiedFilter, setIsVerifiedFilter] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+
   const limit = 3;
 
+useEffect(() => {
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const { users: fetchedUsers, totalPages: fetchedTotalPages } = await getUsers(
+        page,
+        limit,
+        debouncedSearch || undefined,
+        membershipFilter || undefined,
+        isVerifiedFilter || undefined
+      );
+      setUsers(fetchedUsers);
+      setTotalPages(fetchedTotalPages);
+    } catch (err) {
+      setError("Failed to fetch users");
+      console.error("Error fetching users:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  loadUsers();
+}, [page, debouncedSearch, membershipFilter, isVerifiedFilter]);
+
   useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        setLoading(true);
-        const { users: fetchedUsers, totalPages: fetchedTotalPages } = await getUsers(
-          page,
-          limit,
-          search || undefined,
-          membershipFilter || undefined,
-          isVerifiedFilter || undefined
-        );
-        setUsers(fetchedUsers);
-        setTotalPages(fetchedTotalPages);
-      } catch (err) {
-        setError("Failed to fetch users");
-        console.error("Error fetching users:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadUsers();
-  }, [page, search, membershipFilter, isVerifiedFilter]);
+  const handler = setTimeout(() => {
+    setDebouncedSearch(search);
+  }, 500); // 500ms debounce delay
+
+  return () => {
+    clearTimeout(handler); // Cleanup previous timeout
+  };
+}, [search]);
 
   const handleUserUpdate = (updatedUser: User) => {
     setUsers((prevUsers) =>

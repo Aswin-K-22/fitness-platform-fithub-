@@ -3,6 +3,8 @@ export const MESSAGES = {
   MEMBERSHIP_PURCHASE_SUCCESS: 'Membership purchased successfully',
   USER_LOGIN_SUCCESS: 'User logged in successfully',
   TRAINER_APPROVED: 'Trainer approved successfully',
+  TRAINERS_FETCHED: 'Trainers fetched successfully',
+  TRAINERS_NO_TRAINERS_FOUND: 'No trainers found',
   SUCCESS: 'Operation successful',
   CREATED: 'Resource created successfully',
   UPDATED: 'Resource updated successfully',
@@ -27,4 +29,5 @@ export const MESSAGES = {
   TRAINER_PROFILE_UPDATED:'TRAINER_PROFILE_UPDATED',
   PTPLAN_ADMIN_PRICE_UPDATED:'PTPLAN_ADMIN_PRICE_UPDATED',
   PTPLAN_VERIFIED :'PTPLAN_VERIFIED'
+  
 };

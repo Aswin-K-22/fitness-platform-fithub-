@@ -39,12 +39,12 @@ export class AdminRoutes {
       this.adminController.toggleUserVerification.bind(this.adminController),
     );
 
-    this.router.get(
-      '/trainers',
-      this.adminAuthMiddleware.auth.bind(this.adminAuthMiddleware),
-      
-      this.adminController.getTrainers.bind(this.adminController),
-    );
+   this.router.get(
+  '/trainers',
+  this.adminAuthMiddleware.auth.bind(this.adminAuthMiddleware),
+  this.adminValidationMiddleware.validateGetTrainers.bind(this.adminValidationMiddleware),
+  this.adminController.getTrainers.bind(this.adminController),
+);
     this.router.put(
       '/trainers/:trainerId/toggle-approval',
       this.adminAuthMiddleware.auth.bind(this.adminAuthMiddleware),

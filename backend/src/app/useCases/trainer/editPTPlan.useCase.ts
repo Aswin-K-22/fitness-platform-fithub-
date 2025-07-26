@@ -7,7 +7,7 @@ import { IPTPlanRepository } from '@/app/repositories/ptPlan.repository';
 import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 import { MESSAGES } from '@/domain/constants/messages.constant';
-import { IEditPTPlanUseCase } from './interfaces/IEditPTPlanUseCase';
+import { IEditPTPlanUseCase } from './interfeces/IEditPTPlanUseCase';
 import { S3Service } from '@/infra/providers/s3.service';
 import { IPTPlanRequestToEntity } from '@/domain/dtos/createPTPlanRequest.dto';
 

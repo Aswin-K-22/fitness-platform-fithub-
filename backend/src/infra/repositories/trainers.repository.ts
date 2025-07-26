@@ -1,5 +1,5 @@
 // backend/src/infra/repositories/trainers.repository.ts
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { Trainer } from '@/domain/entities/Trainer.entity';
 import { ITrainersRepository } from '@/app/repositories/trainers.repository';
 import { BaseRepository } from './base.repository';
@@ -103,9 +103,111 @@ export class TrainersRepository
     await this.prisma.trainer.update({ where: { email }, data: { refreshToken } });
   }
 
-  async findAll(skip: number, take: number, search?: string, status?: string, specialization?: string) {
-    const trainers = await this.prisma.trainer.findMany({ skip, take });
-    return trainers.map(this.toDomain);
+
+  async findAllWithFilters(
+    skip: number,
+    take: number,
+    search?: string,
+    status?: string,
+    specialization?: string
+  ): Promise<Trainer[]> {
+    try {
+      console.log('findAllWithFilters - Input parameters:', { skip, take, search, status, specialization });
+
+      if (skip < 0 || take <= 0) {
+        console.error('Invalid pagination parameters:', { skip, take });
+        throw new Error('Invalid skip or take values');
+      }
+
+      const where: Prisma.TrainerWhereInput = { role: 'trainer' };
+
+      // Apply status filter
+      if (status) {
+        if (status === 'Approved') {
+          where.verifiedByAdmin = true;
+          where.isVerified = true;
+        } else if (status === 'Pending') {
+          where.verifiedByAdmin = false;
+          where.isVerified = true;
+        } else if (status === 'Suspended') {
+          where.isVerified = false;
+        }
+      }
+
+      // Apply specialization filter
+      if (specialization) {
+        where.specialties = { has: specialization };
+      }
+
+      let trainers: any[] = [];
+      if (search) {
+        // Fetch trainers with name starting with search term
+        const startsWithTrainers = await this.prisma.trainer.findMany({
+          where: {
+            ...where,
+            name: { startsWith: search, mode: 'insensitive' },
+          },
+          orderBy: { name: 'asc' },
+          skip,
+          take,
+        }).catch((error: any) => {
+          console.error('Error fetching startsWith trainers:', error);
+          throw new Error(`StartsWith query failed: ${error.message}`);
+        });
+        console.log('StartsWith trainers:', startsWithTrainers.length);
+
+        // Fetch trainers with name containing search term, excluding those in startsWith
+        const containsTrainers = await this.prisma.trainer.findMany({
+          where: {
+            ...where,
+            name: { contains: search, mode: 'insensitive' },
+            NOT: startsWithTrainers.map((trainer: any) => ({ id: trainer.id })),
+          },
+          orderBy: { name: 'asc' },
+          skip: startsWithTrainers.length >= take ? 0 : skip,
+          take: take - startsWithTrainers.length,
+        }).catch((error: any) => {
+          console.error('Error fetching contains trainers:', error);
+          throw new Error(`Contains query failed: ${error.message}`);
+        });
+        console.log('Contains trainers:', containsTrainers.length);
+
+        trainers = [...startsWithTrainers, ...containsTrainers].slice(0, take);
+      } else {
+        trainers = await this.prisma.trainer.findMany({
+          where,
+          orderBy: { name: 'asc' },
+          skip,
+          take,
+        }).catch((error: any) => {
+          console.error('Error fetching all trainers:', error);
+          throw new Error(`Prisma query failed: ${error.message}`);
+        });
+        console.log('All trainers (no search):', trainers.length);
+      }
+
+      const transformedTrainers = trainers.map((trainer) => {
+        try {
+          const transformed = this.toDomain(trainer);
+          console.log('Transformed trainer:', transformed);
+          return transformed;
+        } catch (transformError) {
+          console.error('Error transforming trainer record:', trainer, transformError);
+          throw transformError;
+        }
+      });
+
+      console.log('Final trainers returned:', transformedTrainers.length);
+      return transformedTrainers;
+    } catch (error) {
+      console.error('findAllWithFilters failed:', error);
+      throw new Error(`Failed to fetch trainers: ${error}`);
+    }
+  }
+  
+async findAll(skip: number, take: number, search?: string, status?: string, specialization?: string): Promise<Trainer[]> {
+    // Call the new method to respect filters
+    return this.findAllWithFilters(skip, take, search, status, specialization);
   }
 
   async findAvailableTrainers() {
@@ -140,8 +242,36 @@ const validIds = trainers.map((t: { id: string }) => t.id);
     return this.toDomain(updated);
   }
 
-  async count(search?: string, status?: string, specialization?: string): Promise<number> {
-    return this.prisma.trainer.count({ where: { role: 'trainer' } });
+async count(search?: string, status?: string, specialization?: string): Promise<number> {
+    const where: Prisma.TrainerWhereInput = { role: 'trainer' };
+
+    // Apply status filter
+    if (status) {
+      if (status === 'Approved') {
+        where.verifiedByAdmin = true;
+        where.isVerified = true;
+      } else if (status === 'Pending') {
+        where.verifiedByAdmin = false;
+        where.isVerified = true;
+      } else if (status === 'Suspended') {
+        where.isVerified = false;
+      }
+    }
+
+    // Apply specialization filter
+    if (specialization) {
+      where.specialties = { has: specialization };
+    }
+
+    // Apply search filter
+    if (search) {
+      where.OR = [
+        { name: { startsWith: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    return this.prisma.trainer.count({ where });
   }
 
   async countPending(): Promise<number> {

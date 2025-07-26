@@ -50,7 +50,7 @@ import { LogoutTrainerUseCase } from '@/app/useCases/logoutTrainer.useCase';
 import { ResendTrainerOtpUseCase } from '@/app/useCases/resendOtpTrainer.useCase';
 import { VerifyTrainerOtpUseCase } from '@/app/useCases/verifyTrainerOtp.useCase';
 import { TrainerRefreshTokenUseCase } from '@/app/useCases/trainerRefreshToken.useCase';
-import { GetTrainersUseCase } from '@/app/useCases/getTrainers.useCase';
+import { GetTrainersUseCase } from '@/app/useCases/admin/getTrainers.useCase';
 import { ApproveTrainerUseCase } from '@/app/useCases/approveTrainer.useCase';
 import { ResumePTPlanUseCase } from '@/app/useCases/resumePTPlan.useCase';
 
@@ -82,7 +82,7 @@ import { S3Service } from '@/infra/providers/s3.service';
 import { CreatePTPlanUseCase } from '@/app/useCases/createPTPlan.useCase';
 import { TrainerValidationMiddleware } from '@/presentation/middlewares/trainer/trainerValidation.middleware';
 import { PTPlansTrainerGetUseCase } from '@/app/useCases/trainer/ptPlansTrainerGet.useCase';
-import { EditPTPlanUseCase } from '@/app/useCases/editPTPlan.useCase';
+import { EditPTPlanUseCase } from '@/app/useCases/trainer/editPTPlan.useCase';
 import { StopPTPlanUseCase } from '@/app/useCases/stopPTPlan.useCase';
 import { AdminValidationMiddleware } from '@/presentation/middlewares/admin/adminValidation.middleware';
 import { AdminPTPlansGetUseCase } from '@/app/useCases/admin/adminPTPlansGetUseCase';
@@ -161,7 +161,7 @@ export function composeApp() {
   const resendTrainerOtpUseCase = new ResendTrainerOtpUseCase(trainersRepository, emailService);
   const getTrainerUseCase = new GetTrainerUseCase(trainersRepository,s3Service);
   const trainerRefreshTokenUseCase = new TrainerRefreshTokenUseCase(trainersRepository, tokenService);
-  const getTrainersUseCase = new GetTrainersUseCase(trainersRepository);
+  const getTrainersUseCase = new GetTrainersUseCase(trainersRepository,s3Service);
   const approveTrainerUseCase = new ApproveTrainerUseCase(trainersRepository);
   const getTrainerProfileUseCase = new GetTrainerProfileUseCase(trainersRepository,s3Service);
   const updateTrainerProfileUseCase = new UpdateTrainerProfileUseCase(trainersRepository,s3Service);

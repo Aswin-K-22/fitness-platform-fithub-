@@ -8,6 +8,7 @@ import { PTPlansRequestDTO } from '@/domain/dtos/pTPlanRequestDTO';
 import { EditPTPlanRequestDTO } from '@/domain/dtos/editPTPlanRequest.dto';
 import { VerifyPTPlanRequestDTO } from '@/domain/dtos/verifyPTPlanRequestDTO';
 import { UpdateAdminPriceRequestDTO } from '@/domain/dtos/updateAdminPriceRequestDTO';
+import { AdminTrainersRequestDTO } from '@/domain/dtos/admin/adminTrainersRequestDTO';
 
 export interface CustomRequest extends Request {
   validatedData?:
@@ -18,6 +19,7 @@ export interface CustomRequest extends Request {
     | AdminPTPlansRequestDTO
     | VerifyPTPlanRequestDTO
     |  UpdateAdminPriceRequestDTO
+    |AdminTrainersRequestDTO
     | undefined;
   PTPlansGetRequestDTO?: PTPlansRequestDTO;
   editPTPlanRequestDTO?: EditPTPlanRequestDTO;

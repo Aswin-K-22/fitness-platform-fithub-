@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { IGetAdminUseCase } from '@/app/useCases/interfaces/IGetAdminUseCase';
 import { IGetUsersUseCase } from '@/app/useCases/interfaces/IGetUsersUseCase';
 import { IToggleUserVerificationUseCase } from '@/app/useCases/interfaces/IToggleUserVerificationUseCase';
-import { IGetTrainersUseCase } from '@/app/useCases/interfaces/IGetTrainersUseCase';
+import { IGetTrainersUseCase } from '@/app/useCases/admin/interfeces/IGetTrainersUseCase';
 import { IApproveTrainerUseCase } from '@/app/useCases/interfaces/IApproveTrainerUseCase';
 import { IGetAdminGymsUseCase } from '@/app/useCases/interfaces/IGetAdminGymsUseCase';
 import { IAddGymUseCase } from '@/app/useCases/interfaces/IAddGymUseCase';
@@ -27,6 +27,8 @@ import { UpdateAdminPriceRequestDTO } from '@/domain/dtos/updateAdminPriceReques
 import { VerifyPTPlanRequestDTO } from '@/domain/dtos/verifyPTPlanRequestDTO';
 import { IVerifyPTPlanUseCase } from '@/app/useCases/admin/interfeces/IVerifyPTPlanUseCase';
 import { IUpdatePTPlanAdminPriceUseCase } from '@/app/useCases/admin/interfeces/IUpdatePTPlanAdminPriceUseCase';
+import { AdminTrainersRequestDTO } from '@/domain/dtos/admin/adminTrainersRequestDTO';
+import { IGetTrainersResponseDTO } from '@/domain/dtos/getTrainersResponse.dto';
 
 export class AdminController implements IAdminController {
   constructor(
@@ -90,19 +92,40 @@ export class AdminController implements IAdminController {
     this.sendResponse(res, result);
   }
 
-  async getTrainers(req: Request, res: Response): Promise<void> {
-    const { page, limit, search, status, specialization } = req.query;
-    const data = {
-      page: page ? parseInt(page as string, 10) : 1,
-      limit: limit ? parseInt(limit as string, 10) : 3,
-      search: search as string | undefined,
-      status: status as string | undefined,
-      specialization: specialization as string | undefined,
-    };
+async getTrainers(req: CustomRequest, res: Response): Promise<void> {
+  try {
+    const validatedData = req.validatedData as AdminTrainersRequestDTO;
+    const adminId = req.admin?.id;
 
-    const result = await this.getTrainersUseCase.execute(data);
+    if (!adminId) {
+      throw new Error(ERRORMESSAGES.ADMIN_NOT_AUTHENTICATED.message);
+    }
+
+    const result = await this.getTrainersUseCase.execute(validatedData.toEntity());
     this.sendResponse(res, result);
+  } catch (error: any) {
+    console.error('[ERROR] Get Trainers error: from admin.controller.ts', error);
+    const response: IGetTrainersResponseDTO = {
+      success: false,
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      data: {
+        trainers: [],
+        stats: {
+          totalTrainers: 0,
+          pendingApproval: 0,
+          activeTrainers: 0,
+          suspended: 0,
+        },
+        totalPages: 0,
+      },
+      error: {
+        code: ERRORMESSAGES.GENERIC_ERROR.code,
+        message: ERRORMESSAGES.GENERIC_ERROR.message,
+      },
+    };
+    this.sendResponse(res, response);
   }
+}
 
   async approveTrainer(req: Request, res: Response): Promise<void> {
     const { trainerId } = req.params;
@@ -220,7 +243,6 @@ async getTrainerPTPlans(req:CustomRequest, res: Response): Promise<void> {
   }
 }
 
-// presentation/controllers/admin/admin.controller.ts
 
 async verifyPTPlan(req: CustomRequest, res: Response): Promise<void> {
   try {

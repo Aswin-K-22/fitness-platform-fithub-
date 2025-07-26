@@ -13,7 +13,7 @@ import { S3Service } from '@/infra/providers/s3.service';
 import { PTPlansRequestDTO } from '@/domain/dtos/pTPlanRequestDTO';
 import { IPTPlansTrainerGetUseCase } from '@/app/useCases/trainer/interfeces/IPTPlansTrainerGetUseCase';
 import { IGetPTPlansResponseDTO } from '@/domain/dtos/getPTPlansResponse.dto';
-import { IEditPTPlanUseCase } from '@/app/useCases/interfaces/IEditPTPlanUseCase';
+import { IEditPTPlanUseCase } from '@/app/useCases/trainer/interfeces/IEditPTPlanUseCase';
 import { EditPTPlanRequestDTO } from '@/domain/dtos/editPTPlanRequest.dto';
 import { StopPTPlanRequestDTO } from '@/domain/dtos/stopResumePTPlanRequest.dto';
 import { IResumePTPlanUseCase, IStopPTPlanUseCase } from '@/app/useCases/interfaces/IStopResumePTPlanUseCase';

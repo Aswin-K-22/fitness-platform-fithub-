@@ -97,6 +97,8 @@ export const ERRORMESSAGES = {
   TRAINER_MISSING_PAYMENT_DETAILS: { code: 'TRAINER_039', message: 'Missing payment details' },
   TRAINER_UPDATE_FAILED: { code: 'TRAINER_040', message: 'Update failed' },
   TRAINER_NOT_AUTHORIZED:{code:'TRAINER_041',message:'TRAINER_NOT_AUTHORIZED'},
+  TRAINER_INVALID_PAGE_NO: { code: 'TRAINER_042', message: 'Page number must be a positive integer' },
+TRAINER_INVALID_PAGE_LIMIT_NO : { code: 'TRAINER_043', message: 'Limit must be a positive integer between 1 and 100', },
   TRAINER_PROFILE_INVALID_NAME: { code: 'TRAINER_PROFILE_001', message: 'Name must be 2+ letters, no numbers or special characters' },
   TRAINER_PROFILE_INVALID_BIO: { code: 'TRAINER_PROFILE_002', message: 'Bio must be at least 10 characters' },
   TRAINER_PROFILE_INVALID_SPECIALTIES: { code: 'TRAINER_PROFILE_003', message: 'Specialties must be a non-empty array of strings' },

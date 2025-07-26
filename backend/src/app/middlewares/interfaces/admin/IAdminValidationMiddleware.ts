@@ -5,4 +5,5 @@ export interface IAdminValidationMiddleware {
     validateGetTrainerPTPlans(req: Request, res: Response, next: NextFunction): Promise<void>;
     validateVerifyPlanInput(req: Request, res: Response, next: NextFunction): Promise<void>
     validateAdminPriceInput(req: Request, res: Response, next: NextFunction): Promise<void>
+    validateGetTrainers(req: Request, res: Response, next: NextFunction): Promise<void>
 }

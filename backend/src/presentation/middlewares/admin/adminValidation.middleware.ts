@@ -9,6 +9,8 @@ import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { CustomRequest } from '@/types/customRequest'
 import { VerifyPTPlanRequestDTO } from '@/domain/dtos/verifyPTPlanRequestDTO';
 import { UpdateAdminPriceRequestDTO } from '@/domain/dtos/updateAdminPriceRequestDTO';
+import { AdminTrainersRequestDTO } from '@/domain/dtos/admin/adminTrainersRequestDTO';
+import { IGetTrainersResponseDTO } from '@/domain/dtos/getTrainersResponse.dto';
 
 
 
@@ -112,6 +114,46 @@ export class AdminValidationMiddleware implements IAdminValidationMiddleware {
       message: 'Validation failed',
       error: {
         code: error.message.includes('PTPLAN') ? error.message : 'VALIDATION_ERROR',
+        message: error.message || 'Validation failed',
+      },
+    };
+    res.status(response.status).json(response);
+  }
+}
+
+async validateGetTrainers(req: CustomRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!req.admin?.id) {
+      throw new Error(ERRORMESSAGES.ADMIN_NOT_AUTHENTICATED.message);
+    }
+
+    const trainersRequestDTO = new AdminTrainersRequestDTO({
+      page: req.query.page?.toString() || '1',
+      limit: req.query.limit?.toString() || '3',
+      search: req.query.search?.toString(),
+      status: req.query.status?.toString(),
+      specialization: req.query.specialization?.toString(),
+    });
+
+    req.validatedData = trainersRequestDTO;
+    next();
+  } catch (error: any) {
+    console.error('[ERROR] Admin middleware-validation error: from validateGetTrainers', error);
+    const response: IGetTrainersResponseDTO = {
+      success: false,
+      status: HttpStatus.BAD_REQUEST,
+      data: {
+        trainers: [],
+        stats: {
+          totalTrainers: 0,
+          pendingApproval: 0,
+          activeTrainers: 0,
+          suspended: 0,
+        },
+        totalPages: 0,
+      },
+      error: {
+        code: error.message.includes('TRAINER') ? error.message : 'VALIDATION_ERROR',
         message: error.message || 'Validation failed',
       },
     };
