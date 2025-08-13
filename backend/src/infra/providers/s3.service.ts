@@ -1,5 +1,7 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
+
 export class S3Service {
   private s3: S3Client;
 
@@ -7,8 +9,6 @@ export class S3Service {
     if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY || !process.env.AWS_REGION || !process.env.AWS_S3_BUCKET) {
       throw new Error('Missing required AWS configuration (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, or AWS_S3_BUCKET)');
     }
-    console.log('AWS_REGION:', process.env.AWS_REGION); // Debug log
-    console.log('AWS_S3_BUCKET:', process.env.AWS_S3_BUCKET); // Debug log
     this.s3 = new S3Client({
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,

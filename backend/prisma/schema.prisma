@@ -10,27 +10,27 @@ datasource db {
 // User Model
 // User Model (Updated)
 model User {
-  id             String          @id @default(auto()) @map("_id") @db.ObjectId
-  email          String          @unique
-  password       String?
-  role           String
-  name           String
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  otp            String?
-  otpExpires     DateTime?
-  isVerified     Boolean         @default(false)
-  refreshToken   String?
-  membershipId   String?         @db.ObjectId // Current active membership
-  fitnessProfile FitnessProfile?
-  workoutPlanId  String?         @db.ObjectId
-  progress       Progress[]
-  weeklySummary  WeeklySummary[]
-  profilePic     String?
-  memberships    Membership[]    @relation
-  Bookings       Booking[]       @relation
-  payments       Payment[]       @relation
-  notifications  Notification[]  @relation
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  email           String           @unique
+  password        String?
+  role            String
+  name            String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  otp             String?
+  otpExpires      DateTime?
+  isVerified      Boolean          @default(false)
+  refreshToken    String?
+  membershipId    String?          @db.ObjectId // Current active membership
+  fitnessProfile  FitnessProfile?
+  workoutPlanId   String?          @db.ObjectId
+  progress        Progress[]
+  weeklySummary   WeeklySummary[]
+  profilePic      String?
+  memberships     Membership[]     @relation
+  Bookings        Booking[]        @relation
+  payments        Payment[]        @relation
+  notifications   Notification[]   @relation
   ptPlanPurchases PTPlanPurchase[] @relation
 }
 
@@ -292,6 +292,7 @@ model MembershipPlan {
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   memberships Membership[] // Link to user memberships
+  payments    Payment[]
 }
 
 //----Booking
@@ -319,22 +320,24 @@ type Slot {
 }
 
 model Payment {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  type           String
-  userId         String?  @db.ObjectId
-  trainerId      String?  @db.ObjectId
-  membershipId   String?  @db.ObjectId // Unique for one-to-one relation
-  amount         Float
-  currency       String
-  paymentGateway String?
-  paymentId      String?
-  status         String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  type             String
+  userId           String?  @db.ObjectId
+  trainerId        String?  @db.ObjectId
+  membershipId     String?  @db.ObjectId // set after verification
+  membershipPlanId String?  @db.ObjectId // set during initiation
+  amount           Float
+  currency         String
+  paymentGateway   String?
+  paymentId        String?
+  status           String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  user       User?       @relation(fields: [userId], references: [id])
-  trainer    Trainer?    @relation(fields: [trainerId], references: [id])
-  membership Membership? @relation(fields: [membershipId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  user           User?            @relation(fields: [userId], references: [id])
+  trainer        Trainer?         @relation(fields: [trainerId], references: [id])
+  membership     Membership?      @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  membershipPlan MembershipPlan?  @relation(fields: [membershipPlanId], references: [id], onDelete: SetNull)
   ptPlanPurchase PTPlanPurchase[] @relation
 }
 
@@ -348,49 +351,48 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id])
 }
 
-
 model PTPlan {
   id              String           @id @default(auto()) @map("_id") @db.ObjectId
   title           String
-  category PTPlanCategory
-  mode PTPlanMode         
+  category        PTPlanCategory
+  mode            PTPlanMode
   description     String
-  goal            String           
-  features        String[]         
-  duration        Int              
-  image           String?          
-  trainerPrice    Float           
-  adminPrice      Float?           
-  totalPrice      Float?           
+  goal            String
+  features        String[]
+  duration        Int
+  image           String?
+  trainerPrice    Float
+  adminPrice      Float?
+  totalPrice      Float?
   verifiedByAdmin Boolean          @default(false) // Admin verification status
-  createdBy       String           @db.ObjectId   // Reference to Trainer
+  createdBy       String           @db.ObjectId // Reference to Trainer
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   isActive        Boolean          @default(true)
-  purchases       PTPlanPurchase[] @relation      // Link to purchased plans
+  purchases       PTPlanPurchase[] @relation // Link to purchased plans
   trainer         Trainer?         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@index([createdBy]) // Index for faster queries by trainer
 }
 
 model PTPlanPurchase {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId        String    @db.ObjectId
-  ptPlanId      String    @db.ObjectId
-  status PTPlanPurchaseStatus
-  startDate     DateTime  // Purchase date
-  endDate       DateTime  // Calculated as startDate + duration (in months)
-  paymentId     String?   @db.ObjectId // Link to Payment model
-  price         Float?    // Price paid for this purchase
-  currency      String    @default("INR") // Always Indian Rupees
-  paymentStatus String?   // e.g., "Paid", "Pending"
+  id            String               @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String               @db.ObjectId
+  ptPlanId      String               @db.ObjectId
+  status        PTPlanPurchaseStatus
+  startDate     DateTime // Purchase date
+  endDate       DateTime // Calculated as startDate + duration (in months)
+  paymentId     String?              @db.ObjectId // Link to Payment model
+  price         Float? // Price paid for this purchase
+  currency      String               @default("INR") // Always Indian Rupees
+  paymentStatus String? // e.g., "Paid", "Pending"
   paymentDate   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 
-  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ptPlan         PTPlan?   @relation(fields: [ptPlanId], references: [id], onDelete: Cascade)
-  payment        Payment?  @relation(fields: [paymentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ptPlan  PTPlan?  @relation(fields: [ptPlanId], references: [id], onDelete: Cascade)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([userId, ptPlanId]) // Index for faster queries by user and plan
 }
@@ -404,8 +406,6 @@ enum PTPlanCategory {
 enum PTPlanMode {
   online
 }
-
-
 
 enum PTPlanPurchaseStatus {
   Active

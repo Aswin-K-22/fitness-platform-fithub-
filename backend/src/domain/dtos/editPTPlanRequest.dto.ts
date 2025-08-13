@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import { ERRORMESSAGES } from '../constants/errorMessages.constant';
+import { PTPlanCategory } from '../enums/PTPlanCategory';
 
 export interface IEditPTPlanRequestDTO {
   title?: string;
-  category?: 'beginner' | 'intermediate' | 'advanced';
+ category?: PTPlanCategory;
   mode?: 'online';
   description?: string;
   goal?: string;
@@ -15,7 +16,7 @@ export interface IEditPTPlanRequestDTO {
 
 export interface IEditPTPlanRequestToEntity {
   title?: string;
-  category?: 'beginner' | 'intermediate' | 'advanced';
+ category?: PTPlanCategory;
   mode?: 'online';
   description?: string;
   goal?: string;
@@ -33,8 +34,8 @@ export const editPTPlanSchema = z.object({
     .nonempty({ message: ERRORMESSAGES.PTPLAN_MISSING_REQUIRED_FIELDS.message })
     .trim()
     .optional(),
-  category: z
-    .enum(['beginner', 'intermediate', 'advanced'], {
+ category: z
+    .nativeEnum(PTPlanCategory, {
       errorMap: () => ({ message: ERRORMESSAGES.PTPLAN_INVALID_CATEGORY.message }),
     })
     .optional(),
@@ -85,7 +86,7 @@ export const editPTPlanSchema = z.object({
 
 export class EditPTPlanRequestDTO implements IEditPTPlanRequestDTO {
   public title?: string;
-  public category?: 'beginner' | 'intermediate' | 'advanced';
+  public category?: PTPlanCategory;
   public mode?: 'online';
   public description?: string;
   public goal?: string;

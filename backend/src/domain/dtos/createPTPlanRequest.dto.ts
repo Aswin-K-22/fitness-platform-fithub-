@@ -1,10 +1,11 @@
 //src/domain/dto/creatPTPRequst.ts
 import { z } from 'zod';
 import { ERRORMESSAGES } from '../constants/errorMessages.constant';
+import { PTPlanCategory } from '../enums/PTPlanCategory';
 
 export interface ICreatePTPlanRequestDTO {
   title: string;
-  category: 'beginner' | 'intermediate' | 'advanced';
+  category: PTPlanCategory;
   mode: 'online';
   description: string;
   goal: string;
@@ -18,7 +19,7 @@ export interface ICreatePTPlanRequestDTO {
 
 export interface IPTPlanRequestToEntity {
   title: string;
-  category: 'beginner' | 'intermediate' | 'advanced';
+  category: PTPlanCategory;
   mode: 'online';
   description: string;
   goal: string;
@@ -40,9 +41,10 @@ export const ptPlanSchema = z.object({
     .max(100, { message: 'Title cannot exceed 100 characters' })
     .nonempty({ message: ERRORMESSAGES.PTPLAN_MISSING_REQUIRED_FIELDS.message })
     .trim(),
-  category: z.enum(['beginner', 'intermediate', 'advanced'], {
-    errorMap: () => ({ message: ERRORMESSAGES.PTPLAN_INVALID_CATEGORY.message }),
-  }),
+category: z
+    .nativeEnum(PTPlanCategory, {
+      errorMap: () => ({ message: ERRORMESSAGES.PTPLAN_INVALID_CATEGORY.message }),
+    }),
   mode: z.literal('online', { errorMap: () => ({ message: ERRORMESSAGES.PTPLAN_INVALID_MODE.message }) }),
   description: z
     .string()
@@ -84,7 +86,7 @@ export const ptPlanSchema = z.object({
 
 export class CreatePTPlanRequestDTO implements ICreatePTPlanRequestDTO {
   public title: string;
-  public category: 'beginner' | 'intermediate' | 'advanced';
+  public category: PTPlanCategory;
   public mode: 'online';
   public description: string;
   public goal: string;

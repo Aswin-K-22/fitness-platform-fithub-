@@ -6,6 +6,7 @@ import { upload } from '@/infra/config/multer';
 import { IUserController } from '@/app/controllers/interfaces/user/IUserController';
 import { IUserAuthController } from '@/app/controllers/interfaces/user/IUserAuthController';
 import { IUserAuthMiddleware } from '@/app/middlewares/interfaces/user/IUserAuthMiddleware';
+import { IUserValidationMiddleware } from '@/app/middlewares/interfaces/user/IUserValidationMiddleware';
 export class UserRoutes {
   public router: Router;
 
@@ -13,6 +14,7 @@ export class UserRoutes {
     private userAuthController: IUserAuthController,
     private userController: IUserController,
     private authMiddleware: IUserAuthMiddleware,
+    private userValidationMiddleware: IUserValidationMiddleware
   ) {
     this.router = Router();
     this.setupRoutes();
@@ -59,10 +61,19 @@ this.router.get(
       this.authMiddleware.auth.bind(this.authMiddleware),
       this.userController.markNotificationRead.bind(this.userController)
     );
-    this.router.post(
-      '/membership/verify-payment',
+  // this.router.post(
+  //     '/membership/verify-payment',
+  //     this.authMiddleware.auth.bind(this.authMiddleware),
+  //     this.userController.verifyMembershipPayment.bind(this.userController)
+  //   );
+
+    this.router.get(
+      '/plans',
       this.authMiddleware.auth.bind(this.authMiddleware),
-      this.userController.verifyMembershipPayment.bind(this.userController)
+      this.userValidationMiddleware.validateGetPTPlans.bind(this.userValidationMiddleware),
+      this.userController.getPTPlans.bind(this.userController)
     );
+    this.router.get('/user-current-plans',this.authMiddleware.auth.bind(this.authMiddleware),this.userController.getUserCurrentPlans.bind(this.userController))
+
   }
 }

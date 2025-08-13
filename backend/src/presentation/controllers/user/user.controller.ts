@@ -4,7 +4,7 @@ import { IGetUserUseCase } from '@/app/useCases/interfaces/IGetUserUseCase';
 import { IGetGymsUseCase } from '@/app/useCases/interfaces/IGetGymsUseCase';
 import { IGetGymDetailsUseCase } from '@/app/useCases/interfaces/IGetGymDetailsUseCase';
 import { IGetMembershipPlansUseCase } from '@/app/useCases/interfaces/IGetMembershipPlansUseCase';
-import { IInitiateMembershipPaymentUseCase } from '@/app/useCases/interfaces/IInitiateMembershipPaymentUseCase';
+import { IInitiateMembershipPaymentUseCase } from '@/app/useCases/user/interfaces/IInitiateMembershipPaymentUseCase';
 import { IVerifyMembershipPaymentUseCase } from '@/app/useCases/interfaces/IVerifyMembershipPaymentUseCase';
 import { IUpdateUserProfileUseCase } from '@/app/useCases/interfaces/IUpdateUserProfileUseCase';
 import { IGetUserProfileUseCase } from '@/app/useCases/interfaces/IGetUserProfileUseCase';
@@ -21,6 +21,11 @@ import { MESSAGES } from '@/domain/constants/messages.constant';
 import { INotificationsRepository } from '@/app/repositories/notifications.repository';
 import { IGetNotificationsUseCase } from '@/app/useCases/interfaces/IGetNotificationsUseCase';
 import { IMarkNotificationReadUseCase } from '@/app/useCases/interfaces/IMarkNotificationReadUseCase';
+import { IGetPTPlansResponseDTO } from '@/domain/dtos/getPTPlansResponse.dto';
+import { CustomRequest } from '@/types/customRequest';
+import { UserPTPlansRequestDTO } from '@/domain/dtos/user/userPTPlanRequestDTO';
+import { IPTPlansUserGetUseCase } from '@/app/useCases/user/interfaces/IPTPlansUserGetUseCase';
+import { IGetUserCurrentPlansUseCase } from '@/app/useCases/user/interfaces/IGetUserCurrentPalnsUseCase';
 
 export class UserController {
   constructor(
@@ -33,7 +38,9 @@ export class UserController {
     private getUserProfileUseCase: IGetUserProfileUseCase,
     private updateUserProfileUseCase: IUpdateUserProfileUseCase,
     private getNotificationsUseCase: IGetNotificationsUseCase,
-    private markNotificationReadUseCase: IMarkNotificationReadUseCase
+    private markNotificationReadUseCase: IMarkNotificationReadUseCase,
+    private ptPlansUserGetUseCase : IPTPlansUserGetUseCase,
+    private getUserCurrentPlansUseCase: IGetUserCurrentPlansUseCase
   ) {}
 
   private sendResponse<T>(res: Response, result: IResponseDTO<T>): void {
@@ -222,4 +229,42 @@ export class UserController {
     const result = await this.verifyMembershipPaymentUseCase.execute(requestDTO, userId);
     this.sendResponse(res, result);
   }
+
+
+  async getPTPlans(req: CustomRequest, res: Response): Promise<void> {
+    try {
+      const validatedData = req.validatedData as UserPTPlansRequestDTO;
+      
+
+      const result = await this.ptPlansUserGetUseCase.execute(validatedData.toEntity());
+      this.sendResponse(res, result);
+    } catch (error: any) {
+      console.error('[ERROR] Get PTPlans error: from user.controller.ts', error);
+      const response: IGetPTPlansResponseDTO = {
+        success: false,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        data: {
+          plans: [],
+          pagination: {
+            page: 1,
+            limit: 10,
+            total: 0,
+            totalPages: 0,
+          },
+        },
+        error: {
+          code: error.message.includes('PTPLAN_') ? error.message : ERRORMESSAGES.GENERIC_ERROR.code,
+          message: error.message || ERRORMESSAGES.GENERIC_ERROR.message,
+        },
+      };
+      this.sendResponse(res, response);
+    }
+  }
+  async getUserCurrentPlans(req: CustomRequest, res: Response): Promise<void> {
+  const userId: string = req.user?.id ?? '';
+
+  const result = await this.getUserCurrentPlansUseCase.execute(userId);
+  this.sendResponse(res, result);
+}
+
 }

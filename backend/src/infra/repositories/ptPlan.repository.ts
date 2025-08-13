@@ -4,6 +4,7 @@ import { PTPlan } from '@/domain/entities/PTPlan.entity';
 import { IPTPlanRequestToEntity } from '@/domain/dtos/createPTPlanRequest.dto';
 import { IPTPlanRepository } from '@/app/repositories/ptPlan.repository';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
+import { PTPlanFilter } from '@/domain/types/ptPlanFilter';
 
 export class PTPlanRepository extends BaseRepository<PTPlan, string> implements IPTPlanRepository {
   constructor(prisma: PrismaClient) {
@@ -142,4 +143,38 @@ async updateAdminPrice(id: string, adminPrice: number, totalPrice: number): Prom
   return this.toDomain(record);
 }
 
+
+async findForUsers(filters: PTPlanFilter, skip: number, take: number): Promise<PTPlan[]> {
+    const records = await this.prisma.pTPlan.findMany({
+      where: {
+        isActive: filters.isActive ?? true,
+        verifiedByAdmin: filters.verifiedByAdmin ?? true,
+        category: filters.category,
+        totalPrice: {
+          gte: filters.totalPrice?.gte,
+          lte: filters.totalPrice?.lte,
+        },
+      },
+      skip,
+      take,
+      orderBy: { createdAt: 'desc' },
+    });
+    return records.map(this.toDomain);
+  }
+
+  async countForUsers(filters: PTPlanFilter): Promise<number> {
+    return this.prisma.pTPlan.count({
+      where: {
+        isActive: filters.isActive ?? true,
+        verifiedByAdmin: filters.verifiedByAdmin ?? true,
+        category: filters.category,
+        totalPrice: {
+          gte: filters.totalPrice?.gte,
+          lte: filters.totalPrice?.lte,
+        },
+      },
+    });
+  }
+
+  
 }

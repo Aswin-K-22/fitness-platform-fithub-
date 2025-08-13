@@ -36,8 +36,8 @@ export class GoogleAuthUseCase implements IGoogleAuthUseCase {
           success: false,
           status: HttpStatus.BAD_REQUEST,
           error: {
-            code: ERRORMESSAGES.GOOGLE_AUTH_INVALID_GOOGLE_TOKEN.code,
-            message: ERRORMESSAGES.GOOGLE_AUTH_INVALID_GOOGLE_TOKEN.message,
+            code: ERRORMESSAGES.USER_INVALID_GOOGLE_TOKEN.code,
+            message: ERRORMESSAGES.USER_INVALID_GOOGLE_TOKEN.message,
           },
         };
       }

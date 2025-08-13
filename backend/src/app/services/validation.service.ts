@@ -1,6 +1,4 @@
 import { z, ZodError } from 'zod';
-import { IResponseDTO } from '@/domain/dtos/response.dto';
-import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 
 export interface IValidationService {

@@ -11,6 +11,8 @@ import { getUserProfile, updateUserProfile } from "../../services/api/userApi";
 import { logoutThunk, setAuth } from "../../store/slices/userAuthSlice";
 import Navbar from "../../components/common/user/Navbar";
 import type { UserAuth } from "../../types/auth.types";
+import { getUserCurrentPlans } from "../../services/api/userApi";
+import type { MembershipDTO } from "../../types/dtos/IGetUserCurrentPlansResponseDTO";
 
 const backendUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -19,7 +21,7 @@ const UserProfile: React.FC = () => {
   const navigate = useNavigate(); 
   const { user } = useSelector((state: RootState) => state.userAuth); 
   const [profileData, setProfileData] = useState<UserProfileData | null>(null);
-  const [membershipPlan, setMembershipPlan] = useState<any | null>(null);
+  const [membershipPlans, setMembershipPlans] = useState<MembershipDTO[] | null>(null); // Changed to array
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState("");
@@ -35,23 +37,16 @@ const UserProfile: React.FC = () => {
         setProfileData(response.user);
         setEditedName(response.user.name || "");
 
-        //const membershipResponse = await getMembershipPlansUser(1, 1); // Fetch one plan for the current user
-        // const membership = membershipResponse.memberships[0]; // Assuming first membership is the active one
-        // if (membership) {
-        //   setMembershipPlan({
-        //     ...membership,
-        //     plan: membershipResponse.plans.find((plan: any) => plan._id === membership.planId),
-        //   });
-        // }
-
+        const plansResponse = await getUserCurrentPlans();
+        setMembershipPlans(plansResponse || []); // Set all plans
       } catch (error) {
-        console.error("Failed to fetch user profile:", error);
+        console.error("Failed to fetch user profile or plans:", error);
         toast.error("Failed to load profile data");
       } finally {
         setLoading(false);
       }
     };
-   fetchProfileAndMembership();
+    fetchProfileAndMembership();
   }, []);
 
   useEffect(() => {
@@ -171,7 +166,6 @@ const UserProfile: React.FC = () => {
     const value = e.target.value;
     setEditedName(value);
     
-    // Real-time validation
     if (value.trim().length === 0) {
       setErrors((prev) => ({ ...prev, name: "Name is required" }));
     } else if (value.trim().length < 2) {
@@ -485,35 +479,38 @@ const UserProfile: React.FC = () => {
                 </div>
               </div>
               
-<div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Current Plan</h3>
-                <div className="text-center">
-                  {membershipPlan ? (
-                    <div className="bg-gradient-to-br from-purple-100 to-pink-100 p-6 rounded-lg mb-4">
-                      <svg className="w-12 h-12 text-purple-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <h4 className="font-semibold text-gray-900 mb-2">{membershipPlan.plan.name}</h4>
-                      <p className="text-gray-600 text-sm mb-2">{membershipPlan.plan.description}</p>
-                      <p className="text-gray-600 text-sm mb-2">
-                        <span className="font-medium">Status:</span> {membershipPlan.status}
-                      </p>
-                      <p className="text-gray-600 text-sm mb-2">
-                        <span className="font-medium">Price:</span> {membershipPlan.price} {membershipPlan.currency}
-                      </p>
-                      <p className="text-gray-600 text-sm mb-2">
-                        <span className="font-medium">Start Date:</span>{" "}
-                        {new Date(membershipPlan.startDate).toLocaleDateString()}
-                      </p>
-                      <p className="text-gray-600 text-sm mb-2">
-                        <span className="font-medium">End Date:</span>{" "}
-                        {new Date(membershipPlan.endDate).toLocaleDateString()}
-                      </p>
-                      <p className="text-gray-600 text-sm">
-                        <span className="font-medium">Features:</span>{" "}
-                        {membershipPlan.plan.features.join(", ") || "N/A"}
-                      </p>
-                    </div>
+              <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Current Plans</h3>
+                <div className="space-y-4">
+                  {membershipPlans && membershipPlans.length > 0 ? (
+                    membershipPlans.map((plan, index) => (
+                      <div key={index} className="bg-gradient-to-br from-purple-100 to-pink-100 p-6 rounded-lg mb-4">
+                        <svg className="w-12 h-12 text-purple-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <h4 className="font-semibold text-gray-900 mb-2">Membership Plan {index + 1}</h4>
+                        <p className="text-gray-600 text-sm mb-2">
+                          <span className="font-medium">Status:</span> {plan.status}
+                        </p>
+                        <p className="text-gray-600 text-sm mb-2">
+                          <span className="font-medium">Price:</span> {plan.price} {plan.currency}
+                        </p>
+                        <p className="text-gray-600 text-sm mb-2">
+                          <span className="font-medium">Start Date:</span>{" "}
+                          {new Date(plan.startDate).toLocaleDateString()}
+                        </p>
+                        <p className="text-gray-600 text-sm mb-2">
+                          <span className="font-medium">End Date:</span>{" "}
+                          {new Date(plan.endDate).toLocaleDateString()}
+                        </p>
+                        <p className="text-gray-600 text-sm">
+                          <span className="font-medium">Payment Status:</span> {plan.paymentStatus}
+                        </p>
+                        {/* <button className="w-full mt-4 bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+                          View Plan Details
+                        </button> */}
+                      </div>
+                    ))
                   ) : (
                     <div className="bg-gradient-to-br from-purple-100 to-pink-100 p-6 rounded-lg mb-4">
                       <svg className="w-12 h-12 text-purple-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -521,11 +518,11 @@ const UserProfile: React.FC = () => {
                       </svg>
                       <h4 className="font-semibold text-gray-900 mb-2">No Plan Assigned</h4>
                       <p className="text-gray-600 text-sm">Start your fitness journey</p>
+                      <button className="w-full mt-4 bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+                        Get Started
+                      </button>
                     </div>
                   )}
-                  <button className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
-                    {membershipPlan ? "View Plan Details" : "Get Started"}
-                  </button>
                 </div>
               </div>
             </div>

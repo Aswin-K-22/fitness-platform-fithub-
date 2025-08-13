@@ -4,7 +4,8 @@ interface PaymentProps {
   id?: string;
   type: string;
   userId : string | null;
-  membershipId?: string;
+  membershipId?: string;       
+  membershipPlanId?: string; 
   amount: number;
   currency: string;
   paymentGateway: string | null;
@@ -19,6 +20,7 @@ export class Payment {
   private _type: string;
   private _userId: string |null;
   private _membershipId?: string;
+  private _membershipPlanId?: string;
   private _amount: number;
   private _currency: string;
   private _paymentGateway: string | null;
@@ -35,6 +37,7 @@ export class Payment {
     this._type = props.type;
     this._userId = props.userId;
     this._membershipId = props.membershipId;
+    this._membershipPlanId = props.membershipPlanId;
     this._amount = props.amount;
     this._currency = props.currency;
     this._paymentGateway = props.paymentGateway;
@@ -49,6 +52,7 @@ export class Payment {
   get type(): string { return this._type; }
   get userId(): string | null { return this._userId; }
   get membershipId(): string | undefined { return this._membershipId; }
+  get membershipPlanId(): string | undefined { return this._membershipPlanId; }
   get amount(): number { return this._amount; }
   get currency(): string { return this._currency; }
   get paymentGateway(): string | null{ return this._paymentGateway; }
@@ -62,6 +66,8 @@ export class Payment {
       id: this._id,
       type: this._type,
       userId: this._userId,
+ membershipId: this._membershipId,
+      membershipPlanId: this._membershipPlanId,
       amount: this._amount,
       currency: this._currency,
       paymentGateway: this._paymentGateway,

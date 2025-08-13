@@ -2,12 +2,13 @@
 
 import { IPTPlanRequestToEntity} from '../dtos/createPTPlanRequest.dto'; // DTO for creating PTPlan
 import { ERRORMESSAGES } from '../constants/errorMessages.constant';
+import { PTPlanCategory } from '../enums/PTPlanCategory';
 
 // Interface for PTPlan properties based on Prisma schema
 interface PTPlanProps {
   id?: string;
   title: string;
-  category: 'beginner' | 'intermediate' | 'advanced';
+  category:PTPlanCategory;
   mode: 'online';
   description: string;
   goal: string;
@@ -29,7 +30,7 @@ interface PTPlanProps {
 export class PTPlan {
   private _id?: string;
   private _title: string;
-  private _category:'beginner' | 'intermediate' | 'advanced';
+  private _category:PTPlanCategory;
   private _mode: 'online';
   private _description: string;
   private _goal: string;
@@ -52,7 +53,7 @@ export class PTPlan {
     }
 
     // Validate category
-    const validCategories = ['beginner', 'intermediate', 'advanced'] as const;
+    const validCategories = Object.values(PTPlanCategory);
     if (!validCategories.includes(dto.category)) {
       throw new Error(JSON.stringify(ERRORMESSAGES.PTPLAN_INVALID_CATEGORY));
     }
@@ -111,7 +112,7 @@ export class PTPlan {
     return this._title;
   }
 
-  get category(): 'beginner' | 'intermediate' | 'advanced' {
+  get category(): PTPlanCategory {
     return this._category;
   }
 

@@ -1,10 +1,12 @@
-/* eslint-disable no-misleading-character-class */
-import React, { useState, useEffect, useCallback } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import debounce from "lodash/debounce";
 import { fetchGyms } from "../../services/api/userApi";
 import type { IGymSearchDTO } from "../../types/dtos/IGymSearchDTO";
-import { locationOptions, locationMap } from "../../constants/locations";
+
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 interface Gym {
   id: string;
@@ -22,6 +24,11 @@ interface Filters {
   location: string;
 }
 
+const locationOptions = [
+  { value: "current", label: "📍 Use Current Location" },
+  { value: "custom", label: "✏️ Enter Custom Location" },
+];
+
 const GymSearchPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<Filters>({
@@ -36,29 +43,184 @@ const GymSearchPage: React.FC = () => {
   const [totalGyms, setTotalGyms] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
+
   const [customLocation, setCustomLocation] = useState("");
-  const [showCustomLocationInput, setShowCustomLocationInput] = useState(false);
-  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [customLat, setCustomLat] = useState<number | null>(null);
+  const [customLng, setCustomLng] = useState<number | null>(null);
   const [customLocationError, setCustomLocationError] = useState<string | null>(null);
+  const [showCustomLocationInput, setShowCustomLocationInput] = useState(false);
+  const [mapsLoaded, setMapsLoaded] = useState(false);
+
+  const autocompleteRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const limit = 3;
 
-  // Get user's current location
+  const getLocationCoordinates = useCallback(() => {
+    if (filters.location === "current") return userLocation;
+    if (filters.location === "custom" && customLat !== null && customLng !== null)
+      return { lat: customLat, lng: customLng };
+    return null;
+  }, [filters.location, userLocation, customLat, customLng]);
+
+  const loadGyms = useCallback(
+    async (force = false) => {
+      console.log("🚀 loadGyms called", {
+        page,
+        force,
+        filters,
+        searchQuery,
+        customLat,
+        customLng,
+        userLocation,
+      });
+      setLoading(true);
+      try {
+        const params: IGymSearchDTO = {
+          page,
+          limit,
+          search: searchQuery,
+          gymType: filters.gymType === "All Types" ? undefined : filters.gymType,
+          rating: filters.rating === "Any Rating" ? undefined : filters.rating.replace("+ Stars", ""),
+        };
+
+        const coordinates = getLocationCoordinates();
+        console.log("📍 coordinates to send in API =", coordinates);
+
+        // FIX: Always send lat/lng if coords exist
+        if (coordinates) {
+          params.lat = coordinates.lat;
+          params.lng = coordinates.lng;
+          if (filters.distance !== "All") {
+            params.radius = parseInt(filters.distance);
+          }
+        }
+
+        console.log("📡 Final API params =", params);
+
+        const response = await fetchGyms(params.page, params.limit, {
+          search: params.search,
+          lat: params.lat,
+          lng: params.lng,
+          radius: params.radius,
+          gymType: params.gymType,
+          rating: params.rating,
+        });
+
+        console.log("✅ API Response =", response);
+
+        setGyms(response.gyms);
+        setTotalPages(response.totalPages);
+        setTotalGyms(response.totalGyms);
+
+        if (response.gyms.length === 0 && filters.location === "custom" && customLocation) {
+          setError(`No gyms found in ${customLocation} within ${filters.distance} km.`);
+        } else {
+          setError(null);
+        }
+      } catch (err) {
+        console.error("❌ Error fetching gyms:", err);
+        setError("Failed to load gyms. Please try again later.");
+        setGyms([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [page, searchQuery, filters, customLocation, customLat, customLng, userLocation, getLocationCoordinates]
+  );
+
+  const debouncedLoadGyms = useCallback(debounce(() => loadGyms(), 800), [loadGyms]);
+
+  // Only auto-fetch when lat/lng ready for custom
+  useEffect(() => {
+    if (filters.location === "custom" && (customLat === null || customLng === null)) {
+      console.log("⏭ Skipping auto-fetch — waiting for custom location selection");
+      return;
+    }
+    debouncedLoadGyms();
+    return () => debouncedLoadGyms.cancel();
+  }, [debouncedLoadGyms, filters, customLat, customLng]);
+
+  // Load Google Maps API
+  useEffect(() => {
+    if ((window as any).google && (window as any).google.maps) {
+      setMapsLoaded(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+    script.async = true;
+    script.onload = () => setMapsLoaded(true);
+    script.onerror = () => setError("Failed to load Google Maps");
+    document.head.appendChild(script);
+  }, []);
+
+  // Setup Autocomplete with gmp-select
+  useEffect(() => {
+    if (mapsLoaded && showCustomLocationInput && autocompleteRef.current) {
+      autocompleteRef.current.innerHTML = "";
+      const autocompleteElement = document.createElement("gmp-place-autocomplete");
+      autocompleteElement.setAttribute("placeholder", "Enter location...");
+      autocompleteElement.setAttribute("country", "IN");
+      autocompleteElement.style.width = "100%";
+      autocompleteElement.style.padding = "12px 16px";
+      autocompleteElement.style.borderRadius = "12px";
+
+      autocompleteElement.addEventListener("gmp-select", async (event: any) => {
+        console.log("📌 gmp-select event:", event);
+        try {
+          const prediction = event.placePrediction;
+          if (!prediction) {
+            console.error("❌ No placePrediction in event");
+            return;
+          }
+          const place = prediction.toPlace();
+          await place.fetchFields({ fields: ["formattedAddress", "location"] });
+          if (!place.location) {
+            console.error("❌ No location found");
+            return;
+          }
+          const lat = place.location.lat();
+          const lng = place.location.lng();
+          const address = place.formattedAddress || "";
+          console.log("📍 Selected custom location:", { lat, lng, address });
+
+          setCustomLat(lat);
+          setCustomLng(lng);
+          setCustomLocation(address);
+          setCustomLocationError(null);
+          setPage(1);
+        } catch (err) {
+          console.error("❌ Error in gmp-select:", err);
+        }
+      });
+
+      autocompleteRef.current.appendChild(autocompleteElement);
+    }
+  }, [mapsLoaded, showCustomLocationInput]);
+
+  // Trigger gyms fetch when coords ready for custom
+  useEffect(() => {
+    if (filters.location === "custom" && customLat !== null && customLng !== null) {
+      console.log("⏳ Custom lat/lng ready, loading gyms...");
+      loadGyms(true);
+    }
+  }, [customLat, customLng, filters.location, loadGyms]);
+
+  // Get current location if filter = current
   useEffect(() => {
     if (navigator.geolocation && filters.location === "current") {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
+        (pos) => {
+          console.log("📍 Current location detected:", pos.coords);
+          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
           setLocationPermissionDenied(false);
           setError(null);
         },
-        (err) => {
-          console.error("Geolocation error:", err);
+        () => {
+          console.warn("❌ Location permission denied");
           setLocationPermissionDenied(true);
           setError("Location access denied. Please select a location manually.");
         }
@@ -66,135 +228,17 @@ const GymSearchPage: React.FC = () => {
     }
   }, [filters.location]);
 
-  // Location suggestion logic
-  const getLocationSuggestions = useCallback((input: string) => {
-    const normalizedInput = input.toLowerCase().trim();
-    if (!normalizedInput) return [];
-    
-    return Object.keys(locationMap).filter(city =>
-      city.toLowerCase().includes(normalizedInput) ||
-      normalizedInput.includes(city.toLowerCase())
-    );
-  }, []);
-
-  // Update suggestions when custom location input changes
-  useEffect(() => {
-    if (filters.location === "custom" && customLocation) {
-      setLocationSuggestions(getLocationSuggestions(customLocation));
-    } else {
-      setLocationSuggestions([]);
-    }
-  }, [customLocation, filters.location, getLocationSuggestions]);
-
-  // Geocode custom location
-  const geocodeLocation = useCallback(async (locationName: string): Promise<{ lat: number; lng: number } | null> => {
-    const normalizedLocation = locationName.toLowerCase().trim();
-    return locationMap[normalizedLocation] || null;
-  }, []);
-
-  // Get coordinates for selected location
-  const getLocationCoordinates = useCallback(async () => {
-    if (filters.location === "current") {
-      return userLocation;
-    } else if (filters.location === "custom" && customLocation.trim()) {
-      if (!customLocation.trim()) {
-        setCustomLocationError("Please enter a valid location");
-        return null;
-      }
-      const coordinates = await geocodeLocation(customLocation);
-      if (!coordinates) {
-        setCustomLocationError("This location is not supported. Please select a location from Kerala or Tamil Nadu.");
-      } else {
-        setCustomLocationError(null);
-      }
-      return coordinates;
-    } else {
-      return locationOptions.find(loc => loc.value === filters.location)?.coordinates || null;
-    }
-  }, [filters.location, userLocation, customLocation, geocodeLocation]);
-
-  const loadGyms = useCallback(async () => {
-    setLoading(true);
-    try {
-      if (filters.location === "custom" && !customLocation.trim()) {
-        setCustomLocationError("Please enter a location to search");
-        setLoading(false);
-        return;
-      }
-
-      const params: IGymSearchDTO = {
-        page,
-        limit,
-        search: searchQuery,
-        gymType: filters.gymType === "All Types" ? undefined : filters.gymType,
-        rating: filters.rating === "Any Rating" ? undefined : filters.rating.replace("+ Stars", ""),
-      };
-
-      if (filters.distance !== "All") {
-        const coordinates = await getLocationCoordinates();
-        if (!coordinates) {
-          setError(
-            filters.location === "current"
-              ? "Location required for distance filter. Please allow location access or select a location."
-              : customLocationError || "This location is not supported. Please select a location from Kerala or Tamil Nadu."
-          );
-          setLoading(false);
-          return;
-        }
-        params.lat = coordinates.lat;
-        params.lng = coordinates.lng;
-        params.radius = parseInt(filters.distance);
-      }
-
-      const response = await fetchGyms(params.page, params.limit, {
-        search: params.search,
-        lat: params.lat,
-        lng: params.lng,
-        radius: params.radius,
-        gymType: params.gymType,
-        rating: params.rating,
-      });
-
-      if (response.gyms.length === 0 && filters.location === "custom" && customLocation) {
-        setError(`No gyms found in ${customLocation.charAt(0).toUpperCase() + customLocation.slice(1)} within the Distance . Try a different location or adjust the distance filter.`);
-      } else {
-        setError(null);
-      }
-
-      setGyms(response.gyms);
-      setTotalPages(response.totalPages);
-      setTotalGyms(response.totalGyms);
-    } catch (err) {
-      console.error("Error fetching gyms:", err);
-      setError("Failed to load gyms. Please try again later.");
-      setGyms([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, searchQuery, filters, getLocationCoordinates, customLocationError, customLocation]);
-
-  const debouncedLoadGyms = useCallback(debounce(loadGyms, 1000), [loadGyms]);
-
-  useEffect(() => {
-    debouncedLoadGyms();
-    return () => debouncedLoadGyms.cancel();
-  }, [debouncedLoadGyms]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    debouncedLoadGyms();
-  };
-
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
+    console.log(`🔄 Filter changed: ${name} = ${value}`);
     setFilters((prev) => ({ ...prev, [name]: value }));
     if (name === "location") {
       setShowCustomLocationInput(value === "custom");
       if (value !== "custom") {
         setCustomLocation("");
+        setCustomLat(null);
+        setCustomLng(null);
         setCustomLocationError(null);
-        setLocationSuggestions([]);
       }
       setUserLocation(null);
       setLocationPermissionDenied(false);
@@ -202,352 +246,386 @@ const GymSearchPage: React.FC = () => {
     setPage(1);
   };
 
-  const handleCustomLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCustomLocation(e.target.value);
-    setCustomLocationError(null);
-    setPage(1);
-  };
-
-  const handleSuggestionSelect = (suggestion: string) => {
-    setCustomLocation(suggestion);
-    setLocationSuggestions([]);
-    setCustomLocationError(null);
-    setPage(1);
-    debouncedLoadGyms();
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    loadGyms(true);
   };
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) setPage(newPage);
   };
 
-  const handleGymClick = (gymId: string) => {
-    navigate(`/user/gym/${gymId}`);
-  };
+  const handleGymClick = (id: string) => navigate(`/user/gym/${id}`);
 
   const backendUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
   const defaultProfilePic = "/images/user.jpg";
-  const distanceOptions = ["All", 5, 10, 20, 50, 60, 100];
+  const distanceOptions = ["All", 5, 10, 20, 50, 100];
 
-  
+  const getGymTypeColor = (type: string) => {
+    switch (type) {
+      case "Basic":
+        return "bg-green-100 text-green-800";
+      case "Premium":
+        return "bg-purple-100 text-purple-800";
+      case "Diamond":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
   return (
-    <div className="font-inter bg-gray-50 min-h-screen">
-      <div className="mt-16">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          {/* Search and Filters */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-            <form onSubmit={handleSearch} className="flex flex-wrap gap-4 items-center bg-gradient-to-r from-blue-600 to-blue-800 p-6 rounded-xl">
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="🔍 Find your perfect gym..."
-                  className="w-full px-6 py-4 rounded-xl border-2 border-white/20 bg-white/10 text-white placeholder-white/70 focus:ring-2 focus:ring-white/50 focus:border-transparent text-lg backdrop-blur-sm"
-                />
+    <div className="font-inter min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Hero Section with Search */}
+      <div className="relative pt-20 pb-16">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10"></div>
+        <div className="relative max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+              Find Your Perfect Gym
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Discover premium fitness centers near you with advanced search and filtering
+            </p>
+          </div>
+
+          {/* Enhanced Search Bar */}
+          <form onSubmit={handleSearch} className="max-w-4xl mx-auto mb-12">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+              <div className="relative flex items-center bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 shadow-2xl p-2">
+                <div className="flex-1 relative">
+                  <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search for gyms, trainers, or equipment..."
+                    className="w-full pl-12 pr-6 py-4 bg-transparent text-lg placeholder-gray-500 focus:outline-none"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  Search
+                </button>
               </div>
-              <button
-                type="submit"
-                className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                Search
-              </button>
-            </form>
+            </div>
+          </form>
+        </div>
+      </div>
 
-            {/* Filter Section */}
-            <div className="mt-8 bg-gradient-to-r from-gray-50 to-white p-6 rounded-xl shadow-inner">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Location Filter */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-semibold text-gray-700 flex items-center">
-                    <span className="mr-2">📍</span>
-                    Location
-                  </label>
-                  <select
-                    name="location"
-                    value={filters.location}
-                    onChange={handleFilterChange}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white shadow-sm"
-                    disabled={loading}
-                  >
-                    {locationOptions.map((location) => (
-                      <option key={location.value} value={location.value}>
-                        {location.label}
-                      </option>
-                    ))}
-                  </select>
-                  {showCustomLocationInput && (
-                    <div className="mt-3 transition-all duration-300">
-                      <input
-                        type="text"
-                        value={customLocation}
-                        onChange={handleCustomLocationChange}
-                        placeholder="Enter city (e.g., Alappuzha, Chennai)"
-                        className={`w-full px-4 py-3 rounded-xl border-2 ${
-                          customLocationError ? "border-red-500" : "border-gray-200"
-                        } hover:border-blue-500 transition-all duration-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm`}
-                      />
-                      {customLocationError && (
-                        <p className="text-red-500 text-xs mt-1">{customLocationError}</p>
-                      )}
-                      {locationSuggestions.length > 0 && (
-                        <ul className="mt-2 bg-white border border-gray-200 rounded-xl shadow-lg max-h-40 overflow-y-auto">
-                          {locationSuggestions.map((suggestion) => (
-                            <li
-                              key={suggestion}
-                              className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-gray-700"
-                              onClick={() => handleSuggestionSelect(suggestion)}
-                            >
-                              {suggestion.charAt(0).toUpperCase() + suggestion.slice(1)}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-                  {filters.location === "current" && (
-                    <div className="text-xs mt-2">
-                      {userLocation ? (
-                        <span className="text-green-600 flex items-center">
-                          <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                          Location detected
-                        </span>
-                      ) : locationPermissionDenied ? (
-                        <span className="text-red-600 flex items-center">
-                          <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                          Location access denied
-                        </span>
-                      ) : (
-                        <span className="text-yellow-600 flex items-center">
-                          <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse"></span>
-                          Getting location...
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Distance Filter */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-semibold text-gray-700 flex items-center">
-                    <span className="mr-2">📏</span>
-                    Distance
-                  </label>
-                  <select
-                    name="distance"
-                    value={filters.distance}
-                    onChange={handleFilterChange}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white shadow-sm"
-                    disabled={loading}
-                  >
-                    {distanceOptions.map((dist) => (
-                      <option key={dist} value={dist}>
-                        {dist === "All" ? "All Distances" : `Within ${dist} km`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Gym Type Filter */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-semibold text-gray-700 flex items-center">
-                    <span className="mr-2">🏋️</span>
-                    Gym Type
-                  </label>
-                  <select
-                    name="gymType"
-                    value={filters.gymType}
-                    onChange={handleFilterChange}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white shadow-sm"
-                    disabled={loading}
-                  >
-                    <option>All Types</option>
-                    <option>Basic</option>
-                    <option>Premium</option>
-                    <option>Diamond</option>
-                  </select>
-                </div>
-
-                {/* Rating Filter */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-semibold text-gray-700 flex items-center">
-                    <span className="mr-2">⭐</span>
-                    Rating
-                  </label>
-                  <select
-                    name="rating"
-                    value={filters.rating}
-                    onChange={handleFilterChange}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white shadow-sm"
-                    disabled={loading}
-                  >
-                    <option>Any Rating</option>
-                    <option>4+ Stars</option>
-                    <option>3+ Stars</option>
-                    <option>2+ Stars</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Active Filters Display */}
-              <div className="mt-6 flex flex-wrap gap-2">
-                {Object.entries(filters).map(([key, value]) => {
-                  if (value && value !== "All" && value !== "All Types" && value !== "Any Rating" && value !== "current") {
-                    const displayValue = key === "location" && value === "custom"
-                      ? customLocation || "Custom Location"
-                      : locationOptions.find(loc => loc.value === value)?.label.replace(/[📍🏙️🏛️🌆🏖️🎓💎🏭✏️🌊⛵⛪🌴🌾🙏🌲🎨⛰️]/g, '').trim() || value;
-                    return (
-                      <span key={key} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200">
-                        <span className="capitalize">{key}:</span>
-                        <span className="ml-1 font-medium">{displayValue}</span>
+      <div className="max-w-7xl mx-auto px-4 pb-12">
+        {/* Enhanced Filters */}
+        <div className="mb-12">
+          <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 p-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <svg className="w-6 h-6 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+              </svg>
+              Filters
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Location Filter */}
+              <div className="space-y-3">
+                <label className="flex items-center text-sm font-semibold text-gray-700">
+                  <svg className="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Location
+                </label>
+                <select
+                  name="location"
+                  value={filters.location}
+                  onChange={handleFilterChange}
+                  className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                >
+                  {locationOptions.map((loc) => (
+                    <option key={loc.value} value={loc.value}>{loc.label}</option>
+                  ))}
+                </select>
+                {showCustomLocationInput && mapsLoaded && (
+                  <div className="mt-3 p-1 bg-white rounded-xl border border-gray-200" ref={autocompleteRef}></div>
+                )}
+                {filters.location === "current" && (
+                  <div className="text-sm mt-2">
+                    {userLocation ? (
+                      <span className="flex items-center text-green-600">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Location detected
                       </span>
-                    );
-                  }
-                  return null;
-                })}
+                    ) : locationPermissionDenied ? (
+                      <span className="flex items-center text-red-600">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Access denied
+                      </span>
+                    ) : (
+                      <span className="flex items-center text-amber-600">
+                        <svg className="w-4 h-4 mr-1 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Getting location...
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Distance Filter */}
+              <div className="space-y-3">
+                <label className="flex items-center text-sm font-semibold text-gray-700">
+                  <svg className="w-4 h-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                  Distance
+                </label>
+                <select
+                  name="distance"
+                  value={filters.distance}
+                  onChange={handleFilterChange}
+                  className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                >
+                  {distanceOptions.map((dist) => (
+                    <option key={dist} value={dist}>
+                      {dist === "All" ? "All Distances" : `Within ${dist} km`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Gym Type Filter */}
+              <div className="space-y-3">
+                <label className="flex items-center text-sm font-semibold text-gray-700">
+                  <svg className="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  Gym Type
+                </label>
+                <select
+                  name="gymType"
+                  value={filters.gymType}
+                  onChange={handleFilterChange}
+                  className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                >
+                  <option>All Types</option>
+                  <option>Basic</option>
+                  <option>Premium</option>
+                  <option>Diamond</option>
+                </select>
+              </div>
+
+              {/* Rating Filter */}
+              <div className="space-y-3">
+                <label className="flex items-center text-sm font-semibold text-gray-700">
+                  <svg className="w-4 h-4 mr-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                  Rating
+                </label>
+                <select
+                  name="rating"
+                  value={filters.rating}
+                  onChange={handleFilterChange}
+                  className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+                >
+                  <option>Any Rating</option>
+                  <option>4+ Stars</option>
+                  <option>3+ Stars</option>
+                  <option>2+ Stars</option>
+                </select>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Gym Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-            {loading ? (
-              [...Array(limit)].map((_, index) => (
-                <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden animate-pulse">
-                  <div className="w-full h-48 bg-gray-200"></div>
-                  <div className="p-4">
-                    <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-                    <div className="flex justify-between">
-                      <div className="h-8 bg-blue-600 rounded-lg w-24"></div>
-                      <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : error ? (
-              <div className="col-span-full text-center text-red-500 py-12 bg-white rounded-xl shadow-lg">
-                <i className="fas fa-exclamation-circle text-4xl mb-4 text-red-400"></i>
-                <p className="text-lg mb-4">{error}</p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                  <i className="fas fa-redo mr-2"></i>
-                  Try Again
-                </button>
+        {/* Results Section */}
+        <div className="mb-8">
+          {!loading && !error && gyms.length > 0 && (
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">
+                Found {totalGyms} gyms
+              </h2>
+              <div className="text-sm text-gray-600">
+                Page {page} of {totalPages}
               </div>
-            ) : gyms.length === 0 ? (
-              <div className="col-span-full text-center text-gray-500 py-12 bg-white rounded-xl shadow-lg">
-                <i className="fas fa-dumbbell text-4xl mb-4 text-gray-400"></i>
-                <p className="text-lg">
-                  {filters.distance === "All"
-                    ? "No gyms found matching your criteria"
-                    : `No gyms found within ${filters.distance} km of selected location`}
-                </p>
-                <p className="text-sm mt-2 text-gray-400">Try adjusting your filters or search terms</p>
-              </div>
-            ) : (
-              gyms.map((gym) => (
-                <div
-                  key={gym.id}
-                  className="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer group"
-                >
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={
-                        gym.image
-                          ? gym.image.startsWith("http")
-                            ? gym.image
-                            : `${backendUrl}${gym.image.startsWith("/") ? "" : "/"}${gym.image}`
-                          : defaultProfilePic
-                      }
-                      alt={gym.name}
-                      className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
-                      onClick={() => handleGymClick(gym.id)}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = defaultProfilePic;
-                      }}
-                    />
-                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center">
-                      <i className="fas fa-star text-yellow-400 mr-1"></i>
-                      <span className="font-semibold text-sm">{gym.ratings?.average?.toFixed(1) || "N/A"}</span>
-                    </div>
-                  </div>
-                  <div className="p-5">
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">{gym.name}</h3>
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
-                        {gym.type || "Standard"}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 mb-4 flex items-center">
-                      <i className="fas fa-map-marker-alt text-red-500 mr-2"></i>
-                      {gym.address?.city || "Unknown"}, {gym.address?.state || "Unknown"}
-                    </p>
-                    <div className="flex justify-between gap-3">
-                      <button
-                        onClick={() => navigate("/user/membership")}
-                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 font-medium"
-                      >
-                        View Plans
-                      </button>
-                      <button
-                        onClick={() => handleGymClick(gym.id)}
-                        className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 font-medium"
-                      >
-                        Details
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-8 flex justify-center items-center space-x-3 bg-white rounded-xl shadow-lg p-4">
-              <button
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1 || loading}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl disabled:opacity-50 hover:bg-gray-200 transition-all duration-300 disabled:cursor-not-allowed flex items-center"
-              >
-                <i className="fas fa-chevron-left mr-2"></i>
-                Previous
-              </button>
-              <div className="flex items-center space-x-2">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const pageNum = i + 1;
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`px-3 py-2 rounded-xl transition-all duration-300 ${
-                        page === pageNum
-                          ? "bg-blue-600 text-white shadow-lg"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-              <span className="text-gray-600 px-4 py-2 bg-gray-50 rounded-xl">
-                <span className="font-semibold">{totalGyms}</span> gyms total
-              </span>
-              <button
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page === totalPages || loading}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl disabled:opacity-50 hover:bg-gray-200 transition-all duration-300 disabled:cursor-not-allowed flex items-center"
-              >
-                Next
-                <i className="fas fa-chevron-right ml-2"></i>
-              </button>
             </div>
           )}
         </div>
+
+        {/* Gym Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          {loading ? (
+            [...Array(limit)].map((_, i) => (
+              <div key={i} className="group">
+                <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 overflow-hidden animate-pulse">
+                  <div className="h-64 bg-gradient-to-r from-gray-200 to-gray-300"></div>
+                  <div className="p-6 space-y-3">
+                    <div className="h-6 bg-gray-300 rounded-lg w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded-lg w-1/2"></div>
+                    <div className="h-4 bg-gray-200 rounded-lg w-1/4"></div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : error ? (
+            <div className="col-span-full">
+              <div className="text-center py-16 bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30">
+                <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <p className="text-xl text-red-600 font-semibold mb-2">Something went wrong</p>
+                <p className="text-gray-600">{error}</p>
+              </div>
+            </div>
+          ) : gyms.length === 0 ? (
+            <div className="col-span-full">
+              <div className="text-center py-16 bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30">
+                <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <p className="text-xl text-gray-600 font-semibold mb-2">No gyms found</p>
+                <p className="text-gray-500">Try adjusting your search filters</p>
+              </div>
+            </div>
+          ) : (
+            gyms.map((gym) => (
+              <div
+                key={gym.id}
+                className="group cursor-pointer transform transition-all duration-300 hover:-translate-y-2"
+                onClick={() => handleGymClick(gym.id)}
+              >
+                <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 overflow-hidden group-hover:shadow-2xl transition-all duration-300">
+                  <div className="relative overflow-hidden">
+                    <img
+                      src={
+                        gym.image?.startsWith("http") ? gym.image :
+                        gym.image ? `${backendUrl}${gym.image.startsWith("/") ? "" : "/"}${gym.image}` :
+                        defaultProfilePic
+                      }
+                      alt={gym.name}
+                      className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                    {gym.type && (
+                      <div className="absolute top-4 left-4">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getGymTypeColor(gym.type)} backdrop-blur-sm`}>
+                          {gym.type}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors duration-200">
+                      {gym.name}
+                    </h3>
+                    <div className="flex items-center text-gray-600 mb-4">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span className="text-sm">
+                        {gym.address?.city || "Unknown"}, {gym.address?.state || "Unknown"}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1">
+                        {[...Array(5)].map((_, i) => (
+                          <svg
+                            key={i}
+                            className={`w-4 h-4 ${i < (gym.ratings?.average || 0) ? 'text-yellow-400' : 'text-gray-300'}`}
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.922-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                        <span className="text-sm text-gray-600 ml-2">
+                          ({gym.ratings?.average?.toFixed(1) || "New"})
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center text-blue-600 group-hover:text-blue-700 transition-colors duration-200">
+                        <span className="text-sm font-semibold mr-1">View Details</span>
+                        <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Enhanced Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center">
+            <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 p-2">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page === 1}
+                  className="px-4 py-2 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-50 text-blue-600"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 7) {
+                      pageNum = i + 1;
+                    } else if (page <= 4) {
+                      pageNum = i + 1;
+                    } else if (page >= totalPages - 3) {
+                      pageNum = totalPages - 6 + i;
+                    } else {
+                      pageNum = page - 3 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`w-10 h-10 rounded-xl font-medium transition-all duration-200 ${
+                          page === pageNum
+                            ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg"
+                            : "text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                
+                <button
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page === totalPages}
+                  className="px-4 py-2 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-50 text-blue-600"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

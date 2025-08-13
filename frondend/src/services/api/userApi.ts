@@ -15,6 +15,8 @@ import type { INotification } from "../../components/common/user/Navbar";
 
 import { io, Socket } from "socket.io-client";
 import Cookies from "js-cookie";
+import type { FetchPTPlansResponse } from "../../types/pTPlan";
+import type { MembershipDTO } from "../../types/dtos/IGetUserCurrentPlansResponseDTO";
 
 
 
@@ -82,8 +84,8 @@ apiClient.interceptors.response.use(
         console.error("User token refresh failed:", refreshError);
         isRefreshing = false;
         processQueue(refreshError as AxiosError);
-        document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
-        document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
+        document.cookie = "userAccessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
+        document.cookie = "userRefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
         return Promise.reject(refreshError);
       }
     }
@@ -220,9 +222,9 @@ export const getUserPaidMembership = async (userId: string): Promise<IMembership
   return response.data;
 };
 
-export const subscribeToPlan = async (planId: string): Promise<{ orderId: string; amount: number; currency: string }> => {
+export const subscribeToPlan = async (planId: string) => {
   const response = await apiClient.post("/membership/payment", { planId });
-  return response.data.data;
+  return response.data; // full: { success, message, data?, error? }
 };
 
 export const verifyPayment = async (data: {
@@ -230,9 +232,11 @@ export const verifyPayment = async (data: {
   razorpay_order_id: string;
   razorpay_signature: string;
   planId: string;
-}): Promise<void> => {
-  await apiClient.post("/membership/verify-payment", data);
+}) => {
+  const res = await apiClient.post("/membership/verify-payment", data);
+  return res.data; // { success, message, data?, error? }
 };
+
 
 export const fetchGymDetails = async (gymId: string): Promise<IGymDetailsDTO> => {
   const response = await apiClient.get(`/gyms/${gymId}`);
@@ -247,6 +251,41 @@ export const getNotifications = async (page: number = 1, limit: number = 10): Pr
 export const markNotificationRead = async (notificationId: string): Promise<void> => {
   await apiClient.post(`/notifications/${notificationId}/read`);
 };
+
+export const fetchPTPlans = async (
+  page: number,
+  limit: number,
+  category: string = 'all',
+  maxPrice: number | null = null
+): Promise<FetchPTPlansResponse> => {
+  try {
+    const response = await apiClient.get('/plans', {
+      params: {
+        page,
+        limit,
+        category: category !== 'all' ? category : undefined,
+        maxPrice: maxPrice !== null ? maxPrice : undefined,
+      },
+      withCredentials: true,
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Failed to fetch PT plans:', error);
+    throw error;
+  }
+};
+
+
+export const getUserCurrentPlans = async (): Promise<MembershipDTO[]> => {
+  try {
+    const response = await apiClient.get("/user-current-plans");
+    return response.data.data?.memberships ?? []; // safely return an array
+  } catch (error) {
+    console.error("Failed to fetch current user plans:", error);
+    throw error;
+  }
+};
+
 
 /////////////////////////////////////////////////////////////////////////////////
 

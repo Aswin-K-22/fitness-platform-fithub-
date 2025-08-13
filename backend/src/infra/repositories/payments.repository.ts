@@ -17,6 +17,8 @@ export class PaymentsRepository
       id: record.id,
       type: record.type,
       userId: record.userId,
+      membershipId: record.membershipId,
+    membershipPlanId: record.membershipPlanId,
       amount: record.amount,
       currency: record.currency,
       paymentGateway: record.paymentGateway,

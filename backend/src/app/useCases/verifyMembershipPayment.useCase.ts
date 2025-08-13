@@ -71,6 +71,22 @@ export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentU
       }
       console.log('[VerifyMembershipPaymentUseCase] Plan found:', plan);
 
+      const activeMemberships = await this.membershipsRepository.getCurrentPlansByUserId(userId);
+const alreadyHasPlan = activeMemberships.some(m => m.planId === planId);
+
+if (alreadyHasPlan) {
+  return {
+    success: false,
+    status: HttpStatus.OK,
+    error: {
+      code: 'MEMBERSHIP_ALREADY_ACTIVE',
+      message: 'You already have an active membership for this plan'
+    }
+  };
+}
+
+
+
       console.log('[VerifyMembershipPaymentUseCase] Finding payment by order ID:', razorpay_order_id);
       const payment = await this.paymentsRepository.findPaymentByOrderId(razorpay_order_id);
       if (!payment) {
@@ -167,7 +183,15 @@ export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentU
           paymentDate: new Date(),
         }).toJSON()
       );
+
+
       console.log('[VerifyMembershipPaymentUseCase] Membership created:', membership);
+
+      await this.paymentsRepository.update(payment.id, {
+  membershipId: membership.id,
+  status: 'Paid',
+  paymentId: razorpay_payment_id
+});
 
       const notification = new Notification({
         userId,

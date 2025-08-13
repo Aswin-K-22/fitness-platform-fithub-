@@ -36,7 +36,7 @@ const ClientInteraction = lazy(() => import("./pages/trainer/ClientInteraction")
 const ClientPlan = lazy(() => import("./pages/trainer/ClientPlan"));
 const PTPlanList = lazy(() => import("./pages/trainer/PTPlanList")); 
 const PTPlanManagement = lazy(() => import("./pages/admin/PTPlanManagement"));
-
+const UserPTPlanList = lazy(()=>import("./pages/user/UserPTPlanList"));
 const DashboardView = lazy(() => import("./pages/admin/DashboardView"));
 const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
 const Reports = lazy(() => import("./pages/admin/Reports"));
@@ -156,6 +156,7 @@ const App: React.FC = () => {
                 <Route path="/user/reset-password" element={<ResetPassword />} />
                 <Route path="/user/payment-success" element={<ProtectedRoute element={<PaymentSuccess />} allowedRole="user" />} />
                 <Route path="/user/payment-failed" element={<ProtectedRoute element={<PaymentFailed />} allowedRole="user" />} />
+                <Route path="/user/pt-plans" element={<ProtectedRoute element={<UserPTPlanList />} allowedRole="user" isPublic={true} />} />
                 <Route path="/forbidden" element={<ForbiddenPage />} />
               </Route>
 

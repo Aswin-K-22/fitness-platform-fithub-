@@ -11,4 +11,7 @@ export interface IUserController {
   verifyMembershipPayment(req: Request, res: Response): Promise<void>;
   getNotifications(req: Request, res: Response): Promise<void>;
   markNotificationRead(req: Request, res: Response): Promise<void>;
+  getPTPlans(req: Request, res: Response): Promise<void>;
+ getUserCurrentPlans(req: Request, res: Response): Promise<void>;
+
 }

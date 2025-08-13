@@ -8,7 +8,7 @@ import { HttpStatus } from '../../domain/enums/httpStatus.enum';
 import { MESSAGES } from '../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
 import Razorpay from 'razorpay';
-import { IInitiateMembershipPaymentUseCase } from './interfaces/IInitiateMembershipPaymentUseCase';
+import { IInitiateMembershipPaymentUseCase } from './user/interfaces/IInitiateMembershipPaymentUseCase';
 
 export class InitiateMembershipPaymentUseCase implements IInitiateMembershipPaymentUseCase {
   private razorpay: Razorpay;
@@ -55,7 +55,7 @@ export class InitiateMembershipPaymentUseCase implements IInitiateMembershipPaym
       // Fetch user
       console.log('Fetching user with ID:', userId);
       const user = await this.usersRepository.findById(userId);
-      console.log('User fetch result:', user);
+  //  console.log('User fetch result:', user);
       if (!user) {
         console.error('User not found', { userId });
         return {
@@ -71,7 +71,7 @@ export class InitiateMembershipPaymentUseCase implements IInitiateMembershipPaym
       // Fetch plan
       console.log('Fetching plan with ID:', planId);
       const plan = await this.membershipsPlanRepository.findById(planId);
-      console.log('Plan fetch result:', plan);
+   // console.log('Plan fetch result:', plan);
       if (!plan) {
         console.error('Plan not found', { planId });
         return {
@@ -83,6 +83,12 @@ export class InitiateMembershipPaymentUseCase implements IInitiateMembershipPaym
           },
         };
       }
+
+
+
+
+
+
 
       // Validate plan price
       if (!plan.price || isNaN(plan.price)) {
@@ -96,6 +102,24 @@ export class InitiateMembershipPaymentUseCase implements IInitiateMembershipPaym
           },
         };
       }
+
+
+    const activeMemberships = await this.membershipsRepository.getCurrentPlansByUserId(userId);
+
+const alreadyHasPlan = activeMemberships.some(m => m.planId === planId);
+if (alreadyHasPlan) {
+  return {
+    success: false,
+    status: HttpStatus.OK,
+    error: {
+      code: 'MEMBERSHIP_ALREADY_ACTIVE',
+      message: 'You already have an active membership for this plan'
+    }
+  };
+}
+
+
+
 
       // Generate receipt
       const shortPlanId = planId.slice(-6);
@@ -134,6 +158,7 @@ export class InitiateMembershipPaymentUseCase implements IInitiateMembershipPaym
       const payment = new Payment({
         type: 'subscription',
         userId,
+           membershipPlanId: planId ,
         amount: plan.price,
         currency: 'INR',
         paymentGateway: 'Razorpay',
@@ -141,6 +166,7 @@ export class InitiateMembershipPaymentUseCase implements IInitiateMembershipPaym
         status: 'Pending',
         createdAt: new Date(),
         updatedAt: new Date(),
+      
       });
       console.log('Creating payment record', { payment: payment.toJSON() });
 

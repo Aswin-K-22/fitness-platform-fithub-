@@ -1,4 +1,5 @@
 //src/app/repositories/ptPlan.repository.ts
+import { PTPlanFilter } from '@/domain/types/ptPlanFilter';
 import { IBaseRepository } from './base.repository';
 import { PTPlan } from '@/domain/entities/PTPlan.entity';
 
@@ -11,4 +12,6 @@ findAllByAdminVerification(skip: number, take: number, verifiedByAdmin?: boolean
   countByAdminVerification(verifiedByAdmin?: boolean): Promise<number>;
   adminVerifyPTPlan(id: string, verifiedByAdmin: boolean): Promise<PTPlan>;
   updateAdminPrice(id: string, adminPrice: number, totalPrice: number): Promise<PTPlan>;
+  findForUsers(filters: PTPlanFilter, skip: number, take: number): Promise<PTPlan[]>;
+  countForUsers(filters: PTPlanFilter): Promise<number>;
 }

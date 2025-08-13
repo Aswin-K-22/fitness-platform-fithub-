@@ -1,15 +1,22 @@
-//src/infra/composer/app.composer.ts
+// src/infra/composer/app.composer.ts
 import { UsersRepository } from '@/infra/repositories/users.repository';
 import { TrainersRepository } from '@/infra/repositories/trainers.repository';
 import { GymsRepository } from '@/infra/repositories/gyms.repository';
 import { MembershipsPlanRepository } from '@/infra/repositories/membershipsPlan.repository';
 import { MembershipsRepository } from '@/infra/repositories/memberships.repository';
 import { PaymentsRepository } from '@/infra/repositories/payments.repository';
+import { NotificationsRepository } from '../repositories/notifications.repository';
+import { PTPlanRepository } from '@/infra/repositories/ptPlan.repository';
+
+// Providers
 import { BcryptPasswordHasher } from '@/infra/providers/bcryptPasswordHasher';
 import { GoogleAuthService } from '@/infra/providers/googleAuthService';
 import { JwtTokenService } from '@/infra/providers/jwtTokenService';
 import { RedisService } from '@/infra/providers/redis.service';
 import { NodemailerEmailService } from '@/infra/providers/nodemailerEmailService';
+import { NotificationService } from '../providers/notification.service';
+import { S3Service } from '@/infra/providers/s3.service';
+
 import prisma from '@/infra/databases/prismaClient';
 import { io } from '@/main';
 
@@ -60,37 +67,45 @@ import { GetAdminUseCase } from '@/app/useCases/getAdmin.useCase';
 import { AdminRefreshTokenUseCase } from '@/app/useCases/adminRefreshToken.useCase';
 import { LogoutAdminUseCase } from '@/app/useCases/logoutAdmin.useCase';
 
-// Presentation
+// Other Use Cases
+import { GetNotificationsUseCase } from '@/app/useCases/getNotifications.useCase';
+import { MarkNotificationReadUseCase } from '@/app/useCases/markNotificationRead.useCase';
+import { CreatePTPlanUseCase } from '@/app/useCases/createPTPlan.useCase';
+import { PTPlansTrainerGetUseCase } from '@/app/useCases/trainer/ptPlansTrainerGet.useCase';
+import { EditPTPlanUseCase } from '@/app/useCases/trainer/editPTPlan.useCase';
+import { StopPTPlanUseCase } from '@/app/useCases/stopPTPlan.useCase';
+import { AdminPTPlansGetUseCase } from '@/app/useCases/admin/adminPTPlansGetUseCase';
+import { VerifyPTPlanUseCase } from '@/app/useCases/admin/verifyPTPlanUseCase';
+import { UpdatePTPlanAdminPriceUseCase } from '@/app/useCases/admin/updatePTPlanAdminPriceUseCase';
+import { PTPlansUserGetUseCase } from '@/app/useCases/user/PTPlansUserGetUseCase';
+
+// Newly added
+import { GetUserCurrentPlansUseCase } from '@/app/useCases/user/getUserCurrentPlans.usecase';
+
+// Controllers
 import { UserAuthController } from '@/presentation/controllers/user/auth.controller';
 import { UserController } from '@/presentation/controllers/user/user.controller';
 import { TrainerAuthController } from '@/presentation/controllers/trainer/auth.controller';
 import { TrainerController } from '@/presentation/controllers/trainer/trainer.controller';
 import { AdminAuthController } from '@/presentation/controllers/admin/adminAuth.controller';
 import { AdminController } from '@/presentation/controllers/admin/admin.controller';
+
+// Middlewares
 import { AuthMiddleware } from '@/presentation/middlewares/user/userAuth.middleware';
 import { TrainerAuthMiddleware } from '@/presentation/middlewares/trainer/trainerAuth.middleware';
 import { AdminAuthMiddleware } from '@/presentation/middlewares/admin/adminAuth.middleware';
+import { UserValidationMiddleware } from '@/presentation/middlewares/user/userValidation.middleware';
+import { TrainerValidationMiddleware } from '@/presentation/middlewares/trainer/trainerValidation.middleware';
+import { AdminValidationMiddleware } from '@/presentation/middlewares/admin/adminValidation.middleware';
+
+// Routes
 import { UserRoutes } from '@/presentation/routes/user.routes';
 import { TrainerRoutes } from '@/presentation/routes/trainer.routes';
 import { AdminRoutes } from '@/presentation/routes/admin.routes';
-import { NotificationsRepository } from '../repositories/notifications.repository';
-import { NotificationService } from '../providers/notification.service';
-import { GetNotificationsUseCase } from '@/app/useCases/getNotifications.useCase';
-import { MarkNotificationReadUseCase } from '@/app/useCases/markNotificationRead.useCase';
-import { PTPlanRepository } from '@/infra/repositories/ptPlan.repository';
-import { S3Service } from '@/infra/providers/s3.service';
-import { CreatePTPlanUseCase } from '@/app/useCases/createPTPlan.useCase';
-import { TrainerValidationMiddleware } from '@/presentation/middlewares/trainer/trainerValidation.middleware';
-import { PTPlansTrainerGetUseCase } from '@/app/useCases/trainer/ptPlansTrainerGet.useCase';
-import { EditPTPlanUseCase } from '@/app/useCases/trainer/editPTPlan.useCase';
-import { StopPTPlanUseCase } from '@/app/useCases/stopPTPlan.useCase';
-import { AdminValidationMiddleware } from '@/presentation/middlewares/admin/adminValidation.middleware';
-import { AdminPTPlansGetUseCase } from '@/app/useCases/admin/adminPTPlansGetUseCase';
-import { VerifyPTPlanUseCase } from '@/app/useCases/admin/verifyPTPlanUseCase';
-import { UpdatePTPlanAdminPriceUseCase } from '@/app/useCases/admin/updatePTPlanAdminPriceUseCase';
+
 
 export function composeApp() {
-  // Repositories
+  // --- Repositories
   const usersRepository = new UsersRepository(prisma);
   const trainersRepository = new TrainersRepository(prisma);
   const gymsRepository = new GymsRepository(prisma);
@@ -100,16 +115,17 @@ export function composeApp() {
   const notificationsRepository = new NotificationsRepository(prisma);
   const ptPlanRepository = new PTPlanRepository(prisma);
 
-  // Providers
+  // --- Providers
   const passwordHasher = new BcryptPasswordHasher();
   const emailService = new NodemailerEmailService();
   const redisService = new RedisService();
   const tokenService = new JwtTokenService(redisService);
   const googleAuthService = new GoogleAuthService();
- const notificationService = new NotificationService(io, notificationsRepository, tokenService);
- const s3Service = new S3Service();
+  const notificationService = new NotificationService(io, notificationsRepository, tokenService);
+  const s3Service = new S3Service();
 
-  // User Use Cases
+  // --- User Use Cases
+  const getUserCurrentPlansUseCase = new GetUserCurrentPlansUseCase(membershipsRepository);
   const createUserUseCase = new CreateUserUseCase(usersRepository, passwordHasher, emailService);
   const loginUserUseCase = new LoginUserUseCase(usersRepository, passwordHasher, tokenService);
   const logoutUserUseCase = new LogoutUserUseCase(usersRepository, tokenService);
@@ -137,7 +153,7 @@ export function composeApp() {
     paymentsRepository,
     usersRepository,
     membershipsPlanRepository,
-    notificationService 
+    notificationService
   );
   const updateUserProfileUseCase = new UpdateUserProfileUseCase(usersRepository);
   const getUsersUseCase = new GetUsersUseCase(usersRepository);
@@ -146,49 +162,47 @@ export function composeApp() {
   const addGymUseCase = new AddGymUseCase(gymsRepository, trainersRepository);
   const getAvailableTrainersUseCase = new GetAvailableTrainersUseCase(trainersRepository);
   const addMembershipPlanUseCase = new AddMembershipPlanUseCase(membershipsPlanRepository);
-
-
-
+  const ptPlansUserGetUseCase = new PTPlansUserGetUseCase(ptPlanRepository, s3Service);
 
   const getNotificationsUseCase = new GetNotificationsUseCase(notificationsRepository);
-  const markNotificationReadUseCase = new MarkNotificationReadUseCase(notificationsRepository)
+  const markNotificationReadUseCase = new MarkNotificationReadUseCase(notificationsRepository);
 
-  // Trainer Use Cases
+  // --- Trainer Use Cases
   const createTrainerUseCase = new CreateTrainerUseCase(trainersRepository, passwordHasher, emailService);
-  const loginTrainerUseCase = new LoginTrainerUseCase(trainersRepository, passwordHasher, tokenService,s3Service);
+  const loginTrainerUseCase = new LoginTrainerUseCase(trainersRepository, passwordHasher, tokenService, s3Service);
   const logoutTrainerUseCase = new LogoutTrainerUseCase(trainersRepository, tokenService);
   const verifyTrainerOtpUseCase = new VerifyTrainerOtpUseCase(trainersRepository);
   const resendTrainerOtpUseCase = new ResendTrainerOtpUseCase(trainersRepository, emailService);
-  const getTrainerUseCase = new GetTrainerUseCase(trainersRepository,s3Service);
+  const getTrainerUseCase = new GetTrainerUseCase(trainersRepository, s3Service);
   const trainerRefreshTokenUseCase = new TrainerRefreshTokenUseCase(trainersRepository, tokenService);
-  const getTrainersUseCase = new GetTrainersUseCase(trainersRepository,s3Service);
+  const getTrainersUseCase = new GetTrainersUseCase(trainersRepository, s3Service);
   const approveTrainerUseCase = new ApproveTrainerUseCase(trainersRepository);
-  const getTrainerProfileUseCase = new GetTrainerProfileUseCase(trainersRepository,s3Service);
-  const updateTrainerProfileUseCase = new UpdateTrainerProfileUseCase(trainersRepository,s3Service);
+  const getTrainerProfileUseCase = new GetTrainerProfileUseCase(trainersRepository, s3Service);
+  const updateTrainerProfileUseCase = new UpdateTrainerProfileUseCase(trainersRepository, s3Service);
   const createPTPlanUseCase = new CreatePTPlanUseCase(ptPlanRepository);
   const ptPlansTrainerGetUseCase = new PTPlansTrainerGetUseCase(ptPlanRepository, s3Service);
   const editPTPlanUseCase = new EditPTPlanUseCase(ptPlanRepository, s3Service);
   const stopPTPlanUseCase = new StopPTPlanUseCase(ptPlanRepository);
   const resumePTPlanUseCase = new ResumePTPlanUseCase(ptPlanRepository);
 
-  // Admin Use Cases
-const loginAdminUseCase = new LoginAdminUseCase(usersRepository, passwordHasher, tokenService);
-const getAdminUseCase = new GetAdminUseCase(usersRepository);
-const adminRefreshTokenUseCase = new AdminRefreshTokenUseCase(usersRepository, tokenService);
-const logoutAdminUseCase = new LogoutAdminUseCase(usersRepository, tokenService);
-const adminPTPlansGetUseCase = new AdminPTPlansGetUseCase(ptPlanRepository, s3Service);
-const verifyPTPlanUseCase = new VerifyPTPlanUseCase(ptPlanRepository);
-const updatePTPlanAdminPriceUseCase = new UpdatePTPlanAdminPriceUseCase(ptPlanRepository);
+  // --- Admin Use Cases
+  const loginAdminUseCase = new LoginAdminUseCase(usersRepository, passwordHasher, tokenService);
+  const getAdminUseCase = new GetAdminUseCase(usersRepository);
+  const adminRefreshTokenUseCase = new AdminRefreshTokenUseCase(usersRepository, tokenService);
+  const logoutAdminUseCase = new LogoutAdminUseCase(usersRepository, tokenService);
+  const adminPTPlansGetUseCase = new AdminPTPlansGetUseCase(ptPlanRepository, s3Service);
+  const verifyPTPlanUseCase = new VerifyPTPlanUseCase(ptPlanRepository);
+  const updatePTPlanAdminPriceUseCase = new UpdatePTPlanAdminPriceUseCase(ptPlanRepository);
 
-
-  // Middlewares
+  // --- Middlewares
   const authMiddleware = new AuthMiddleware(usersRepository, tokenService);
+  const userValidationMiddleware = new UserValidationMiddleware();
   const trainerAuthMiddleware = new TrainerAuthMiddleware(trainersRepository, tokenService);
   const trainerValidationMiddleware = new TrainerValidationMiddleware();
   const adminAuthMiddleware = new AdminAuthMiddleware(usersRepository, tokenService);
   const adminValidationMiddleware = new AdminValidationMiddleware();
 
-  // Controllers
+  // --- Controllers
   const userAuthController = new UserAuthController(
     createUserUseCase,
     loginUserUseCase,
@@ -201,6 +215,7 @@ const updatePTPlanAdminPriceUseCase = new UpdatePTPlanAdminPriceUseCase(ptPlanRe
     resetPasswordUseCase,
     verifyUserOtpUseCase
   );
+
   const userController = new UserController(
     getUserUseCase,
     getGymsUseCase,
@@ -211,8 +226,11 @@ const updatePTPlanAdminPriceUseCase = new UpdatePTPlanAdminPriceUseCase(ptPlanRe
     getUserProfileUseCase,
     updateUserProfileUseCase,
     getNotificationsUseCase,
-    markNotificationReadUseCase
+    markNotificationReadUseCase,
+    ptPlansUserGetUseCase,
+    getUserCurrentPlansUseCase // ✅ Added here
   );
+
   const trainerAuthController = new TrainerAuthController(
     createTrainerUseCase,
     loginTrainerUseCase,
@@ -221,6 +239,7 @@ const updatePTPlanAdminPriceUseCase = new UpdatePTPlanAdminPriceUseCase(ptPlanRe
     resendTrainerOtpUseCase,
     trainerRefreshTokenUseCase
   );
+
   const trainerController = new TrainerController(
     getTrainerUseCase, 
     getTrainerProfileUseCase, 
@@ -230,29 +249,35 @@ const updatePTPlanAdminPriceUseCase = new UpdatePTPlanAdminPriceUseCase(ptPlanRe
     ptPlansTrainerGetUseCase,
     editPTPlanUseCase,
     stopPTPlanUseCase,
-  resumePTPlanUseCase
-);
-  const adminAuthController = new AdminAuthController(loginAdminUseCase, adminRefreshTokenUseCase, logoutAdminUseCase);
-const adminController = new AdminController(
-  getAdminUseCase,
-  getUsersUseCase,
-  toggleUserVerificationUseCase,
-  getTrainersUseCase,
-  approveTrainerUseCase,
-  getAdminGymsUseCase,
-  addGymUseCase,
-  getAvailableTrainersUseCase,
-  getAdminMembershipPlansUseCase,
-  addMembershipPlanUseCase,
-  adminPTPlansGetUseCase,
-  verifyPTPlanUseCase,
-  updatePTPlanAdminPriceUseCase
-);
+    resumePTPlanUseCase
+  );
 
-  // Routes
-  const userRoutes = new UserRoutes(userAuthController, userController, authMiddleware);
-  const trainerRoutes = new TrainerRoutes(trainerAuthController, trainerController, trainerAuthMiddleware,trainerValidationMiddleware);
-  const adminRoutes = new AdminRoutes(adminAuthController, adminController, adminAuthMiddleware,adminValidationMiddleware);
+  const adminAuthController = new AdminAuthController(
+    loginAdminUseCase,
+    adminRefreshTokenUseCase,
+    logoutAdminUseCase
+  );
+
+  const adminController = new AdminController(
+    getAdminUseCase,
+    getUsersUseCase,
+    toggleUserVerificationUseCase,
+    getTrainersUseCase,
+    approveTrainerUseCase,
+    getAdminGymsUseCase,
+    addGymUseCase,
+    getAvailableTrainersUseCase,
+    getAdminMembershipPlansUseCase,
+    addMembershipPlanUseCase,
+    adminPTPlansGetUseCase,
+    verifyPTPlanUseCase,
+    updatePTPlanAdminPriceUseCase
+  );
+
+  // --- Routes
+  const userRoutes = new UserRoutes(userAuthController, userController, authMiddleware, userValidationMiddleware);
+  const trainerRoutes = new TrainerRoutes(trainerAuthController, trainerController, trainerAuthMiddleware, trainerValidationMiddleware);
+  const adminRoutes = new AdminRoutes(adminAuthController, adminController, adminAuthMiddleware, adminValidationMiddleware);
 
   return {
     userRoutes,
