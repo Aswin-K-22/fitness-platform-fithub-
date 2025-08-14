@@ -35,8 +35,8 @@ import { VerifyUserOtpUseCase } from '@/app/useCases/verifyUserOtp.useCase';
 import { GetGymDetailsUseCase } from '@/app/useCases/getGymDetails.useCase';
 import { GetMembershipPlansUseCase } from '@/app/useCases/getMembershipPlans.useCase';
 import { UpdateUserProfileUseCase } from '@/app/useCases/updateUserProfile.useCase';
-import { InitiateMembershipPaymentUseCase } from '@/app/useCases/initiateMembershipPayment.useCase';
-import { VerifyMembershipPaymentUseCase } from '@/app/useCases/verifyMembershipPayment.useCase';
+import { InitiateMembershipPaymentUseCase } from '@/app/useCases/user/initiateMembershipPayment.useCase';
+import { VerifyMembershipPaymentUseCase } from '@/app/useCases/user/verifyMembershipPayment.useCase';
 import { GetUserProfileUseCase } from '@/app/useCases/getUserProfile.useCase';
 import { GetUsersUseCase } from '@/app/useCases/getUsers.useCase';
 import { ToggleUserVerificationUseCase } from '@/app/useCases/toggleUserVerification.useCase';
@@ -68,8 +68,8 @@ import { AdminRefreshTokenUseCase } from '@/app/useCases/adminRefreshToken.useCa
 import { LogoutAdminUseCase } from '@/app/useCases/logoutAdmin.useCase';
 
 // Other Use Cases
-import { GetNotificationsUseCase } from '@/app/useCases/getNotifications.useCase';
-import { MarkNotificationReadUseCase } from '@/app/useCases/markNotificationRead.useCase';
+import { GetNotificationsUseCase } from '@/app/useCases/user/getNotifications.useCase';
+import { MarkNotificationReadUseCase } from '@/app/useCases/user/markNotificationRead.useCase';
 import { CreatePTPlanUseCase } from '@/app/useCases/createPTPlan.useCase';
 import { PTPlansTrainerGetUseCase } from '@/app/useCases/trainer/ptPlansTrainerGet.useCase';
 import { EditPTPlanUseCase } from '@/app/useCases/trainer/editPTPlan.useCase';
@@ -165,7 +165,7 @@ export function composeApp() {
   const ptPlansUserGetUseCase = new PTPlansUserGetUseCase(ptPlanRepository, s3Service);
 
   const getNotificationsUseCase = new GetNotificationsUseCase(notificationsRepository);
-  const markNotificationReadUseCase = new MarkNotificationReadUseCase(notificationsRepository);
+  const markNotificationReadUseCase = new MarkNotificationReadUseCase(notificationService);
 
   // --- Trainer Use Cases
   const createTrainerUseCase = new CreateTrainerUseCase(trainersRepository, passwordHasher, emailService);

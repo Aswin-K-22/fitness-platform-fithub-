@@ -8,7 +8,6 @@ import {
   verifyPayment,
   getUserCurrentPlans,
 } from "../../services/api/userApi";
-import Navbar from "../../components/common/user/Navbar";
 import type { RootState } from "../../store/store";
 import { useSelector } from "react-redux";
 import type { MembershipPlanDTO as MembershipPlan } from "../../types/dtos/MembershipPlanDTO";
@@ -216,7 +215,6 @@ const MembershipPage: React.FC = () => {
 
   return (
     <div className="bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 font-inter min-h-screen">
-      <Navbar />
       <main className="pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Hero */}

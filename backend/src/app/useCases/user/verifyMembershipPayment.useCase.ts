@@ -1,14 +1,14 @@
-import { VerifyMembershipPaymentRequestDTO, IVerifyMembershipPaymentResponseDTO } from '../../domain/dtos/verifyMembershipPayment.dto';
-import { IMembershipsRepository } from '../repositories/memberships.repository';
-import { IPaymentsRepository } from '../repositories/payments.repository';
-import { IUsersRepository } from '../repositories/users.repository';
-import { IMembershipsPlanRepository } from '../repositories/membershipPlan.repository';
-import { HttpStatus } from '../../domain/enums/httpStatus.enum';
-import { MESSAGES } from '../../domain/constants/messages.constant';
-import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { VerifyMembershipPaymentRequestDTO, IVerifyMembershipPaymentResponseDTO } from '../../../domain/dtos/verifyMembershipPayment.dto';
+import { IMembershipsRepository } from '../../repositories/memberships.repository';
+import { IPaymentsRepository } from '../../repositories/payments.repository';
+import { IUsersRepository } from '../../repositories/users.repository';
+import { IMembershipsPlanRepository } from '../../repositories/membershipPlan.repository';
+import { HttpStatus } from '../../../domain/enums/httpStatus.enum';
+import { MESSAGES } from '../../../domain/constants/messages.constant';
+import { ERRORMESSAGES } from '../../../domain/constants/errorMessages.constant';
 import crypto from 'crypto';
 import { Membership } from '@/domain/entities/Membership.entity';
-import { IVerifyMembershipPaymentUseCase } from './interfaces/IVerifyMembershipPaymentUseCase';
+import { IVerifyMembershipPaymentUseCase } from '../interfaces/IVerifyMembershipPaymentUseCase';
 import { NotificationService } from '@/infra/providers/notification.service';
 import { Notification } from '@/domain/entities/Notification.entity';
 
@@ -54,7 +54,7 @@ export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentU
           },
         };
       }
-      console.log('[VerifyMembershipPaymentUseCase] User found:', user);
+      console.log('[VerifyMembershipPaymentUseCase] User ID found:', user.id);
 
       console.log('[VerifyMembershipPaymentUseCase] Finding plan by ID:', planId);
       const plan = await this.membershipsPlanRepository.findById(planId);
@@ -69,7 +69,6 @@ export class VerifyMembershipPaymentUseCase implements IVerifyMembershipPaymentU
           },
         };
       }
-      console.log('[VerifyMembershipPaymentUseCase] Plan found:', plan);
 
       const activeMemberships = await this.membershipsRepository.getCurrentPlansByUserId(userId);
 const alreadyHasPlan = activeMemberships.some(m => m.planId === planId);
@@ -100,7 +99,6 @@ if (alreadyHasPlan) {
           },
         };
       }
-      console.log('[VerifyMembershipPaymentUseCase] Payment found:', payment);
 
       console.log('[VerifyMembershipPaymentUseCase] Generating signature');
       if (!process.env.RAZORPAY_KEY_SECRET) {
@@ -159,15 +157,6 @@ if (alreadyHasPlan) {
       const startDate = new Date();
       const endDate = new Date();
       endDate.setMonth(endDate.getMonth() + plan.duration);
-      console.log('[VerifyMembershipPaymentUseCase] Creating membership with:', {
-        userId,
-        planId,
-        startDate,
-        endDate,
-        paymentId: payment.id,
-        price: plan.price,
-        currency: 'INR',
-      });
 
       const membership = await this.membershipsRepository.create(
         new Membership({
@@ -185,7 +174,6 @@ if (alreadyHasPlan) {
       );
 
 
-      console.log('[VerifyMembershipPaymentUseCase] Membership created:', membership);
 
       await this.paymentsRepository.update(payment.id, {
   membershipId: membership.id,

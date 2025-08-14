@@ -2,8 +2,8 @@ import { Notification } from '@/domain/entities/Notification.entity';
 import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { MESSAGES } from '@/domain/constants/messages.constant';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
-import { INotificationsRepository } from '../repositories/notifications.repository';
 import { IGetNotificationsUseCase } from './interfaces/IGetNotificationsUseCase';
+import { INotificationsRepository } from '@/app/repositories/notifications.repository';
 
 export interface IGetNotificationsResponseDTO {
   success: boolean;

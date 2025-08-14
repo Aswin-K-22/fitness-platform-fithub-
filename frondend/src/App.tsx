@@ -7,8 +7,11 @@ import { ToastContainer } from "react-toastify";
 
 import { initializeAuth } from "./hooks/initializeAuth";
 import { useAuthSession } from "./hooks/useAuthSession";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "./store/store";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "./store/store";
+
+
+import { initUserSocket, connectUserSocket, disconnectUserSocket } from "./services/sockets/userSocket";
 
 // Lazy-loaded components
 const HomePage = lazy(() => import("./pages/user/HomePage"));
@@ -131,11 +134,23 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
 const App: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-
+const { isAuthenticated } = useSelector((state: RootState) => state.userAuth);
   useEffect(() => {
     console.log("useEffect in App.tsx is running");
     dispatch(initializeAuth());
+
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      initUserSocket(); 
+      connectUserSocket();
+    } else {
+      disconnectUserSocket();
+    }
+  }, [isAuthenticated]);
+
+
 
   return (
     <div className="min-h-screen bg-gray-100">

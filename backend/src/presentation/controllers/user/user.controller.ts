@@ -19,7 +19,7 @@ import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 import { MESSAGES } from '@/domain/constants/messages.constant';
 import { INotificationsRepository } from '@/app/repositories/notifications.repository';
-import { IGetNotificationsUseCase } from '@/app/useCases/interfaces/IGetNotificationsUseCase';
+import { IGetNotificationsUseCase } from '@/app/useCases/user/interfaces/IGetNotificationsUseCase';
 import { IMarkNotificationReadUseCase } from '@/app/useCases/interfaces/IMarkNotificationReadUseCase';
 import { IGetPTPlansResponseDTO } from '@/domain/dtos/getPTPlansResponse.dto';
 import { CustomRequest } from '@/types/customRequest';

@@ -1,8 +1,9 @@
 import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { MESSAGES } from '@/domain/constants/messages.constant';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
-import { INotificationsRepository } from '../repositories/notifications.repository';
-import { IMarkNotificationReadUseCase } from './interfaces/IMarkNotificationReadUseCase';
+import { INotificationsRepository } from '../../repositories/notifications.repository';
+import { IMarkNotificationReadUseCase } from '../interfaces/IMarkNotificationReadUseCase';
+import { NotificationService } from '@/infra/providers/notification.service';
 
 export interface IMarkNotificationReadResponseDTO {
   success: boolean;
@@ -14,7 +15,7 @@ export interface IMarkNotificationReadResponseDTO {
 
 
 export class MarkNotificationReadUseCase implements IMarkNotificationReadUseCase {
-  constructor(private notificationsRepository: INotificationsRepository) {}
+ constructor(private notificationService: NotificationService) {}
 
   async execute(userId: string, notificationId: string): Promise<IMarkNotificationReadResponseDTO> {
     try {
@@ -30,8 +31,7 @@ export class MarkNotificationReadUseCase implements IMarkNotificationReadUseCase
         };
       }
 
-      await this.notificationsRepository.markAsRead(notificationId);
-
+        await this.notificationService.markAsReadAndEmit(notificationId, userId);
       return {
         success: true,
         status: HttpStatus.OK,

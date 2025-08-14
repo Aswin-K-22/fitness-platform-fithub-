@@ -5,22 +5,15 @@ import { toast } from "react-toastify";
 import type { AppDispatch, RootState } from "../../../store/store";
 import { logoutThunk } from "../../../store/slices/userAuthSlice";
 import { getNotifications, markNotificationRead } from "../../../services/api/userApi";
+import { setUserNotifications,markUserNotificationRead as markReadAction  } from "../../../store/slices/userNotificationsSlice.ts";
 const backendUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-
-export interface INotification {
-  id: string;
-  userId: string;
-  message: string;
-  type: 'success' | 'error' | 'info';
-  createdAt: string;
-  read: boolean;
-}
 
 
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user } = useSelector((state: RootState) => state.userAuth);
+  const { notifications, unreadCount } = useSelector((state: RootState) => state.userNotifications);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,8 +21,6 @@ const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<INotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const defaultProfilePic = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=32&h=32";
@@ -77,25 +68,18 @@ const Navbar: React.FC = () => {
 
 
   // Fetch notifications on mount and after payment verification
-  useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      const fetchNotifications = async () => {
-        try {
-          const { notifications } = await getNotifications(1, 10);
-          setNotifications(notifications);
-          setUnreadCount(notifications.filter((n) => !n.read).length);
-        } catch (error) {
-          console.error('[Navbar] Failed to fetch notifications:', error);
-          //toast.error("Failed to load notifications");
-        }
-      };
-      fetchNotifications();
-
-      // Poll for new notifications every 30 seconds
-      // const interval = setInterval(fetchNotifications, 30000);
-      // return () => clearInterval(interval);
-    }
-  }, [isAuthenticated, user?.id]);
+useEffect(() => {
+  if (isAuthenticated && user?.id) {
+    (async () => {
+      try {
+        const { notifications } = await getNotifications(1, 10);
+        dispatch(setUserNotifications(notifications)); 
+      } catch (error) {
+        console.error("Failed to fetch notifications:", error);
+      }
+    })();
+  }
+}, [isAuthenticated, user?.id]);
 
 
 
@@ -118,18 +102,14 @@ const Navbar: React.FC = () => {
   }, []);
 
 
-  const handleMarkNotificationRead = async (notificationId: string) => {
-    try {
-      await markNotificationRead(notificationId);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
-      );
-      setUnreadCount((prev) => prev - 1);
-    } catch (error) {
-      console.error('[Navbar] Failed to mark notification as read:', error);
-      toast.error("Failed to mark notification as read");
-    }
-  };
+const handleMarkNotificationRead = async (id: string) => {
+  try {
+    await markNotificationRead(id);
+    dispatch(markReadAction(id)); 
+  } catch (error) {
+    console.error("Failed to mark as read:", error);
+  }
+};
 
 
   const handleLogout = async () => {
@@ -450,3 +430,5 @@ const handleMenuItemClick = (action: () => void) => {
 };
 
 export default Navbar;
+
+

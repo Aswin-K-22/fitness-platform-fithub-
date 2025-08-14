@@ -11,7 +11,7 @@ export class NotificationsRepository implements INotificationsRepository {
     });
     return new Notification({
       ...created,
-      type: created.type as 'success' | 'error' | 'info', // Cast type
+      type: created.type as 'success' | 'error' | 'info', 
     });
   }
 

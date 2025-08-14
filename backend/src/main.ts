@@ -9,16 +9,32 @@ import rateLimit from 'express-rate-limit';
 import * as dotenv from 'dotenv';
 import { composeApp } from '@/infra/composer/app.composer';
 
+import Redis from 'ioredis';
+import { createAdapter } from '@socket.io/redis-adapter';
+
+
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+
+// ---------------- Socket.IO + Redis ----------------
+
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.ORIGIN,
     credentials: true,
   },
+  transports: ['websocket'],
 });
+const pubClient = new Redis({
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+});
+const subClient = pubClient.duplicate();
+io.adapter(createAdapter(pubClient, subClient));
+
+
 
 app.use(morgan('[:date[iso]] :method :url :status :response-time ms'));
 app.use(cors({
@@ -51,11 +67,9 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   res.status(500).json({ message: 'Something went wrong on the server', error: err.message });
 });
 
-// Socket.io
-io.on('connection', (socket) => {
-  console.log('User connected');
-  
-});
+
+
+// ---------------- Start Server ----------------
 
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {

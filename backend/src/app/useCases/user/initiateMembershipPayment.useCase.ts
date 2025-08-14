@@ -1,14 +1,14 @@
-import { InitiateMembershipPaymentRequestDTO, IInitiateMembershipPaymentResponseDTO } from '../../domain/dtos/initiateMembershipPayment.dto';
-import { Payment } from '../../domain/entities/Payment.entity';
-import { IMembershipsRepository } from '../repositories/memberships.repository';
-import { IPaymentsRepository } from '../repositories/payments.repository';
-import { IUsersRepository } from '../repositories/users.repository';
-import { IMembershipsPlanRepository } from '../repositories/membershipPlan.repository';
-import { HttpStatus } from '../../domain/enums/httpStatus.enum';
-import { MESSAGES } from '../../domain/constants/messages.constant';
-import { ERRORMESSAGES } from '../../domain/constants/errorMessages.constant';
+import { InitiateMembershipPaymentRequestDTO, IInitiateMembershipPaymentResponseDTO } from '../../../domain/dtos/initiateMembershipPayment.dto';
+import { Payment } from '../../../domain/entities/Payment.entity';
+import { IMembershipsRepository } from '../../repositories/memberships.repository';
+import { IPaymentsRepository } from '../../repositories/payments.repository';
+import { IUsersRepository } from '../../repositories/users.repository';
+import { IMembershipsPlanRepository } from '../../repositories/membershipPlan.repository';
+import { HttpStatus } from '../../../domain/enums/httpStatus.enum';
+import { MESSAGES } from '../../../domain/constants/messages.constant';
+import { ERRORMESSAGES } from '../../../domain/constants/errorMessages.constant';
 import Razorpay from 'razorpay';
-import { IInitiateMembershipPaymentUseCase } from './user/interfaces/IInitiateMembershipPaymentUseCase';
+import { IInitiateMembershipPaymentUseCase } from './interfaces/IInitiateMembershipPaymentUseCase';
 
 export class InitiateMembershipPaymentUseCase implements IInitiateMembershipPaymentUseCase {
   private razorpay: Razorpay;
@@ -136,7 +136,6 @@ if (alreadyHasPlan) {
           currency: 'INR',
           receipt,
         });
-        console.log('Razorpay order created:', order);
       } catch (error: any) {
         console.error('Razorpay order creation failed', {
           message: error.message,
@@ -168,11 +167,9 @@ if (alreadyHasPlan) {
         updatedAt: new Date(),
       
       });
-      console.log('Creating payment record', { payment: payment.toJSON() });
 
       try {
         const savedPayment = await this.paymentsRepository.create(payment);
-        console.log('Payment record created:', savedPayment);
       } catch (error: any) {
         console.error('Payment creation failed', {
           message: error.message,
@@ -182,7 +179,6 @@ if (alreadyHasPlan) {
         throw error; // Re-throw to be caught by outer try-catch
       }
 
-      // Return success response
       console.log('Payment initiated successfully', { orderId: order.id });
       return {
         success: true,
