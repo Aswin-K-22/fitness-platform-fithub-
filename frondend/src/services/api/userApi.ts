@@ -220,7 +220,8 @@ export const fetchPTPlans = async (
   page: number,
   limit: number,
   category: string = 'all',
-  maxPrice: number | null = null
+  maxPrice: number | null = null,
+  minPrice : number | null = null
 ): Promise<FetchPTPlansResponse> => {
   try {
     const response = await apiClient.get('/plans', {
@@ -228,7 +229,8 @@ export const fetchPTPlans = async (
         page,
         limit,
         category: category !== 'all' ? category : undefined,
-        maxPrice: maxPrice !== null ? maxPrice : undefined,
+        maxPrice: maxPrice !== null  ? maxPrice : undefined,
+        minPrice:  minPrice !== null  ? minPrice : undefined,
       },
       withCredentials: true,
     });

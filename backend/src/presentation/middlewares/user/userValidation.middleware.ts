@@ -32,9 +32,9 @@ export class UserValidationMiddleware implements IUserValidationMiddleware {
 
   async validateGetPTPlans(req: CustomRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user?.id) {
-        throw new Error(ERRORMESSAGES.AUTH_USER_NOT_AUTHENTICATED.message);
-      }
+      // if (!req.user?.id) {
+      //   throw new Error(ERRORMESSAGES.AUTH_USER_NOT_AUTHENTICATED.message);
+      // }
 
       const ptPlansRequestDTO = new UserPTPlansRequestDTO({
         page: req.query.page?.toString() || '1',

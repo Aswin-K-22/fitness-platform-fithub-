@@ -4,8 +4,6 @@ import { Range } from "react-range";
 import { fetchPTPlans } from "../../services/api/userApi";
 import type { PTPlan } from "../../types/pTPlan";
 
-
-
 const UserPTPlanList: React.FC = () => {
   const [filteredPlans, setFilteredPlans] = useState<PTPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -13,42 +11,48 @@ const UserPTPlanList: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalPlans, setTotalPlans] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [maxPrice, setMaxPrice] = useState<number>(0);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
+
+  // We can set a reasonable default or get this from backend on first fetch
+  const [maxPrice] = useState<number>(10000000);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]);
+
   const plansPerPage = 3;
 
+  // Debounced API fetch for plans
   useEffect(() => {
-    const loadPlans = async () => {
-      setLoading(true);
-      try {
-        const response = await fetchPTPlans(
-          currentPage,
-          plansPerPage,
-          categoryFilter,
-          priceRange[1]
-        );
-        
-        setFilteredPlans(response.plans);
-        setTotalPages(response.pagination.totalPages);
-        setTotalPlans(response.pagination.total);
+    const debounceTimer = setTimeout(() => {
+      const loadPlans = async () => {
+        setLoading(true);
+        try {
+          const response = await fetchPTPlans(
+            currentPage,
+            plansPerPage,
+            categoryFilter,
+            priceRange[1],
+            priceRange[0]
+          );
 
-        // Calculate max price from all plans (fetch without price filter to get full range)
-        if (currentPage === 1 && categoryFilter === "all" && priceRange[1] === maxPrice) {
-          const allPlansResponse = await fetchPTPlans(1, 1000, "all"); // Fetch large limit to get all plans
-          const newMaxPrice = Math.max(...allPlansResponse.plans.map((plan) => plan.totalPrice || 0));
-          setMaxPrice(newMaxPrice);
-          setPriceRange([0, newMaxPrice]);
+          setFilteredPlans(response.plans);
+          setTotalPages(response.pagination.totalPages);
+          setTotalPlans(response.pagination.total);
+
+          // If backend sends max price in response, update it here
+          // if (response.maxPrice) {
+          //   setMaxPrice(response.maxPrice);
+          // }
+        } catch (error) {
+          toast.error("Failed to load plans");
+          console.error("Failed to fetch PT plans:", error);
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        toast.error("Failed to load plans");
-        console.error("Failed to fetch PT plans:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    loadPlans();
-  }, [currentPage, categoryFilter, priceRange[1]]);
+      loadPlans();
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(debounceTimer);
+  }, [currentPage, categoryFilter, priceRange]);
 
   const paginate = (pageNumber: number) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
@@ -78,10 +82,7 @@ const UserPTPlanList: React.FC = () => {
       case "online":
         return (
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
               d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
             />
           </svg>
@@ -89,16 +90,10 @@ const UserPTPlanList: React.FC = () => {
       case "in-person":
         return (
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
               d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
             />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
               d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
             />
           </svg>
@@ -106,10 +101,7 @@ const UserPTPlanList: React.FC = () => {
       case "hybrid":
         return (
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
               d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
             />
           </svg>
@@ -122,16 +114,8 @@ const UserPTPlanList: React.FC = () => {
   const DefaultImagePlaceholder = () => (
     <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
       <div className="text-center">
-        <svg
-          className="w-16 h-16 mx-auto text-gray-400 mb-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.5"
+        <svg className="w-16 h-16 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"
             d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
           />
         </svg>
@@ -155,7 +139,8 @@ const UserPTPlanList: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
-      {/* Header Section */}
+      
+      {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -167,12 +152,12 @@ const UserPTPlanList: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Section */}
+      {/* Filters */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Filter Plans</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Category Filter */}
+            {/* Category */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
               <div className="relative">
@@ -186,18 +171,13 @@ const UserPTPlanList: React.FC = () => {
                   <option value="intermediate">Intermediate</option>
                   <option value="advanced">Advanced</option>
                 </select>
-                <svg
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
             </div>
 
-            {/* Price Range Filter with react-range */}
+            {/* Price Range */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Price Range (₹{priceRange[0]} - ₹{priceRange[1]})
@@ -208,13 +188,16 @@ const UserPTPlanList: React.FC = () => {
                   min={0}
                   max={maxPrice}
                   values={priceRange}
-                  onChange={(values) => setPriceRange([values[0], values[1]])}
+                  onChange={(values) => {
+                    const [minVal, maxVal] = values;
+                    if (minVal > maxVal) {
+                      setPriceRange([maxVal, minVal]);
+                    } else {
+                      setPriceRange([minVal, maxVal]);
+                    }
+                  }}
                   renderTrack={({ props, children }) => (
-                    <div
-                      {...props}
-                      className="h-2 w-full bg-gray-200 rounded-lg relative"
-                      style={{ ...props.style }}
-                    >
+                    <div {...props} className="h-2 w-full bg-gray-200 rounded-lg relative" style={{ ...props.style }}>
                       <div
                         className="absolute h-2 bg-indigo-600 rounded-lg"
                         style={{
@@ -225,15 +208,8 @@ const UserPTPlanList: React.FC = () => {
                       {children}
                     </div>
                   )}
-                  renderThumb={({ props, index }) => (
-                    <div
-                      {...props}
-                      className="h-5 w-5 bg-indigo-600 rounded-full shadow focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      style={{ ...props.style }}
-                    >
-                      <div className="absolute top-6 text-xs text-gray-600">
-                        ₹{priceRange[index]}
-                      </div>
+                  renderThumb={({ props,  }) => (
+                    <div {...props} className="h-5 w-5 bg-indigo-600 rounded-full shadow focus:outline-none focus:ring-2 focus:ring-indigo-500" style={{ ...props.style }}>
                     </div>
                   )}
                 />
@@ -256,21 +232,13 @@ const UserPTPlanList: React.FC = () => {
         </div>
       </div>
 
-      {/* Content Section */}
+      {/* Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {displayedPlans.length === 0 ? (
           <div className="text-center py-16">
             <div className="max-w-md mx-auto">
-              <svg
-                className="w-24 h-24 mx-auto text-gray-300 mb-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1"
+              <svg className="w-24 h-24 mx-auto text-gray-300 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1"
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
@@ -280,13 +248,14 @@ const UserPTPlanList: React.FC = () => {
           </div>
         ) : (
           <>
+            {/* Plan Items */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {displayedPlans.map((plan) => (
                 <div
                   key={plan.id}
                   className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100"
                 >
-                  {/* Image Section */}
+                  {/* Image */}
                   <div className="relative overflow-hidden">
                     {plan.image ? (
                       <img
@@ -304,42 +273,27 @@ const UserPTPlanList: React.FC = () => {
                     ) : (
                       <DefaultImagePlaceholder />
                     )}
-                    {/* Status Badge */}
+
+                    {/* Status */}
                     <div className="absolute top-4 right-4">
                       {plan.verifiedByAdmin ? (
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          Verified
+                          ✓ Verified
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
                           Pending
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Content Section */}
+                  {/* Content */}
                   <div className="p-6">
                     <h2 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">{plan.title}</h2>
                     <div className="flex flex-wrap gap-2 mb-4">
                       <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getCategoryColor(
-                          plan.category
-                        )}`}
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getCategoryColor(plan.category)}`}
                       >
                         {plan.category.charAt(0).toUpperCase() + plan.category.slice(1)}
                       </span>
@@ -351,52 +305,13 @@ const UserPTPlanList: React.FC = () => {
                     <p className="text-gray-600 text-sm mb-4 line-clamp-2">{plan.description}</p>
                     <div className="space-y-3 mb-6">
                       <div className="flex items-center text-sm">
-                        <svg
-                          className="w-4 h-4 mr-2 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-                          />
-                        </svg>
-                        <span className="text-gray-600">{plan.goal}</span>
+                        🎯 {plan.goal}
                       </div>
                       <div className="flex items-center text-sm">
-                        <svg
-                          className="w-4 h-4 mr-2 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <span className="text-gray-600">{plan.duration} months</span>
+                        ⏳ {plan.duration} months
                       </div>
                       <div className="flex items-center text-sm">
-                        <svg
-                          className="w-4 h-4 mr-2 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                          />
-                        </svg>
-                        <span className="font-semibold text-gray-900">₹{plan.totalPrice}</span>
+                        💰 <span className="font-semibold text-gray-900">₹{plan.totalPrice}</span>
                       </div>
                     </div>
                     <button

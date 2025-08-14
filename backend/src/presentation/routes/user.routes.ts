@@ -69,7 +69,7 @@ this.router.get(
 
     this.router.get(
       '/plans',
-      this.authMiddleware.auth.bind(this.authMiddleware),
+     
       this.userValidationMiddleware.validateGetPTPlans.bind(this.userValidationMiddleware),
       this.userController.getPTPlans.bind(this.userController)
     );
