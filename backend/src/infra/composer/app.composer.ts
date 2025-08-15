@@ -102,6 +102,10 @@ import { AdminValidationMiddleware } from '@/presentation/middlewares/admin/admi
 import { UserRoutes } from '@/presentation/routes/user.routes';
 import { TrainerRoutes } from '@/presentation/routes/trainer.routes';
 import { AdminRoutes } from '@/presentation/routes/admin.routes';
+import { InitiatePTPlanPaymentUseCase } from '@/app/useCases/user/InitiatePTPlanPaymentUseCase';
+import { VerifyPTPlanPaymentUseCase } from '@/app/useCases/user/VerifyPTPlanPaymentUseCase';
+import { PTPlanPurchasesRepository } from '../repositories/ptPlanPurchase.repository';
+import { GetUserCurrentPTPlansUseCase } from '@/app/useCases/user/GetUserCurrentPTPlansUseCase';
 
 
 export function composeApp() {
@@ -114,6 +118,8 @@ export function composeApp() {
   const paymentsRepository = new PaymentsRepository(prisma);
   const notificationsRepository = new NotificationsRepository(prisma);
   const ptPlanRepository = new PTPlanRepository(prisma);
+  const ptPlanPurchasesRepository = new PTPlanPurchasesRepository(prisma);
+
 
   // --- Providers
   const passwordHasher = new BcryptPasswordHasher();
@@ -166,6 +172,26 @@ export function composeApp() {
 
   const getNotificationsUseCase = new GetNotificationsUseCase(notificationsRepository);
   const markNotificationReadUseCase = new MarkNotificationReadUseCase(notificationService);
+  const initiatePTPlanPaymentUseCase = new InitiatePTPlanPaymentUseCase(
+  ptPlanRepository,
+  paymentsRepository,
+  usersRepository,
+  ptPlanPurchasesRepository
+);
+
+const verifyPTPlanPaymentUseCase = new VerifyPTPlanPaymentUseCase(
+  ptPlanRepository,
+  paymentsRepository,
+  usersRepository,
+  ptPlanPurchasesRepository,
+    notificationService
+);
+
+const getUserCurrentPTPlansUseCase = new GetUserCurrentPTPlansUseCase(
+  ptPlanPurchasesRepository,
+  ptPlanRepository,
+  trainersRepository
+);
 
   // --- Trainer Use Cases
   const createTrainerUseCase = new CreateTrainerUseCase(trainersRepository, passwordHasher, emailService);
@@ -228,7 +254,10 @@ export function composeApp() {
     getNotificationsUseCase,
     markNotificationReadUseCase,
     ptPlansUserGetUseCase,
-    getUserCurrentPlansUseCase // ✅ Added here
+    getUserCurrentPlansUseCase ,
+    initiatePTPlanPaymentUseCase,  
+  verifyPTPlanPaymentUseCase ,
+getUserCurrentPTPlansUseCase
   );
 
   const trainerAuthController = new TrainerAuthController(

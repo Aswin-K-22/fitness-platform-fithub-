@@ -1,3 +1,4 @@
+//payment.enitity.ts
 import { PaymentErrorType } from '../enums/paymentErrorType.enum';
 
 interface PaymentProps {
@@ -5,7 +6,9 @@ interface PaymentProps {
   type: string;
   userId : string | null;
   membershipId?: string;       
-  membershipPlanId?: string; 
+  membershipPlanId?: string;
+  ptPlanPurchaseId?: string | null;
+  ptPlanId?: string | null;
   amount: number;
   currency: string;
   paymentGateway: string | null;
@@ -21,6 +24,8 @@ export class Payment {
   private _userId: string |null;
   private _membershipId?: string;
   private _membershipPlanId?: string;
+   private _ptPlanPurchaseId?: string;  
+  private _ptPlanId?: string;
   private _amount: number;
   private _currency: string;
   private _paymentGateway: string | null;
@@ -38,6 +43,8 @@ export class Payment {
     this._userId = props.userId;
     this._membershipId = props.membershipId;
     this._membershipPlanId = props.membershipPlanId;
+      this._ptPlanPurchaseId = props.ptPlanPurchaseId ?? undefined;
+this._ptPlanId = props.ptPlanId ?? undefined;
     this._amount = props.amount;
     this._currency = props.currency;
     this._paymentGateway = props.paymentGateway;
@@ -53,6 +60,8 @@ export class Payment {
   get userId(): string | null { return this._userId; }
   get membershipId(): string | undefined { return this._membershipId; }
   get membershipPlanId(): string | undefined { return this._membershipPlanId; }
+ get ptPlanPurchaseId(): string | undefined | null { return this._ptPlanPurchaseId; }
+get ptPlanId(): string | undefined | null { return this._ptPlanId; }
   get amount(): number { return this._amount; }
   get currency(): string { return this._currency; }
   get paymentGateway(): string | null{ return this._paymentGateway; }
@@ -68,6 +77,8 @@ export class Payment {
       userId: this._userId,
  membershipId: this._membershipId,
       membershipPlanId: this._membershipPlanId,
+       ptPlanPurchaseId: this._ptPlanPurchaseId,
+      ptPlanId: this._ptPlanId,
       amount: this._amount,
       currency: this._currency,
       paymentGateway: this._paymentGateway,

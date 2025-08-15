@@ -61,11 +61,7 @@ this.router.get(
       this.authMiddleware.auth.bind(this.authMiddleware),
       this.userController.markNotificationRead.bind(this.userController)
     );
-  // this.router.post(
-  //     '/membership/verify-payment',
-  //     this.authMiddleware.auth.bind(this.authMiddleware),
-  //     this.userController.verifyMembershipPayment.bind(this.userController)
-  //   );
+ 
 
     this.router.get(
       '/plans',
@@ -74,6 +70,24 @@ this.router.get(
       this.userController.getPTPlans.bind(this.userController)
     );
     this.router.get('/user-current-plans',this.authMiddleware.auth.bind(this.authMiddleware),this.userController.getUserCurrentPlans.bind(this.userController))
+
+    this.router.post(
+  '/pt-plans/payment',
+  this.authMiddleware.auth.bind(this.authMiddleware),
+  this.userController.initiatePTPlanPayment.bind(this.userController)
+);
+
+this.router.post(
+  '/pt-plans/verify-payment',
+  this.authMiddleware.auth.bind(this.authMiddleware),
+  this.userController.verifyPTPlanPayment.bind(this.userController)
+);
+
+this.router.get(
+  '/user-pt-plans',
+  this.authMiddleware.auth.bind(this.authMiddleware),
+  this.userController.getUserPTPlans.bind(this.userController)
+);
 
   }
 }

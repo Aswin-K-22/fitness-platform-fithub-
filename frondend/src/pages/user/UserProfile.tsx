@@ -7,12 +7,12 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom"; 
 import type { AppDispatch, RootState } from "../../store/store";
 import type { UserProfileData } from "../../types/user.types";
-import { getUserProfile, updateUserProfile } from "../../services/api/userApi";
+import { getUserCurrentPTPlans, getUserProfile, updateUserProfile } from "../../services/api/userApi";
 import { logoutThunk, setAuth } from "../../store/slices/userAuthSlice";
-import Navbar from "../../components/common/user/Navbar";
 import type { UserAuth } from "../../types/auth.types";
 import { getUserCurrentPlans } from "../../services/api/userApi";
 import type { MembershipDTO } from "../../types/dtos/IGetUserCurrentPlansResponseDTO";
+import type { IUserCurrentPTPlanDTO } from "../../types/dtos/IUserCurrentPTPlanDTO";
 
 const backendUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -29,6 +29,8 @@ const UserProfile: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ name?: string; profilePic?: string }>({});
   const [activeTab, setActiveTab] = useState("overview");
+   const [userPTPlans, setUserPTPlans] = useState<IUserCurrentPTPlanDTO[] | null>(null);
+
 
   useEffect(() => {
     const fetchProfileAndMembership = async () => {
@@ -39,6 +41,9 @@ const UserProfile: React.FC = () => {
 
         const plansResponse = await getUserCurrentPlans();
         setMembershipPlans(plansResponse || []); // Set all plans
+              const userPTPlansResponse = await getUserCurrentPTPlans();
+              console.log(userPTPlansResponse)
+setUserPTPlans(userPTPlansResponse);
       } catch (error) {
         console.error("Failed to fetch user profile or plans:", error);
         toast.error("Failed to load profile data");
@@ -265,7 +270,6 @@ const UserProfile: React.FC = () => {
   if (loading) {
     return (
       <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 min-h-screen">
-        <Navbar />
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
@@ -279,7 +283,6 @@ const UserProfile: React.FC = () => {
   if (!profileData) {
     return (
       <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 min-h-screen">
-        <Navbar />
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="text-6xl mb-4">😔</div>
@@ -292,7 +295,6 @@ const UserProfile: React.FC = () => {
 
   return (
     <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 min-h-screen">
-      <Navbar />
       
       {/* Hero Section */}
       <div className="relative pt-20 pb-32 overflow-hidden">
@@ -477,6 +479,67 @@ const UserProfile: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+<div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+  <h3 className="text-xl font-semibold text-gray-900 mb-4">Personal Trainer</h3>
+  <div className="space-y-4">
+    {userPTPlans && userPTPlans.length > 0 ? (
+      userPTPlans.map((plan, idx) => (
+        <div key={plan.purchase.id || idx} className="bg-gradient-to-br from-blue-100 to-cyan-100 p-6 rounded-lg mb-4">
+          <div className="flex items-center mb-3">
+            {plan.trainer.profilePic ? (
+              <img
+                src={plan.trainer.profilePic}
+                alt={plan.trainer.name}
+                className="h-12 w-12 rounded-full object-cover mr-3"
+              />
+            ) : (
+              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center mr-3">
+                <span className="text-white text-xl font-bold">
+                  {plan.trainer.name?.charAt(0).toUpperCase() || "T"}
+                </span>
+              </div>
+            )}
+            <h4 className="font-semibold text-gray-900">{plan.trainer.name}</h4>
+          </div>
+          <p className="text-gray-600 text-sm mb-2">
+            <span className="font-medium">Specialization:</span> {plan.trainer.specialties?.join(', ') || "N/A"}
+          </p>
+          <p className="text-gray-600 text-sm mb-2">
+            <span className="font-medium">Email:</span> {plan.trainer.name || "N/A"}
+          </p>
+          <p className="text-gray-600 text-sm mb-2">
+            <span className="font-medium">Contact:</span> {plan.trainer.name || "N/A"}
+          </p>
+          <p className="text-gray-600 text-sm mb-2">
+            <span className="font-medium">Plan:</span> {plan.plan.title}
+          </p>
+          <button
+            onClick={() => navigate("/user/chat")}
+            className="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            Chat with Trainer
+          </button>
+        </div>
+      ))
+    ) : (
+      <div className="bg-gradient-to-br from-blue-100 to-cyan-100 p-6 rounded-lg mb-4">
+        <svg className="w-12 h-12 text-blue-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h4 className="font-semibold text-gray-900 mb-2">No Trainer Assigned</h4>
+        <p className="text-gray-600 text-sm">Get personalized guidance with a trainer</p>
+        <button className="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+          Find a Trainer
+        </button>
+      </div>
+    )}
+  </div>
+</div>
+
               </div>
               
               <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
@@ -525,6 +588,7 @@ const UserProfile: React.FC = () => {
                   )}
                 </div>
               </div>
+
             </div>
           )}
 

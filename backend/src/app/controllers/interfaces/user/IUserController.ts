@@ -13,5 +13,8 @@ export interface IUserController {
   markNotificationRead(req: Request, res: Response): Promise<void>;
   getPTPlans(req: Request, res: Response): Promise<void>;
  getUserCurrentPlans(req: Request, res: Response): Promise<void>;
+ initiatePTPlanPayment(req: Request, res: Response): Promise<void>;
+ verifyPTPlanPayment(req: Request, res: Response): Promise<void>;
+ getUserPTPlans(req: Request, res: Response): Promise<void>;
 
 }

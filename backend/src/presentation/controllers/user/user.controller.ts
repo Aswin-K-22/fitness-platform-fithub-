@@ -5,7 +5,7 @@ import { IGetGymsUseCase } from '@/app/useCases/interfaces/IGetGymsUseCase';
 import { IGetGymDetailsUseCase } from '@/app/useCases/interfaces/IGetGymDetailsUseCase';
 import { IGetMembershipPlansUseCase } from '@/app/useCases/interfaces/IGetMembershipPlansUseCase';
 import { IInitiateMembershipPaymentUseCase } from '@/app/useCases/user/interfaces/IInitiateMembershipPaymentUseCase';
-import { IVerifyMembershipPaymentUseCase } from '@/app/useCases/interfaces/IVerifyMembershipPaymentUseCase';
+import { IVerifyMembershipPaymentUseCase } from '@/app/useCases/user/interfaces/IVerifyMembershipPaymentUseCase';
 import { IUpdateUserProfileUseCase } from '@/app/useCases/interfaces/IUpdateUserProfileUseCase';
 import { IGetUserProfileUseCase } from '@/app/useCases/interfaces/IGetUserProfileUseCase';
 import { GetGymsRequestDTO } from '@/domain/dtos/getGymsRequest.dto';
@@ -26,8 +26,12 @@ import { CustomRequest } from '@/types/customRequest';
 import { UserPTPlansRequestDTO } from '@/domain/dtos/user/userPTPlanRequestDTO';
 import { IPTPlansUserGetUseCase } from '@/app/useCases/user/interfaces/IPTPlansUserGetUseCase';
 import { IGetUserCurrentPlansUseCase } from '@/app/useCases/user/interfaces/IGetUserCurrentPalnsUseCase';
+import { IUserController } from '@/app/controllers/interfaces/user/IUserController';
+import { IInitiatePTPlanPaymentUseCase } from '@/app/useCases/user/interfaces/IInitiatePTPlanPaymentUseCase';
+import { IVerifyPTPlanPaymentUseCase } from '@/app/useCases/user/interfaces/IVerifyPTPlanPaymentUseCase';
+import { IGetUserCurrentPTPlansUseCase } from '@/app/useCases/user/interfaces/IGetUserPTPlansUseCase';
 
-export class UserController {
+export class UserController implements IUserController {
   constructor(
     private getUserUseCase: IGetUserUseCase,
     private getGymsUseCase: IGetGymsUseCase,
@@ -40,7 +44,10 @@ export class UserController {
     private getNotificationsUseCase: IGetNotificationsUseCase,
     private markNotificationReadUseCase: IMarkNotificationReadUseCase,
     private ptPlansUserGetUseCase : IPTPlansUserGetUseCase,
-    private getUserCurrentPlansUseCase: IGetUserCurrentPlansUseCase
+    private getUserCurrentPlansUseCase: IGetUserCurrentPlansUseCase,
+      private initiatePTPlanPaymentUseCase: IInitiatePTPlanPaymentUseCase,
+    private verifyPTPlanPaymentUseCase: IVerifyPTPlanPaymentUseCase,
+    private getUserCurrentPTPlansUseCase :IGetUserCurrentPTPlansUseCase,
   ) {}
 
   private sendResponse<T>(res: Response, result: IResponseDTO<T>): void {
@@ -266,5 +273,88 @@ export class UserController {
   const result = await this.getUserCurrentPlansUseCase.execute(userId);
   this.sendResponse(res, result);
 }
+
+
+async initiatePTPlanPayment(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.id;
+  if (!userId) {
+    return this.sendResponse(res, {
+      success: false,
+      status: HttpStatus.UNAUTHORIZED,
+      error: {
+        code: ERRORMESSAGES.PTPLAN_UNAUTHORIZED?.code ,
+        message: ERRORMESSAGES.PTPLAN_UNAUTHORIZED?.message ,
+      },
+    });
+  }
+
+  const requestDTO = {
+    planId: req.body.planId,
+  };
+
+
+  const result = await this.initiatePTPlanPaymentUseCase.execute(requestDTO, userId);
+  this.sendResponse(res, result);
+}
+
+
+async verifyPTPlanPayment(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.id;
+  if (!userId) {
+    return this.sendResponse(res, {
+      success: false,
+      status: HttpStatus.UNAUTHORIZED,
+      error: {
+        code: ERRORMESSAGES.PTPLAN_UNAUTHORIZED?.code ,
+        message: ERRORMESSAGES.PTPLAN_UNAUTHORIZED?.message ,
+      },
+    });
+  }
+
+  const requestDTO = {
+    razorpay_payment_id: req.body.razorpay_payment_id,
+    razorpay_order_id: req.body.razorpay_order_id,
+    razorpay_signature: req.body.razorpay_signature,
+    planId: req.body.planId,
+  };
+
+  const result = await this.verifyPTPlanPaymentUseCase.execute(requestDTO, userId);
+  this.sendResponse(res, result);
+}
+
+
+async getUserPTPlans(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.id;
+  if (!userId) {
+    return this.sendResponse(res, {
+      success: false,
+      status: 401,
+     error: {
+          code: ERRORMESSAGES.AUTH_USER_NOT_AUTHENTICATED.code,
+          message: ERRORMESSAGES.AUTH_USER_NOT_AUTHENTICATED.message,
+        },
+    });
+  }
+
+  try {
+    const userPTPlans = await this.getUserCurrentPTPlansUseCase.execute(userId);
+
+    this.sendResponse(res, {
+      success: true,
+      status: 200,
+      data: userPTPlans,
+    });
+  } catch (error) {
+    this.sendResponse(res, {
+      success: false,
+      status: 500,
+      error: {
+        code: ERRORMESSAGES.FETCH_PT_PLANS_FAILED.code,
+        message: ERRORMESSAGES.FETCH_PT_PLANS_FAILED.message
+      },
+    });
+  }
+}
+
 
 }

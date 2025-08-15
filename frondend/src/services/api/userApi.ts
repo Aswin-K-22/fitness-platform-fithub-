@@ -16,6 +16,7 @@ import type { IMembershipPlansResponseDTO } from "../../types/dtos/IMembershipPl
 import type { FetchPTPlansResponse } from "../../types/pTPlan";
 import type { MembershipDTO } from "../../types/dtos/IGetUserCurrentPlansResponseDTO";
 import type { INotification } from "../../types/INotification";
+import type { IUserCurrentPTPlanDTO } from "../../types/dtos/IUserCurrentPTPlanDTO";
 
 
 
@@ -248,6 +249,32 @@ export const getUserCurrentPlans = async (): Promise<MembershipDTO[]> => {
     return response.data.data?.memberships ?? []; // safely return an array
   } catch (error) {
     console.error("Failed to fetch current user plans:", error);
+    throw error;
+  }
+};
+
+
+export const subscribeToPTPlan = async (planId: string) => {
+  const response = await apiClient.post("/pt-plans/payment", { planId });
+  return response.data; // { success, message, data?, error? }
+};
+
+export const verifyPTPayment = async (data: {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+  planId: string;
+}) => {
+  const res = await apiClient.post("/pt-plans/verify-payment", data);
+  return res.data; // { success, message, data?, error? }
+};
+
+export const getUserCurrentPTPlans = async (): Promise<IUserCurrentPTPlanDTO[]> => {
+  try {
+    const response = await apiClient.get('/user-pt-plans');
+    return response.data.data.data ?? [];
+  } catch (error) {
+    console.error('Failed to fetch current user PT plans:', error);
     throw error;
   }
 };

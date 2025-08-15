@@ -32,6 +32,7 @@ model User {
   payments        Payment[]        @relation
   notifications   Notification[]   @relation
   ptPlanPurchases PTPlanPurchase[] @relation
+  trainerEarnings TrainerEarning[] @relation
 }
 
 type FitnessProfile {
@@ -72,14 +73,14 @@ type WeeklySummary {
 
 // Trainer Model (Updated)
 model Trainer {
-  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  id              String                 @id @default(auto()) @map("_id") @db.ObjectId
   name            String
-  email           String          @unique
+  email           String                 @unique
   password        String
   role            String
   profilePic      String?
-  isVerified      Boolean         @default(false) // OTP verification
-  verifiedByAdmin Boolean         @default(false) // Admin approval
+  isVerified      Boolean                @default(false) // OTP verification
+  verifiedByAdmin Boolean                @default(false) // Admin approval
   otp             String?
   otpExpires      DateTime?
   refreshToken    String?
@@ -91,14 +92,16 @@ model Trainer {
   clients         Client[]
   paymentDetails  PaymentDetails?
   availability    Availability[]
-  gyms            String[]        @db.ObjectId
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  bookings        Booking[]       @relation
-  payments        Payment[]       @relation
+  gyms            String[]               @db.ObjectId
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  bookings        Booking[]              @relation
+  payments        Payment[]              @relation
   phone           String?
   ratings         Ratings?
-  ptPlans         PTPlan[]        @relation
+  ptPlans         PTPlan[]               @relation
+  trainerEarnings TrainerEarning[]       @relation
+  gymAssignments  TrainerGymAssignment[] @relation
 }
 
 type Certification {
@@ -176,8 +179,8 @@ type Exercise {
 }
 
 model Gym {
-  id                      String        @id @default(auto()) @map("_id") @db.ObjectId
-  name                    String        @unique
+  id                      String                 @id @default(auto()) @map("_id") @db.ObjectId
+  name                    String                 @unique
   type                    String // e.g., "Basic", "Premium", "Diamond"
   description             String?
   address                 GymAddress?
@@ -186,15 +189,16 @@ model Gym {
   equipment               Equipment[]
   schedule                GymSchedule[]
   trainers                GymTrainer[]
-  suggestedPlan           String?       @db.ObjectId
+  suggestedPlan           String?                @db.ObjectId
   facilities              String[]
   maxCapacity             Int
   membershipCompatibility String[] //  auto-filled by business rule  e.g., ["Basic", "Premium", "Diamond"]
   images                  GymImage[]
   ratings                 Ratings?
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
-  bookings                Booking[]     @relation
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  bookings                Booking[]              @relation
+  trainerAssignments      TrainerGymAssignment[] @relation
 }
 
 type GymAddress {
@@ -324,8 +328,10 @@ model Payment {
   type             String
   userId           String?  @db.ObjectId
   trainerId        String?  @db.ObjectId
-  membershipId     String?  @db.ObjectId // set after verification
-  membershipPlanId String?  @db.ObjectId // set during initiation
+  membershipId     String?  @db.ObjectId // Applicable if type = membership
+  membershipPlanId String?  @db.ObjectId // Applicable if type = membership
+  ptPlanPurchaseId String?  @unique @db.ObjectId // Applicable if type = pt-plan-subscription
+  ptPlanId         String?  @db.ObjectId // Applicable if type = pt-plan-subscription
   amount           Float
   currency         String
   paymentGateway   String?
@@ -334,11 +340,12 @@ model Payment {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  user           User?            @relation(fields: [userId], references: [id])
-  trainer        Trainer?         @relation(fields: [trainerId], references: [id])
-  membership     Membership?      @relation(fields: [membershipId], references: [id], onDelete: SetNull)
-  membershipPlan MembershipPlan?  @relation(fields: [membershipPlanId], references: [id], onDelete: SetNull)
-  ptPlanPurchase PTPlanPurchase[] @relation
+  user           User?           @relation(fields: [userId], references: [id])
+  trainer        Trainer?        @relation(fields: [trainerId], references: [id])
+  membership     Membership?     @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  membershipPlan MembershipPlan? @relation(fields: [membershipPlanId], references: [id], onDelete: SetNull)
+  ptPlanPurchase PTPlanPurchase? @relation(fields: [ptPlanPurchaseId], references: [id], onDelete: NoAction)
+  ptPlan         PTPlan?         @relation(fields: [ptPlanId], references: [id], onDelete: SetNull)
 }
 
 model Notification {
@@ -371,6 +378,7 @@ model PTPlan {
   isActive        Boolean          @default(true)
   purchases       PTPlanPurchase[] @relation // Link to purchased plans
   trainer         Trainer?         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  payments        Payment[]
 
   @@index([createdBy]) // Index for faster queries by trainer
 }
@@ -390,9 +398,10 @@ model PTPlanPurchase {
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 
-  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ptPlan  PTPlan?  @relation(fields: [ptPlanId], references: [id], onDelete: Cascade)
-  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  user            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ptPlan          PTPlan?          @relation(fields: [ptPlanId], references: [id], onDelete: Cascade)
+  payment         Payment?
+  trainerEarnings TrainerEarning[] @relation
 
   @@index([userId, ptPlanId]) // Index for faster queries by user and plan
 }
@@ -411,4 +420,44 @@ enum PTPlanPurchaseStatus {
   Active
   Expired
   Pending
+}
+
+model TrainerGymAssignment {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  trainerId       String    @db.ObjectId
+  gymId           String    @db.ObjectId
+  dayRate         Float     @default(100) // Daily salary rate for this assignment
+  assignedAt      DateTime // Date the trainer was assigned
+  unassignedAt    DateTime? // Date trainer was unassigned; null if still assigned
+  salaryPaidUntil DateTime // Tracks salary paid through this date; init to assignedAt
+
+  trainer Trainer @relation(fields: [trainerId], references: [id])
+  gym     Gym     @relation(fields: [gymId], references: [id])
+
+  @@index([trainerId, assignedAt])
+}
+
+model TrainerEarning {
+  id               String      @id @default(auto()) @map("_id") @db.ObjectId
+  trainerId        String      @db.ObjectId
+  userId           String?     @db.ObjectId // Optional: user whose PT purchase generated commission
+  ptPlanPurchaseId String?     @db.ObjectId // Optional: related PT plan purchase
+  periodStart      DateTime // Start of salary/commission period (e.g. 1st Jan)
+  periodEnd        DateTime // End of period (e.g. 31st Jan)
+  amount           Float // Earnings amount
+  type             EarningType // FixedSalary or PTCommission
+  isCredited       Boolean     @default(false) // Has this amount been paid to the trainer
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  trainer        Trainer         @relation(fields: [trainerId], references: [id])
+  user           User?           @relation(fields: [userId], references: [id])
+  ptPlanPurchase PTPlanPurchase? @relation(fields: [ptPlanPurchaseId], references: [id])
+
+  @@index([trainerId, periodStart, periodEnd])
+}
+
+enum EarningType {
+  FixedSalary
+  PTCommission
 }

@@ -8,7 +8,7 @@ import { MESSAGES } from '../../../domain/constants/messages.constant';
 import { ERRORMESSAGES } from '../../../domain/constants/errorMessages.constant';
 import crypto from 'crypto';
 import { Membership } from '@/domain/entities/Membership.entity';
-import { IVerifyMembershipPaymentUseCase } from '../interfaces/IVerifyMembershipPaymentUseCase';
+import { IVerifyMembershipPaymentUseCase } from './interfaces/IVerifyMembershipPaymentUseCase';
 import { NotificationService } from '@/infra/providers/notification.service';
 import { Notification } from '@/domain/entities/Notification.entity';
 

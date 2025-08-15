@@ -65,6 +65,12 @@ export const ERRORMESSAGES = {
   PAYMENT_INVALID_PAYMENT_SIGNATURE: { code: 'PAYMENT_007', message: 'Invalid payment signature' },
   PAYMENT_INITIATION_FAILED: { code: 'PAYMENT_008', message: 'Failed to initiate payment' },
   PAYMENT_VERIFICATION_FAILED: { code: 'PAYMENT_009', message: 'Failed to verify payment' },
+   PAYMENT_USER_UNAUTHORIZED: {
+    code: "PAYMENT_USER_UNAUTHORIZED",
+    message: "User not authorized to perform payment",
+  },
+
+ 
   TRAINER_INVALID_EMAIL: { code: 'TRAINER_001', message: 'Invalid email' },
   TRAINER_INVALID_NAME: { code: 'TRAINER_002', message: 'Name must be 2+ letters, no numbers or special characters' },
   TRAINER_INVALID_PASSWORD: { code: 'TRAINER_003', message: 'Password must be at least 5 characters' },
@@ -161,5 +167,9 @@ export const ERRORMESSAGES = {
   PTPLAN_INVALID_PAGE_LIMIT_NO: { code: 'PTPLAN_014', message: 'invalid page limit number ' }, 
   PTPLAN_INVALID_MIN_PRICE :{ code: 'PTPLAN_020', message: 'PTPLAN_INVALID_MIN_PRICE ' },
   PTPLAN_INVALID_MAX_PRICE:{ code: 'PTPLAN_020', message: 'PTPLAN_INVALID_MAX_PRICE ' },
-  
+  PTPLAN_UNAUTHORIZED : { code: 'PTPLAN_020', message: 'PTPLAN_INVALID_MAX_PRICE ' },
+  FETCH_PT_PLANS_FAILED :{
+        code: "FETCH_PT_PLANS_FAILED",
+        message: "Failed to fetch user PT plans",
+      },
 } as const;
