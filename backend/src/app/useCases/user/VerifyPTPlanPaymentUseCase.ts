@@ -19,7 +19,9 @@ export class VerifyPTPlanPaymentUseCase implements IVerifyPTPlanPaymentUseCase {
     private paymentsRepository: IPaymentsRepository,
     private usersRepository: IUsersRepository,
     private ptPlanPurchasesRepository: IPTPlanPurchasesRepository,
-    private notificationService: NotificationService 
+    private notificationService: NotificationService ,
+    private trainerNotificationService: NotificationService
+
   ) {}
 
   async execute(
@@ -134,6 +136,7 @@ export class VerifyPTPlanPaymentUseCase implements IVerifyPTPlanPaymentUseCase {
         paymentId: razorpay_payment_id
       });
 
+
       // ✅ Add Real-Time Notification
       const notification = new Notification({
         userId,
@@ -143,6 +146,15 @@ export class VerifyPTPlanPaymentUseCase implements IVerifyPTPlanPaymentUseCase {
         read: false
       });
       await this.notificationService.sendNotification(notification);
+const trainerId = plan.createdBy;
+const trainerNotification = new Notification({
+  userId: trainerId, 
+  message: `User ${user.name} has purchased your PT plan "${plan.title}".`,
+  type: 'success',
+  createdAt: new Date(),
+  read: false
+});
+await this.trainerNotificationService.sendNotification(trainerNotification);
 
       return {
         success: true,

@@ -8,9 +8,13 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import * as dotenv from 'dotenv';
 import { composeApp } from '@/infra/composer/app.composer';
-
+import prisma from '@/infra/databases/prismaClient';
 import Redis from 'ioredis';
 import { createAdapter } from '@socket.io/redis-adapter';
+import { NotificationService } from './infra/providers/notification.service';
+import { NotificationsRepository } from './infra/repositories/notifications.repository';
+import { JwtTokenService } from './infra/providers/jwtTokenService';
+import { RedisService } from './infra/providers/redis.service';
 
 
 dotenv.config();
@@ -36,6 +40,7 @@ io.adapter(createAdapter(pubClient, subClient));
 
 
 
+
 app.use(morgan('[:date[iso]] :method :url :status :response-time ms'));
 app.use(cors({
   origin: process.env.ORIGIN,
@@ -56,7 +61,8 @@ app.use('/api/user/auth/signup', rateLimit({
 }));
 
 // Mount routes
-const { userRoutes, trainerRoutes, adminRoutes } = composeApp();
+const { userRoutes, trainerRoutes, adminRoutes, userNotificationService, trainerNotificationService } = composeApp();
+
 app.use('/api/user', userRoutes.router);
 app.use('/api/trainer', trainerRoutes.router);
 app.use('/api/admin', adminRoutes.router);

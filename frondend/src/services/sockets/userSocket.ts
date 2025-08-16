@@ -20,7 +20,7 @@ export function initUserSocket() {
 
   console.log("[userSocket] Creating new Socket.io connection...");
 
-  socket = io(SOCKET_URL, {
+  socket = io(`${SOCKET_URL}/user`, {
     transports: ["websocket"],
     withCredentials: true,
     reconnection: true,

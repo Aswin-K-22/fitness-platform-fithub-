@@ -4,6 +4,8 @@ import { Link, useNavigate, useLocation } from "react-router-dom"; // Add Link
 import { toast } from "react-toastify";
 import type { AppDispatch, RootState } from "../../../store/store";
 import { logoutThunk } from "../../../store/slices/trainerAuthSlice";
+import { getTrainerNotifications, markTrainerNotificationRead } from "../../../services/api/trainerApi";
+import { setTrainerNotifications ,  markTrainerNotificationRead as markTrainerNotificationReadAction } from "../../../store/slices/trainerNotificationsSlice";
 
 const Navbar: React.FC = () => {
   const { trainer } = useSelector((state: RootState) => state.trainerAuth);
@@ -13,9 +15,11 @@ const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { notifications, unreadCount } = useSelector((state: RootState) => state.trainerNotifications);
+const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+const notificationsRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
+useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -25,6 +29,37 @@ const Navbar: React.FC = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+  const handleClickOutside = (event: MouseEvent) => {
+    if (
+      notificationsRef.current &&
+      !notificationsRef.current.contains(event.target as Node)
+    ) {
+      setIsNotificationsOpen(false);
+    }
+  };
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
+
+
+
+
+  
+  useEffect(() => {
+  if (trainer?.id) {
+    (async () => {
+      try {
+        const { notifications } = await getTrainerNotifications(1, 10);
+        dispatch(setTrainerNotifications(notifications));
+      } catch (error) {
+        console.error("Failed to fetch trainer notifications:", error);
+      }
+    })();
+  }
+}, [trainer?.id]);
+
 
   const handleLogout = async () => {
     try {
@@ -40,6 +75,15 @@ const Navbar: React.FC = () => {
     }
     setIsOpen(false);
   };
+
+const handleMarkNotificationRead = async (id: string) => {
+  try {
+    await markTrainerNotificationRead(id);
+    dispatch(markTrainerNotificationReadAction(id));
+  } catch (error) {
+    console.error("Failed to mark trainer notification as read:", error);
+  }
+};
 
   const handleProfileClick = () => {
     navigate("/trainer/profile");
@@ -113,26 +157,57 @@ const Navbar: React.FC = () => {
           {/* Right side - Notifications and Profile */}
           <div className="flex items-center space-x-4">
             {/* Notifications */}
+           <div className="relative" ref={notificationsRef}>
+  <button
+    type="button"
+    onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+    className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors duration-200"
+    aria-label="View trainer notifications"
+    aria-expanded={isNotificationsOpen}
+  >
+    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+    </svg>
+    {unreadCount > 0 && (
+      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+        {unreadCount}
+      </span>
+    )}
+  </button>
+  {isNotificationsOpen && (
+    <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in slide-in-from-top-2 fade-in-0 duration-200">
+      <div className="px-4 py-3 border-b border-gray-100">
+        <p className="text-sm font-semibold text-gray-900">Notifications</p>
+      </div>
+      <div className="max-h-64 overflow-y-auto">
+        {notifications.length === 0 ? (
+          <p className="px-4 py-2 text-sm text-gray-500">No notifications</p>
+        ) : (
+          notifications.map((notification) => (
             <button
-              type="button"
-              className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-              aria-label="View notifications"
+              key={notification.id}
+              onClick={() => !notification.read && handleMarkNotificationRead(notification.id)}
+              className={`w-full flex items-center space-x-3 px-4 py-2.5 text-sm transition-all duration-200 ${
+                notification.read ? "text-gray-500" : "text-gray-700 hover:text-indigo-700 hover:bg-indigo-50"
+              }`}
             >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
-                />
-              </svg>
-              <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-400"></span>
+              <i
+                className={`fas fa-${notification.type === 'success' ? 'check-circle' : notification.type === 'error' ? 'exclamation-circle' : 'info-circle'} text-base w-5`}
+              ></i>
+              <div className="text-left">
+                <p className="font-medium">{notification.message}</p>
+                <p className="text-xs text-gray-400">
+                  {new Date(notification.createdAt).toLocaleString()}
+                </p>
+              </div>
             </button>
+          ))
+        )}
+      </div>
+    </div>
+  )}
+</div>
+
 
             {/* Profile Dropdown */}
            <div className="relative" ref={dropdownRef}>
@@ -329,3 +404,5 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
+
+

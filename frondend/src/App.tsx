@@ -12,6 +12,7 @@ import type { AppDispatch, RootState } from "./store/store";
 
 
 import { initUserSocket, connectUserSocket, disconnectUserSocket } from "./services/sockets/userSocket";
+import { connectTrainerSocket, disconnectTrainerSocket, initTrainerSocket } from "./services/sockets/trainerSocket";
 
 // Lazy-loaded components
 const HomePage = lazy(() => import("./pages/user/HomePage"));
@@ -135,7 +136,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
 const App: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-const { isAuthenticated } = useSelector((state: RootState) => state.userAuth);
+const { isAuthenticated: isUserAuthenticated } = useSelector((state: RootState) => state.userAuth);
+  const { isAuthenticated: isTrainerAuthenticated } = useSelector((state: RootState) => state.trainerAuth);
+
+
   useEffect(() => {
     console.log("useEffect in App.tsx is running");
     dispatch(initializeAuth());
@@ -143,14 +147,23 @@ const { isAuthenticated } = useSelector((state: RootState) => state.userAuth);
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      initUserSocket(); 
+    if (isUserAuthenticated) {
+      initUserSocket();
       connectUserSocket();
     } else {
       disconnectUserSocket();
     }
-  }, [isAuthenticated]);
+  }, [isUserAuthenticated]);
 
+
+   useEffect(() => {
+    if (isTrainerAuthenticated) {
+      initTrainerSocket();
+      connectTrainerSocket();
+    } else {
+      disconnectTrainerSocket();
+    }
+  }, [isTrainerAuthenticated]);
 
 
   return (

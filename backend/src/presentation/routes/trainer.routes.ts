@@ -121,6 +121,18 @@ this.router.patch(
     );
     // this.router.get('/trainer/profile', this.trainerAuthMiddleware.auth.bind(this.trainerAuthMiddleware), this.trainerController.getTrainer.bind(this.trainerController));
 
+    this.router.get(
+  '/notifications',
+ this.trainerAuthMiddleware.auth.bind(this.trainerAuthMiddleware),
+  this.trainerController.getTrainerNotifications.bind(this.trainerController)
+);
+
+this.router.post(
+  '/notifications/:notificationId/read',
+  this.trainerAuthMiddleware.auth.bind(this.trainerAuthMiddleware),
+  this.trainerController.markTrainerNotificationRead.bind(this.trainerController)
+);
+
     
   }
 }

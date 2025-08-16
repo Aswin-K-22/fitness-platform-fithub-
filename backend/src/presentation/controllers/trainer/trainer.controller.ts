@@ -19,6 +19,8 @@ import { StopPTPlanRequestDTO } from '@/domain/dtos/stopResumePTPlanRequest.dto'
 import { IResumePTPlanUseCase, IStopPTPlanUseCase } from '@/app/useCases/interfaces/IStopResumePTPlanUseCase';
 import { UpdateTrainerProfileRequestDTO } from '@/domain/dtos/updateTrainerProfileResponse.dto';
 import { CustomRequest } from '@/types/customRequest'
+import { IGetTrainerNotificationsUseCase } from '@/app/useCases/trainer/interfeces/IGetTrainerNotificationsUseCase ';
+import { IMarkTrainerNotificationReadUseCase } from '@/app/useCases/trainer/interfeces/IMarkTrainerNotificationReadUseCase';
 
 export class TrainerController {
   constructor(
@@ -30,7 +32,9 @@ export class TrainerController {
     private readonly ptPlansTrainerGetUseCase : IPTPlansTrainerGetUseCase,
     private readonly editPTPlanUseCase : IEditPTPlanUseCase,
     private readonly stopPTPlanUseCase : IStopPTPlanUseCase,
-    private readonly resumePTPlanUseCase: IResumePTPlanUseCase
+    private readonly resumePTPlanUseCase: IResumePTPlanUseCase,
+    private readonly getTrainerNotificationsUseCase : IGetTrainerNotificationsUseCase,
+    private readonly markTrainerNotificationReadUseCase :IMarkTrainerNotificationReadUseCase
   ) {}
 
   private sendResponse<T>(res: Response, result: IResponseDTO<T>): void {
@@ -288,6 +292,47 @@ async stopPTPlan(req:CustomRequest, res: Response): Promise<void> {
       });
     }
   }
+
+  async markTrainerNotificationRead(req:CustomRequest, res: Response): Promise<void> {
+  const trainerId = req.trainer?.id; // Assuming `req.trainer` is set by trainerAuthMiddleware
+  if (!trainerId) {
+    return this.sendResponse(res, {
+      success: false,
+      status: HttpStatus.UNAUTHORIZED,
+      error: {
+        code: ERRORMESSAGES.NOTIFICATION_UNAUTHORIZED.code,
+        message: ERRORMESSAGES.NOTIFICATION_UNAUTHORIZED.message,
+      },
+    });
+  }
+  const notificationId = req.params.notificationId;
+  const response = await this.markTrainerNotificationReadUseCase.execute(trainerId, notificationId);
+  this.sendResponse(res, response);
+}
+
+
+async getTrainerNotifications(req:CustomRequest, res: Response): Promise<void> {
+  const trainerId = req.trainer?.id;
+  if (!trainerId) {
+    return this.sendResponse(res, {
+      success: false,
+      status: HttpStatus.UNAUTHORIZED,
+      error: {
+        code: ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.code,
+        message: ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.message,
+      },
+    });
+  }
+
+  // Optionally get pagination params from query with defaults
+  const page = parseInt(req.query.page as string, 10) || 1;
+  const limit = parseInt(req.query.limit as string, 10) || 10;
+
+  const response = await this.getTrainerNotificationsUseCase.execute(trainerId, page, limit);
+  this.sendResponse(res, response);
+}
+
+
 }
 
   

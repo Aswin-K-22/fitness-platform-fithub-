@@ -3,6 +3,7 @@ import adminAuthReducer from "./slices/adminAuthSlice";
 import trainerAuthReducer from "./slices/trainerAuthSlice";
 import userAuthReducer from "./slices/userAuthSlice";
 import userNotificationsReducer from "./slices/userNotificationsSlice.ts";
+import trainerNotificationsReducer from "./slices/trainerNotificationsSlice.ts"
 
 
 export const store = configureStore({
@@ -11,6 +12,7 @@ export const store = configureStore({
     trainerAuth: trainerAuthReducer,
     userAuth: userAuthReducer,
     userNotifications: userNotificationsReducer, 
+    trainerNotifications: trainerNotificationsReducer,
   },
 });
 

@@ -14,7 +14,7 @@ import { getUserCurrentPlans } from "../../services/api/userApi";
 import type { MembershipDTO } from "../../types/dtos/IGetUserCurrentPlansResponseDTO";
 import type { IUserCurrentPTPlanDTO } from "../../types/dtos/IUserCurrentPTPlanDTO";
 
-const backendUrl = import.meta.env.VITE_API_BASE_URL;
+const backendUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const UserProfile: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>(); 

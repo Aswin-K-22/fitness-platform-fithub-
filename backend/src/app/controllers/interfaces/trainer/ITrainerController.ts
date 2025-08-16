@@ -9,4 +9,7 @@ export interface ITrainerController {
   editPTPlan(req: Request, res: Response): Promise<void>;
   stopPTPlan(req: Request, res: Response): Promise<void>;
   resumePTPlan(req: Request, res: Response): Promise<void>;
+  getTrainerNotifications(req: Request, res: Response): Promise<void>;
+  markTrainerNotificationRead(req: Request, res: Response): Promise<void>
+
 }

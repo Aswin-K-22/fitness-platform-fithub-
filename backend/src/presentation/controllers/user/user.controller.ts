@@ -20,7 +20,7 @@ import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 import { MESSAGES } from '@/domain/constants/messages.constant';
 import { INotificationsRepository } from '@/app/repositories/notifications.repository';
 import { IGetNotificationsUseCase } from '@/app/useCases/user/interfaces/IGetNotificationsUseCase';
-import { IMarkNotificationReadUseCase } from '@/app/useCases/interfaces/IMarkNotificationReadUseCase';
+import { IMarkNotificationReadUseCase } from '@/app/useCases/user/interfaces/IMarkNotificationReadUseCase';
 import { IGetPTPlansResponseDTO } from '@/domain/dtos/getPTPlansResponse.dto';
 import { CustomRequest } from '@/types/customRequest';
 import { UserPTPlansRequestDTO } from '@/domain/dtos/user/userPTPlanRequestDTO';

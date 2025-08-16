@@ -4,12 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import ChatCard from '../../components/common/trainer/ChatCard';
 import MessageBubble from '../../components/common/trainer/MessageBubble';
 import ClientDetails from '../../components/common/trainer/ClientDetails';
-import { fetchClients, fetchMessages, fetchFeedback, fetchSessions } from '../../services/api/trainerApi';
-import type { IClient, IClientFeedback, IClientSession, IMessage } from '../../types/dtos/IClientInteractionDTO';
-
+import { fetchMessages, fetchFeedback, fetchSessions, fetchTrainerUsersPTPlans } from '../../services/api/trainerApi';
+import type {  IClientFeedback, IClientSession, IMessage } from '../../types/dtos/IClientInteractionDTO';
+import type { ITrainerUserWithPlansDTO } from '../../types/dtos/ITrainerUsersPTPlansResponseDTO';
+const backendUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const defaultProfilePic = "/images/user.jpg";
 const ClientInteraction: React.FC = () => {
-  const [clients, setClients] = useState<IClient[]>([]);
-  const [selectedClient, setSelectedClient] = useState<IClient | null>(null);
+const [clients, setClients] = useState<ITrainerUserWithPlansDTO[]>([]);
+
+
+const [selectedClient, setSelectedClient] = useState<ITrainerUserWithPlansDTO | null>(null);
+
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [feedback, setFeedback] = useState<IClientFeedback | null>(null);
   const [sessions, setSessions] = useState<IClientSession[]>([]);
@@ -18,20 +23,25 @@ const ClientInteraction: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const loadClients = async () => {
-      try {
-        const response = await fetchClients();
-        setClients(response);
-        if (response.length > 0) {
-          setSelectedClient(response?.[0]);
+useEffect(() => {
+  const loadClients = async () => {
+    try {
+      const response = await fetchTrainerUsersPTPlans();
+      if (response.success && response.data) {
+        setClients(response.data);
+        if (response.data.length > 0) {
+          setSelectedClient(response.data[0]);
         }
-      } catch (error) {
-        console.error('Error fetching clients:', error);
       }
-    };
-    loadClients();
-  }, []);
+    } catch (error) {
+      console.error('Error fetching trainer users PT plans:', error);
+    }
+  };
+  loadClients();
+}, []);
+
+
+
 
   useEffect(() => {
     if (selectedClient) {
@@ -66,12 +76,10 @@ const ClientInteraction: React.FC = () => {
       // TODO: Send message to backend via trainerApi
     }
   };
-
-  const filteredClients = clients.filter((client) => {
-    if (filter === 'Online') return client.isOnline;
-    if (filter === 'Unread') return client.unreadCount > 0;
-    return true;
-  });
+const filteredClients = clients?.filter(() => {
+  // You can add your own logic later, for now keep all
+  return true;
+});
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -115,15 +123,24 @@ const ClientInteraction: React.FC = () => {
           </div>
           <div className="overflow-y-auto h-[calc(100vh-12rem)]">
             {filteredClients.map((client) => (
-              <ChatCard
-                key={client.id}
-                client={client}
-                isSelected={selectedClient?.id === client.id}
-                onSelect={() => {
-                  setSelectedClient(client);
-                  setIsSidebarOpen(false);
-                }}
-              />
+           <ChatCard
+  key={client.user.id}
+  client={{
+    id: client.user.id,
+    name: client.user.name,
+    isOnline: false, // API doesn’t provide yet
+  avatar: client.user.profilePic ? `${backendUrl}${client.user.profilePic}` : "/images/user.jpg"
+,
+    unreadCount: 0,  // default for now
+    lastSession: client.plans?.[0]?.purchase?.startDate || 'N/A'
+  }}
+  isSelected={selectedClient?.user.id === client.user.id}
+  onSelect={() => {
+    setSelectedClient(client);
+    setIsSidebarOpen(false);
+  }}
+/>
+
             ))}
           </div>
         </aside>
@@ -136,22 +153,22 @@ const ClientInteraction: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <img
-                      src={selectedClient.avatar}
-                      className="h-12 w-12 rounded-full object-cover"
-                      alt={selectedClient.name}
-                    />
+  src={`${backendUrl}${selectedClient.user.profilePic}` || defaultProfilePic}
+  className="h-12 w-12 rounded-full object-cover"
+  alt={selectedClient.user.name}
+/>
                     <div>
-                      <h2 className="text-lg font-medium text-gray-900">{selectedClient.name}</h2>
+                      <h2 className="text-lg font-medium text-gray-900">{selectedClient.user.name}</h2>
                       <p className="text-sm text-gray-500">
-                        {selectedClient.isOnline ? 'Online' : 'Offline'} • Last workout:{' '}
-                        {selectedClient.lastSession}
+                        {/* {selectedClient.isOnline ? 'Online' : 'Offline'} • Last workout:{' '}
+                        {selectedClient.lastSession} */}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
                     <button
                       className="!rounded-button px-4 py-2 bg-custom text-blue-950 font-medium"
-                      onClick={() => navigate(`/trainer/client-plan/${selectedClient.id}`)}
+                      onClick={() => navigate(`/trainer/client-plan/${selectedClient.user.id}`)}
                     >
                       <i className="fas fa-dumbbell mr-2"></i>Workout & Diet Plan
                     </button>

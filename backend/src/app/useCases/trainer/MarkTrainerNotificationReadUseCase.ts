@@ -1,25 +1,22 @@
 import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { MESSAGES } from '@/domain/constants/messages.constant';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
-import { INotificationsRepository } from '../../repositories/notifications.repository';
-import { IMarkNotificationReadUseCase } from './interfaces/IMarkNotificationReadUseCase';
-import { NotificationService } from '@/infra/providers/notification.service';
+import { NotificationService as TrainerNotificationService  } from '@/infra/providers/notification.service';
+import { IMarkTrainerNotificationReadUseCase } from './interfeces/IMarkTrainerNotificationReadUseCase';
 
-export interface IMarkNotificationReadResponseDTO {
+export interface IMarkTrainerNotificationReadResponseDTO {
   success: boolean;
   status: HttpStatus;
   message: string;
   error?: { code: string; message: string };
 }
 
+export class MarkTrainerNotificationReadUseCase implements IMarkTrainerNotificationReadUseCase {
+  constructor(private trainerNotificationService: TrainerNotificationService) {}
 
-
-export class MarkNotificationReadUseCase implements IMarkNotificationReadUseCase {
- constructor(private notificationService: NotificationService) {}
-
-  async execute(userId: string, notificationId: string): Promise<IMarkNotificationReadResponseDTO> {
+  async execute(trainerId: string, notificationId: string): Promise<IMarkTrainerNotificationReadResponseDTO> {
     try {
-      if (!userId) {
+      if (!trainerId) {
         return {
           success: false,
           status: HttpStatus.UNAUTHORIZED,
@@ -31,19 +28,19 @@ export class MarkNotificationReadUseCase implements IMarkNotificationReadUseCase
         };
       }
 
-        await this.notificationService.markAsReadAndEmit(notificationId, userId);
+      await this.trainerNotificationService.markAsReadAndEmit(notificationId, trainerId);
+
       return {
         success: true,
         status: HttpStatus.OK,
         message: MESSAGES.NOTIFICATION_MARKED_READ,
       };
     } catch (error) {
-      console.error('[MarkNotificationReadUseCase] Error:', error);
+      console.error('[MarkTrainerNotificationReadUseCase] Error:', error);
       return {
         success: false,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: ERRORMESSAGES.NOTIFICATION_MARK_READ_FAILED.message,
-
+        message: ERRORMESSAGES.NOTIFICATION_MARK_READ_FAILED.message,
         error: {
           code: ERRORMESSAGES.NOTIFICATION_MARK_READ_FAILED.code,
           message: ERRORMESSAGES.NOTIFICATION_MARK_READ_FAILED.message,

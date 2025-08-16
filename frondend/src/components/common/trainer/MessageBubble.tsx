@@ -6,13 +6,13 @@ interface MessageBubbleProps {
   message: IMessage;
   isTrainer: boolean;
 }
-
+const defaultProfilePic = "/images/user.jpg";
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isTrainer }) => {
   return (
     <div className={`flex items-start ${isTrainer ? 'justify-end' : ''} space-x-3`}>
       {!isTrainer && (
         <img
-          src="/images/trainer.png"
+          src={`${defaultProfilePic}`}
           className="h-10 w-10 rounded-full object-cover"
           alt="Client"
         />

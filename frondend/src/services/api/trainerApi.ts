@@ -11,6 +11,8 @@ import type { ITrainerDashboardResponseDTO } from "../../types/dtos/ITrainerDash
 import type { IClient, IClientFeedback, IClientSession, IMessage } from "../../types/dtos/IClientInteractionDTO";
 import type { IClientPlan } from "../../types/dtos/IClientPlanDTO";
 import type { FetchPTPlansResponse } from "../../types/pTPlan";
+import type { ITrainerNotification } from "../../store/slices/trainerNotificationsSlice";
+import type { IGetTrainerUsersPTPlansResponseDTO } from "../../types/dtos/ITrainerUsersPTPlansResponseDTO";
 
 
 const apiClient = axios.create({
@@ -407,5 +409,31 @@ export const updatePTPlan = async (planId: string, formData: FormData): Promise<
   } catch (error) {
     console.error("Failed to update PT plan:", error);
     throw new Error("Failed to update PT plan: " + (error as Error).message);
+  }
+};
+
+export const getTrainerNotifications = async (
+  page: number = 1,
+  limit: number = 10
+): Promise<{ notifications: ITrainerNotification[] }> => {
+  const response = await apiClient.get("/notifications", { 
+    params: { page, limit }
+  });
+  return response.data.data;
+};
+
+export const markTrainerNotificationRead = async (notificationId: string): Promise<void> => {
+  await apiClient.post(`/notifications/${notificationId}/read`);
+};
+
+export const fetchTrainerUsersPTPlans = async (): Promise<IGetTrainerUsersPTPlansResponseDTO> => {
+  try {
+    const response = await apiClient.get("/users-pt-plans", {
+      withCredentials: true
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error("Failed to fetch trainer users PT plans:", error);
+    throw error;
   }
 };

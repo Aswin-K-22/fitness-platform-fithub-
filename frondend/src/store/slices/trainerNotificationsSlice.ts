@@ -1,45 +1,47 @@
-//src/store/userNotification.ts
+//src/store/slices/trainerNotificationsSlice.ts
+
+
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-export interface IUserNotification {
+export interface ITrainerNotification {
   id: string;
-  userId: string;
+  trainerId: string;
   message: string;
   type: "success" | "error" | "info";
   createdAt: string;
   read: boolean;
 }
 
-interface UserNotificationsState {
-  notifications: IUserNotification[];
+interface TrainerNotificationsState {
+  notifications: ITrainerNotification[];
   unreadCount: number;
 }
 
-const initialState: UserNotificationsState = {
+const initialState: TrainerNotificationsState = {
   notifications: [],
   unreadCount: 0,
 };
 
-const userNotificationsSlice = createSlice({
-  name: "userNotifications",
+const trainerNotificationsSlice = createSlice({
+  name: "trainerNotifications",
   initialState,
   reducers: {
-    setUserNotifications(state, action: PayloadAction<IUserNotification[]>) {
+    setTrainerNotifications(state, action: PayloadAction<ITrainerNotification[]>) {
       state.notifications = action.payload;
       state.unreadCount = action.payload.filter((n) => !n.read).length;
     },
-    addUserNotification(state, action: PayloadAction<IUserNotification>) {
+    addTrainerNotification(state, action: PayloadAction<ITrainerNotification>) {
       state.notifications.unshift(action.payload);
       if (!action.payload.read) state.unreadCount += 1;
     },
-    markUserNotificationRead(state, action: PayloadAction<string>) {
+    markTrainerNotificationRead(state, action: PayloadAction<string>) {
       const n = state.notifications.find((x) => x.id === action.payload);
       if (n && !n.read) {
         n.read = true;
         state.unreadCount = Math.max(state.unreadCount - 1, 0);
       }
     },
-    resetUserNotifications(state) {
+    resetTrainerNotifications(state) {
       state.notifications = [];
       state.unreadCount = 0;
     },
@@ -47,10 +49,10 @@ const userNotificationsSlice = createSlice({
 });
 
 export const {
-  setUserNotifications,
-  addUserNotification,
-  markUserNotificationRead,
-  resetUserNotifications,
-} = userNotificationsSlice.actions;
+  setTrainerNotifications,
+  addTrainerNotification,
+  markTrainerNotificationRead,
+  resetTrainerNotifications,
+} = trainerNotificationsSlice.actions;
 
-export default userNotificationsSlice.reducer;
+export default trainerNotificationsSlice.reducer;

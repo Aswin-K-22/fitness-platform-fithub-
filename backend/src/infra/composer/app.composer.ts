@@ -106,9 +106,15 @@ import { InitiatePTPlanPaymentUseCase } from '@/app/useCases/user/InitiatePTPlan
 import { VerifyPTPlanPaymentUseCase } from '@/app/useCases/user/VerifyPTPlanPaymentUseCase';
 import { PTPlanPurchasesRepository } from '../repositories/ptPlanPurchase.repository';
 import { GetUserCurrentPTPlansUseCase } from '@/app/useCases/user/GetUserCurrentPTPlansUseCase';
+import { GetTrainerNotificationsUseCase } from '@/app/useCases/trainer/GetNotificationsUseCase';
+import { MarkTrainerNotificationReadUseCase } from '@/app/useCases/trainer/MarkTrainerNotificationReadUseCase';
 
 
 export function composeApp() {
+
+  const userNamespace = io.of('/user');
+const trainerNamespace = io.of('/trainer');
+
   // --- Repositories
   const usersRepository = new UsersRepository(prisma);
   const trainersRepository = new TrainersRepository(prisma);
@@ -127,7 +133,9 @@ export function composeApp() {
   const redisService = new RedisService();
   const tokenService = new JwtTokenService(redisService);
   const googleAuthService = new GoogleAuthService();
-  const notificationService = new NotificationService(io, notificationsRepository, tokenService);
+  const userNotificationService = new NotificationService(userNamespace, notificationsRepository, tokenService, "user");
+const trainerNotificationService = new NotificationService(trainerNamespace, notificationsRepository, tokenService, "trainer");
+
   const s3Service = new S3Service();
 
   // --- User Use Cases
@@ -159,7 +167,7 @@ export function composeApp() {
     paymentsRepository,
     usersRepository,
     membershipsPlanRepository,
-    notificationService
+    userNotificationService
   );
   const updateUserProfileUseCase = new UpdateUserProfileUseCase(usersRepository);
   const getUsersUseCase = new GetUsersUseCase(usersRepository);
@@ -171,7 +179,7 @@ export function composeApp() {
   const ptPlansUserGetUseCase = new PTPlansUserGetUseCase(ptPlanRepository, s3Service);
 
   const getNotificationsUseCase = new GetNotificationsUseCase(notificationsRepository);
-  const markNotificationReadUseCase = new MarkNotificationReadUseCase(notificationService);
+  const markNotificationReadUseCase = new MarkNotificationReadUseCase(userNotificationService);
   const initiatePTPlanPaymentUseCase = new InitiatePTPlanPaymentUseCase(
   ptPlanRepository,
   paymentsRepository,
@@ -184,7 +192,8 @@ const verifyPTPlanPaymentUseCase = new VerifyPTPlanPaymentUseCase(
   paymentsRepository,
   usersRepository,
   ptPlanPurchasesRepository,
-    notificationService
+    userNotificationService,
+    trainerNotificationService
 );
 
 const getUserCurrentPTPlansUseCase = new GetUserCurrentPTPlansUseCase(
@@ -210,7 +219,8 @@ const getUserCurrentPTPlansUseCase = new GetUserCurrentPTPlansUseCase(
   const editPTPlanUseCase = new EditPTPlanUseCase(ptPlanRepository, s3Service);
   const stopPTPlanUseCase = new StopPTPlanUseCase(ptPlanRepository);
   const resumePTPlanUseCase = new ResumePTPlanUseCase(ptPlanRepository);
-
+const  getTrainerNotificationsUseCase = new GetTrainerNotificationsUseCase(notificationsRepository)
+   const markTrainerNotificationReadUseCase = new MarkTrainerNotificationReadUseCase(trainerNotificationService)
   // --- Admin Use Cases
   const loginAdminUseCase = new LoginAdminUseCase(usersRepository, passwordHasher, tokenService);
   const getAdminUseCase = new GetAdminUseCase(usersRepository);
@@ -278,7 +288,9 @@ getUserCurrentPTPlansUseCase
     ptPlansTrainerGetUseCase,
     editPTPlanUseCase,
     stopPTPlanUseCase,
-    resumePTPlanUseCase
+    resumePTPlanUseCase,
+    getTrainerNotificationsUseCase,
+    markTrainerNotificationReadUseCase
   );
 
   const adminAuthController = new AdminAuthController(
@@ -312,5 +324,7 @@ getUserCurrentPTPlansUseCase
     userRoutes,
     trainerRoutes,
     adminRoutes,
+     userNotificationService,
+    trainerNotificationService,
   };
 }
