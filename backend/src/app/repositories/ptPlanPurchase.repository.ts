@@ -9,5 +9,6 @@ export interface IPTPlanPurchasesRepository extends IBaseRepository<PTPlanPurcha
   findAllByUser(userId: string, skip: number, take: number): Promise<PTPlanPurchase[]>;
   countByUser(userId: string): Promise<number>;
   findActiveByUser(userId: string): Promise<PTPlanPurchase[]>;
+   findByTrainerId(trainerId: string): Promise<PTPlanPurchase[]>;
 
 }

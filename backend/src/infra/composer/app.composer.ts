@@ -108,6 +108,7 @@ import { PTPlanPurchasesRepository } from '../repositories/ptPlanPurchase.reposi
 import { GetUserCurrentPTPlansUseCase } from '@/app/useCases/user/GetUserCurrentPTPlansUseCase';
 import { GetTrainerNotificationsUseCase } from '@/app/useCases/trainer/GetNotificationsUseCase';
 import { MarkTrainerNotificationReadUseCase } from '@/app/useCases/trainer/MarkTrainerNotificationReadUseCase';
+import { GetTrainerUsersPTPlansUseCase } from '@/app/useCases/trainer/GetTrainerCurrentUsersPTPlansUseCase';
 
 
 export function composeApp() {
@@ -221,7 +222,14 @@ const getUserCurrentPTPlansUseCase = new GetUserCurrentPTPlansUseCase(
   const resumePTPlanUseCase = new ResumePTPlanUseCase(ptPlanRepository);
 const  getTrainerNotificationsUseCase = new GetTrainerNotificationsUseCase(notificationsRepository)
    const markTrainerNotificationReadUseCase = new MarkTrainerNotificationReadUseCase(trainerNotificationService)
-  // --- Admin Use Cases
+  
+  const getTrainerUsersPTPlansUseCase = new GetTrainerUsersPTPlansUseCase(
+  ptPlanPurchasesRepository,
+   ptPlanRepository,
+   usersRepository
+ );
+  
+   // --- Admin Use Cases
   const loginAdminUseCase = new LoginAdminUseCase(usersRepository, passwordHasher, tokenService);
   const getAdminUseCase = new GetAdminUseCase(usersRepository);
   const adminRefreshTokenUseCase = new AdminRefreshTokenUseCase(usersRepository, tokenService);
@@ -290,7 +298,8 @@ getUserCurrentPTPlansUseCase
     stopPTPlanUseCase,
     resumePTPlanUseCase,
     getTrainerNotificationsUseCase,
-    markTrainerNotificationReadUseCase
+    markTrainerNotificationReadUseCase,
+     getTrainerUsersPTPlansUseCase
   );
 
   const adminAuthController = new AdminAuthController(

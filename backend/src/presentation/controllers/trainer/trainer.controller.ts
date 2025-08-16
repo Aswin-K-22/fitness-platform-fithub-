@@ -21,6 +21,7 @@ import { UpdateTrainerProfileRequestDTO } from '@/domain/dtos/updateTrainerProfi
 import { CustomRequest } from '@/types/customRequest'
 import { IGetTrainerNotificationsUseCase } from '@/app/useCases/trainer/interfeces/IGetTrainerNotificationsUseCase ';
 import { IMarkTrainerNotificationReadUseCase } from '@/app/useCases/trainer/interfeces/IMarkTrainerNotificationReadUseCase';
+import { IGetTrainerUsersPTPlansUseCase } from '@/app/useCases/trainer/interfeces/IGetTrainerUsersPTPlansUseCase';
 
 export class TrainerController {
   constructor(
@@ -34,7 +35,8 @@ export class TrainerController {
     private readonly stopPTPlanUseCase : IStopPTPlanUseCase,
     private readonly resumePTPlanUseCase: IResumePTPlanUseCase,
     private readonly getTrainerNotificationsUseCase : IGetTrainerNotificationsUseCase,
-    private readonly markTrainerNotificationReadUseCase :IMarkTrainerNotificationReadUseCase
+    private readonly markTrainerNotificationReadUseCase :IMarkTrainerNotificationReadUseCase,
+    private readonly getTrainerUsersPTPlansUseCase :IGetTrainerUsersPTPlansUseCase
   ) {}
 
   private sendResponse<T>(res: Response, result: IResponseDTO<T>): void {
@@ -331,6 +333,43 @@ async getTrainerNotifications(req:CustomRequest, res: Response): Promise<void> {
   const response = await this.getTrainerNotificationsUseCase.execute(trainerId, page, limit);
   this.sendResponse(res, response);
 }
+
+
+async getUsersForTrainerPlans(req:CustomRequest, res: Response): Promise<void> {
+  const trainerId = req.trainer?.id;
+  if (!trainerId) {
+    return this.sendResponse(res, {
+      success: false,
+      status: HttpStatus.UNAUTHORIZED,
+      error: {
+        code: ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.code,
+        message: ERRORMESSAGES.TRAINER_NOT_AUTHENTICATED.message,
+      },
+    });
+  }
+
+
+  try {
+    const users = await this.getTrainerUsersPTPlansUseCase.execute(trainerId);
+
+    this.sendResponse(res, {
+      success: true,
+      status: 200,
+      data: users,
+    });
+  } catch (error) {
+    this.sendResponse(res, {
+      success: false,
+      status: 500,
+      error: {
+        code: ERRORMESSAGES.FETCH_PT_PLANS_FAILED.code,
+        message: ERRORMESSAGES.FETCH_PT_PLANS_FAILED.message,
+      },
+    });
+  }
+}
+
+
 
 
 }

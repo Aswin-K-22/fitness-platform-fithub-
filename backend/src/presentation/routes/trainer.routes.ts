@@ -133,6 +133,12 @@ this.router.post(
   this.trainerController.markTrainerNotificationRead.bind(this.trainerController)
 );
 
+this.router.get(
+      '/users-pt-plans',
+      this.trainerAuthMiddleware.auth.bind(this.trainerAuthMiddleware),
+      this.trainerController.getUsersForTrainerPlans.bind(this.trainerController)
+);
+
     
   }
 }

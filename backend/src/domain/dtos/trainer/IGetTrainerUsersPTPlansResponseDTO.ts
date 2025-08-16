@@ -1,0 +1,58 @@
+// purchase info
+export interface ITrainerUserPurchaseDTO {
+  id: string | null;
+  status: string;
+  startDate: string;
+  endDate: string;
+  paymentId?: string | null;
+  price?: number | null;
+  currency: string;
+  paymentStatus?: string | null;
+  paymentDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// plan + purchase
+export interface ITrainerUserPlanDTO {
+  plan: {
+    id: string | null;
+    title: string;
+    category: string;
+    mode: string;
+    description: string;
+    goal: string;
+    features: string[];
+    duration: number;
+    image: string | null;
+    trainerPrice: number;
+    totalPrice?: number | null;
+    verifiedByAdmin: boolean;
+  };
+  purchase: ITrainerUserPurchaseDTO;
+}
+
+// user + all their purchased plans
+export interface ITrainerUserWithPlansDTO {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    profilePic?: string | null;
+    age?: number | null;
+    gender?: string | null;
+  };
+  plans: ITrainerUserPlanDTO[];
+}
+
+// final response wrapper
+export interface IGetTrainerUsersPTPlansResponseDTO {
+  success: boolean;
+  status: number;
+  data?: ITrainerUserWithPlansDTO[];
+  message?: string;
+  error?: {
+    code: string;
+    message: string;
+  };
+}

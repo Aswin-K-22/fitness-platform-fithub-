@@ -83,5 +83,24 @@ export class PTPlanPurchasesRepository
     });
   }
 
+     
+  async findByTrainerId(trainerId: string): Promise<PTPlanPurchase[]> {
+    const today = new Date();
+
+    const records = await this.prisma.pTPlanPurchase.findMany({
+      where: {
+        ptPlan: {
+          createdBy: trainerId,
+        },
+        status: 'Active',
+        startDate: { lte: today },
+        endDate: { gte: today },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return records.map(this.toDomain);
+  }
+
   
 }
