@@ -1,13 +1,20 @@
-export interface IUserCurrentPTPlanDTO {
-  trainer: {
-    id: string | null;
-    name: string;
-    profilePic: string | null;
-    specialties: string[];
-    experienceLevel: string | null;
-    bio: string | null;
-    // Any other Trainer fields you want to expose
-  };
+// Purchase info
+export interface IUserPurchaseDTO {
+  id: string | null;
+  status: string;
+  startDate: string;
+  endDate: string;
+  paymentId?: string | null;
+  price?: number | null;
+  currency: string;
+  paymentStatus?: string | null;
+  paymentDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Plan + purchase
+export interface IUserPlanWithPurchaseDTO {
   plan: {
     id: string | null;
     title: string;
@@ -21,19 +28,21 @@ export interface IUserCurrentPTPlanDTO {
     trainerPrice: number;
     totalPrice: number | null;
     verifiedByAdmin: boolean;
-    // Any other PTPlan fields you want to expose
   };
-  purchase: {
-    id: string | null;
-    status: string;
-    startDate: string;  // ISO date string
-    endDate: string;    // ISO date string
-    paymentId: string | null | undefined;
-    price: number | null | undefined;
-    currency: string;
-    paymentStatus: string | null | undefined;
-    paymentDate: string | null;
-    createdAt: string;
-    updatedAt: string;
-  };
+  purchase: IUserPurchaseDTO;
 }
+
+// Trainer + their purchased plans
+export interface IUserTrainerWithPlansDTO {
+  trainer: {
+    id: string | null;
+    name: string;
+    profilePic: string | null;
+    specialties: string[];
+    experienceLevel?: string | null;
+    bio?: string | null;
+  };
+  plans: IUserPlanWithPurchaseDTO[];
+}
+
+// State type for your React component

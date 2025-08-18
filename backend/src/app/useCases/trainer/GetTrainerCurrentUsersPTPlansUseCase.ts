@@ -11,7 +11,8 @@ export class GetTrainerUsersPTPlansUseCase implements IGetTrainerUsersPTPlansUse
   constructor(
     private ptPlanPurchasesRepository: IPTPlanPurchasesRepository,
     private ptPlanRepository: IPTPlanRepository,
-    private usersRepository: IUsersRepository
+    private usersRepository: IUsersRepository,
+    
   ) {}
 
   async execute(trainerId: string): Promise<IGetTrainerUsersPTPlansResponseDTO> {

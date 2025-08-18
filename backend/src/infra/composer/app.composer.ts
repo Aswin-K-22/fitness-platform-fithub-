@@ -200,7 +200,8 @@ const verifyPTPlanPaymentUseCase = new VerifyPTPlanPaymentUseCase(
 const getUserCurrentPTPlansUseCase = new GetUserCurrentPTPlansUseCase(
   ptPlanPurchasesRepository,
   ptPlanRepository,
-  trainersRepository
+  trainersRepository,
+  s3Service
 );
 
   // --- Trainer Use Cases

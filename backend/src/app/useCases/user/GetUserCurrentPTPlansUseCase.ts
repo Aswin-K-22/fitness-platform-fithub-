@@ -4,13 +4,20 @@ import { ITrainersRepository } from '@/app/repositories/trainers.repository';
 import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 import { ERRORMESSAGES } from '@/domain/constants/errorMessages.constant';
 import { IGetUserCurrentPTPlansUseCase } from './interfaces/IGetUserPTPlansUseCase';
-import { IGetUserPTPlansResponseDTO, IUserPTPlanResponseDTO } from '@/domain/dtos/user/IUserPTPlanResponseDTO';
+import { 
+  IGetUserPTPlansResponseDTO, 
+  IUserTrainerWithPlansDTO, 
+  IUserPlanWithPurchaseDTO 
+} from '@/domain/dtos/user/IUserPTPlanResponseDTO';
+import { S3Service } from '@/infra/providers/s3.service';
+
 
 export class GetUserCurrentPTPlansUseCase implements IGetUserCurrentPTPlansUseCase {
   constructor(
     private ptPlanPurchasesRepository: IPTPlanPurchasesRepository,
     private ptPlanRepository: IPTPlanRepository,
-    private trainersRepository: ITrainersRepository
+    private trainersRepository: ITrainersRepository,
+     private s3Service: S3Service
   ) {}
 
   async execute(userId: string): Promise<IGetUserPTPlansResponseDTO> {
@@ -19,12 +26,13 @@ export class GetUserCurrentPTPlansUseCase implements IGetUserCurrentPTPlansUseCa
         return {
           success: false,
           status: HttpStatus.UNAUTHORIZED,
-          error: ERRORMESSAGES.PTPLAN_UNAUTHORIZED || { code: 'PTPLAN_UNAUTHORIZED', message: 'Unauthorized access' }
+          error: ERRORMESSAGES.PTPLAN_UNAUTHORIZED 
+            || { code: 'PTPLAN_UNAUTHORIZED', message: 'Unauthorized access' }
         };
       }
 
-      // Get all PT plan purchases for the user
-    const activePurchases = await this.ptPlanPurchasesRepository.findActiveByUser(userId);
+      // 1. Get all active purchases for the user
+      const activePurchases = await this.ptPlanPurchasesRepository.findActiveByUser(userId);
 
       if (!activePurchases || activePurchases.length === 0) {
         return {
@@ -35,34 +43,27 @@ export class GetUserCurrentPTPlansUseCase implements IGetUserCurrentPTPlansUseCa
         };
       }
 
-      // For each purchase, fetch plan and trainer details
-      const userPTPlans: IUserPTPlanResponseDTO[] = [];
+      // 2. Group by trainer
+      const trainerMap: Map<string, IUserTrainerWithPlansDTO> = new Map();
 
       for (const purchase of activePurchases) {
-        // Fetch PTPlan entity
+        // Fetch plan
         const plan = await this.ptPlanRepository.findById(purchase.ptPlanId);
-        if (!plan) {
-          // Skip if plan not found (or handle as needed)
-          continue;
-        }
+        if (!plan) continue;
 
-        // Fetch Trainer entity
+        // Fetch trainer
+
+        if (!plan.createdBy) {
+  continue; // or handle error
+}
+
         const trainer = await this.trainersRepository.findById(plan.createdBy);
-        if (!trainer) {
-          // Skip if trainer not found (or handle as needed)
-          continue;
-        }
+        if (!trainer) continue;
 
-        // Compose DTO with selected fields from each entity
-        userPTPlans.push({
-          trainer: {
-            id: trainer.id,
-            name: trainer.name,
-            profilePic: trainer.profilePic,
-            specialties: trainer.specialties,
-            experienceLevel: trainer.experienceLevel,
-            bio: trainer.bio,
-          },
+        // Build plan+purchase DTO
+        const imageUrl = plan.image ? await this.s3Service.getPresignedUrl(plan.image) : null;
+
+        const planWithPurchase: IUserPlanWithPurchaseDTO = {
           plan: {
             id: plan.id,
             title: plan.title,
@@ -72,7 +73,7 @@ export class GetUserCurrentPTPlansUseCase implements IGetUserCurrentPTPlansUseCa
             goal: plan.goal,
             features: plan.features,
             duration: plan.duration,
-            image: plan.image,
+            image:imageUrl,
             trainerPrice: plan.trainerPrice,
             totalPrice: plan.totalPrice,
             verifiedByAdmin: plan.verifiedByAdmin,
@@ -90,16 +91,47 @@ export class GetUserCurrentPTPlansUseCase implements IGetUserCurrentPTPlansUseCa
             createdAt: purchase.createdAt.toISOString(),
             updatedAt: purchase.updatedAt.toISOString(),
           }
-        });
+        };
+
+        // Add trainer & plans grouping
+        if (!trainer.id) {
+  continue;
+}
+
+let profilePicUrl = trainer.profilePic;
+if (profilePicUrl && profilePicUrl.startsWith('trainer-profiles/')) {
+  profilePicUrl = await this.s3Service.getPresignedUrl(profilePicUrl) || trainer.profilePic;
+}
+
+
+
+        if (!trainerMap.has(trainer.id)) {
+          trainerMap.set(trainer.id, {
+            trainer: {
+              id: trainer.id,
+              name: trainer.name,
+              profilePic:  profilePicUrl,
+              specialties: trainer.specialties,
+              experienceLevel: trainer.experienceLevel,
+              bio: trainer.bio,
+            },
+            plans: [planWithPurchase]
+          });
+        } else {
+          trainerMap.get(trainer.id)!.plans.push(planWithPurchase);
+        }
       }
+
+      // 3. Convert grouping → array
+      const trainersWithPlans: IUserTrainerWithPlansDTO[] = Array.from(trainerMap.values());
 
       return {
         success: true,
         status: HttpStatus.OK,
-        data: userPTPlans,
+        data: trainersWithPlans,
       };
     } catch (error) {
-      console.error('Error in GetUserPTPlansUseCase:', error);
+      console.error('Error in GetUserCurrentPTPlansUseCase:', error);
       return {
         success: false,
         status: HttpStatus.INTERNAL_SERVER_ERROR,

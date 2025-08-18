@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import * as echarts from "echarts";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom"; 
+import { Crown, Calendar, CreditCard, CheckCircle, XCircle, Clock, Zap, Star } from 'lucide-react';
 import type { AppDispatch, RootState } from "../../store/store";
 import type { UserProfileData } from "../../types/user.types";
 import { getUserCurrentPTPlans, getUserProfile, updateUserProfile } from "../../services/api/userApi";
@@ -12,7 +13,7 @@ import { logoutThunk, setAuth } from "../../store/slices/userAuthSlice";
 import type { UserAuth } from "../../types/auth.types";
 import { getUserCurrentPlans } from "../../services/api/userApi";
 import type { MembershipDTO } from "../../types/dtos/IGetUserCurrentPlansResponseDTO";
-import type { IUserCurrentPTPlanDTO } from "../../types/dtos/IUserCurrentPTPlanDTO";
+import type {  IUserTrainerWithPlansDTO } from "../../types/dtos/IUserCurrentPTPlanDTO";
 
 const backendUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -29,7 +30,8 @@ const UserProfile: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ name?: string; profilePic?: string }>({});
   const [activeTab, setActiveTab] = useState("overview");
-   const [userPTPlans, setUserPTPlans] = useState<IUserCurrentPTPlanDTO[] | null>(null);
+  const [userPTPlans, setUserPTPlans] = useState<IUserTrainerWithPlansDTO[] | null>(null);
+
 
 
   useEffect(() => {
@@ -293,6 +295,69 @@ setUserPTPlans(userPTPlansResponse);
     );
   }
 
+
+    const getStatusConfig = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return {
+          icon: CheckCircle,
+          color: 'text-emerald-500',
+          bgColor: 'bg-emerald-50',
+          borderColor: 'border-emerald-200',
+          gradient: 'from-emerald-400 to-teal-400'
+        };
+      case 'expired':
+        return {
+          icon: XCircle,
+          color: 'text-red-500',
+          bgColor: 'bg-red-50',
+          borderColor: 'border-red-200',
+          gradient: 'from-red-400 to-pink-400'
+        };
+      case 'pending':
+        return {
+          icon: Clock,
+          color: 'text-amber-500',
+          bgColor: 'bg-amber-50',
+          borderColor: 'border-amber-200',
+          gradient: 'from-amber-400 to-orange-400'
+        };
+      default:
+        return {
+          icon: Zap,
+          color: 'text-blue-500',
+          bgColor: 'bg-blue-50',
+          borderColor: 'border-blue-200',
+          gradient: 'from-blue-400 to-indigo-400'
+        };
+    }
+  };
+
+  const getPlanTypeIcon = (planId: string) => {
+    if (planId.toLowerCase().includes('premium') || planId.toLowerCase().includes('pro')) {
+      return Crown;
+    }
+    return Star;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getDaysRemaining = (endDate: string) => {
+    const end = new Date(endDate);
+    const now = new Date();
+    const diffTime = end.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+
+
   return (
     <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 min-h-screen">
       
@@ -481,113 +546,339 @@ setUserPTPlans(userPTPlansResponse);
                 </div>
 
 <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-  <h3 className="text-xl font-semibold text-gray-900 mb-4">Personal Trainer</h3>
-  <div className="space-y-4">
-    {userPTPlans && userPTPlans.length > 0 ? (
-      userPTPlans.map((plan, idx) => (
-        <div key={plan.purchase.id || idx} className="bg-gradient-to-br from-blue-100 to-cyan-100 p-6 rounded-lg mb-4">
-          <div className="flex items-center mb-3">
-            {plan.trainer.profilePic ? (
-              <img
-                src={plan.trainer.profilePic}
-                alt={plan.trainer.name}
-                className="h-12 w-12 rounded-full object-cover mr-3"
-              />
-            ) : (
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center mr-3">
-                <span className="text-white text-xl font-bold">
-                  {plan.trainer.name?.charAt(0).toUpperCase() || "T"}
-                </span>
+   <div className="relative overflow-hidden">
+      {/* Background with gradient mesh */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-cyan-500/10"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(120,119,198,0.3),transparent_50%)] animate-pulse"></div>
+      
+      <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl hover:shadow-purple-500/25 transition-all duration-500 p-8 group hover:scale-[1.02]">
+        {/* Header with animated icon */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <div className="w-14 h-14 bg-gradient-to-tr from-purple-600 via-blue-600 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-purple-500/50 transition-all duration-300">
+                <svg className="w-8 h-8 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
               </div>
-            )}
-            <h4 className="font-semibold text-gray-900">{plan.trainer.name}</h4>
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white animate-bounce"></div>
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent">
+                Personal Trainer
+              </h3>
+              <p className="text-gray-500 text-sm">Your fitness journey starts here</p>
+            </div>
           </div>
-          <p className="text-gray-600 text-sm mb-2">
-            <span className="font-medium">Specialization:</span> {plan.trainer.specialties?.join(', ') || "N/A"}
-          </p>
-          <p className="text-gray-600 text-sm mb-2">
-            <span className="font-medium">Email:</span> {plan.trainer.name || "N/A"}
-          </p>
-          <p className="text-gray-600 text-sm mb-2">
-            <span className="font-medium">Contact:</span> {plan.trainer.name || "N/A"}
-          </p>
-          <p className="text-gray-600 text-sm mb-2">
-            <span className="font-medium">Plan:</span> {plan.plan.title}
-          </p>
-          <button
-            onClick={() => navigate("/user/chat")}
-            className="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            Chat with Trainer
-          </button>
+          <div className="hidden md:block">
+            <div className="flex space-x-1">
+              <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+              <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            </div>
+          </div>
         </div>
-      ))
-    ) : (
-      <div className="bg-gradient-to-br from-blue-100 to-cyan-100 p-6 rounded-lg mb-4">
-        <svg className="w-12 h-12 text-blue-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <h4 className="font-semibold text-gray-900 mb-2">No Trainer Assigned</h4>
-        <p className="text-gray-600 text-sm">Get personalized guidance with a trainer</p>
-        <button className="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
-          Find a Trainer
-        </button>
+
+        <div className="space-y-6">
+          {userPTPlans && userPTPlans.length > 0 ? (
+            userPTPlans.map((trainerWithPlans, tIdx) => (
+              <div key={trainerWithPlans.trainer.id || tIdx} className="space-y-6">
+                {/* Trainer Profile Card */}
+                <div className="relative bg-gradient-to-br from-white to-gray-50/50 rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                  <div className="flex items-start space-x-4">
+                    <div className="relative">
+                      {trainerWithPlans.trainer.profilePic ? (
+                        <img
+                          src={trainerWithPlans.trainer.profilePic}
+                          alt={trainerWithPlans.trainer.name}
+                          className="w-16 h-16 rounded-2xl object-cover shadow-lg ring-4 ring-white"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-500 to-cyan-500 flex items-center justify-center shadow-lg ring-4 ring-white">
+                          <span className="text-white text-2xl font-bold">
+                            {trainerWithPlans.trainer.name?.charAt(0).toUpperCase() || "T"}
+                          </span>
+                        </div>
+                      )}
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-3 border-white flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h4 className="text-xl font-bold text-gray-900">{trainerWithPlans.trainer.name}</h4>
+                        {trainerWithPlans.trainer.experienceLevel && (
+                          <span className="px-2 py-1 bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-700 text-xs font-bold rounded-full border border-orange-200/50">
+                            {trainerWithPlans.trainer.experienceLevel}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {trainerWithPlans.trainer.bio && (
+                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{trainerWithPlans.trainer.bio}</p>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {trainerWithPlans.trainer.specialties?.map((specialty : string, idx:number   ) => (
+                          <span 
+                            key={idx}
+                            className="px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 text-xs font-semibold rounded-full border border-purple-200/50"
+                          >
+                            {specialty}
+                          </span>
+                        )) || (
+                          <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full">
+                            General Training
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm font-medium text-green-600">Active</span>
+                    </div>
+                  </div>
+                </div>  
+
+                {/* Training Plans */}
+                {trainerWithPlans.plans.map((planWithPurchase, pIdx) => (
+                  <div key={planWithPurchase.plan.id || pIdx} className="relative group/plan">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-2xl blur opacity-20 group-hover/plan:opacity-30 transition-opacity duration-300"></div>
+                    <div className="relative bg-gradient-to-br from-white via-purple-50/30 to-cyan-50/30 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl">
+                      
+                      {/* Plan Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 bg-gradient-to-tr from-purple-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <h5 className="text-lg font-bold text-gray-900">{planWithPurchase.plan.title}</h5>
+                            <p className="text-sm text-gray-600">{planWithPurchase.plan.goal}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-1">
+                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                          <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                        </div>
+                      </div>
+
+                      {/* Duration Info */}
+                      <div className="flex items-center space-x-4 mb-6">
+                        <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="font-medium">
+                            {new Date(planWithPurchase.purchase.startDate).toLocaleDateString()} – {new Date(planWithPurchase.purchase.endDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      <button
+                        onClick={() => navigate("/user/chat")}
+                        className="w-full group/btn relative overflow-hidden bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 hover:from-purple-700 hover:via-blue-700 hover:to-cyan-700 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        <div className="absolute inset-0 bg-white/10 transform translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700"></div>
+                        <div className="relative flex items-center justify-center space-x-3">
+                          <svg className="w-6 h-6 group-hover/btn:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                          <span>Start Training Session</span>
+                          <svg className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))
+          ) : (
+            <div className="relative group/empty">
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-300/20 to-blue-300/20 rounded-2xl blur opacity-50"></div>
+              <div className="relative bg-gradient-to-br from-white to-gray-50/80 backdrop-blur-sm rounded-2xl p-8 border border-gray-200/50 text-center">
+                <div className="w-20 h-20 bg-gradient-to-tr from-gray-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
+                  <svg className="w-10 h-10 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <h4 className="text-2xl font-bold text-gray-900 mb-3">Ready to Transform?</h4>
+                <p className="text-gray-600 mb-6 max-w-sm mx-auto">Connect with expert trainers and start your personalized fitness journey today</p>
+                <button className="group/find relative overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-4 px-8 rounded-xl font-semibold text-lg shadow-lg hover:shadow-blue-500/50 transition-all duration-300 transform hover:scale-105 active:scale-95">
+                  <div className="absolute inset-0 bg-white/10 transform translate-x-[-100%] group-hover/find:translate-x-[100%] transition-transform duration-700"></div>
+                  <div className="relative flex items-center justify-center space-x-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <span>Find Your Trainer</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    )}
-  </div>
+    </div>
 </div>
+
 
               </div>
               
-              <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Current Plans</h3>
-                <div className="space-y-4">
-                  {membershipPlans && membershipPlans.length > 0 ? (
-                    membershipPlans.map((plan, index) => (
-                      <div key={index} className="bg-gradient-to-br from-purple-100 to-pink-100 p-6 rounded-lg mb-4">
-                        <svg className="w-12 h-12 text-purple-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <h4 className="font-semibold text-gray-900 mb-2">Membership Plan {index + 1}</h4>
-                        <p className="text-gray-600 text-sm mb-2">
-                          <span className="font-medium">Status:</span> {plan.status}
-                        </p>
-                        <p className="text-gray-600 text-sm mb-2">
-                          <span className="font-medium">Price:</span> {plan.price} {plan.currency}
-                        </p>
-                        <p className="text-gray-600 text-sm mb-2">
-                          <span className="font-medium">Start Date:</span>{" "}
-                          {new Date(plan.startDate).toLocaleDateString()}
-                        </p>
-                        <p className="text-gray-600 text-sm mb-2">
-                          <span className="font-medium">End Date:</span>{" "}
-                          {new Date(plan.endDate).toLocaleDateString()}
-                        </p>
-                        <p className="text-gray-600 text-sm">
-                          <span className="font-medium">Payment Status:</span> {plan.paymentStatus}
-                        </p>
-                        {/* <button className="w-full mt-4 bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
-                          View Plan Details
-                        </button> */}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="bg-gradient-to-br from-purple-100 to-pink-100 p-6 rounded-lg mb-4">
-                      <svg className="w-12 h-12 text-purple-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <h4 className="font-semibold text-gray-900 mb-2">No Plan Assigned</h4>
-                      <p className="text-gray-600 text-sm">Start your fitness journey</p>
-                      <button className="w-full mt-4 bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
-                        Get Started
-                      </button>
-                    </div>
-                  )}
+<div className="w-full max-w-6xl mx-auto p-4">
+  {/* Compact Header */}
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+      <Crown className="w-4 h-4 text-white" />
+    </div>
+    <div>
+      <h2 className="text-xl font-bold text-gray-800">My Memberships</h2>
+      <p className="text-gray-500 text-xs">Manage your fitness plans</p>
+    </div>
+  </div>
+
+  {membershipPlans && membershipPlans.length > 0 ? (
+    <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-1">
+      {membershipPlans.map((plan, index) => {
+        const statusConfig = getStatusConfig(plan.status);
+        const PlanIcon = getPlanTypeIcon(plan.planId);
+        const StatusIcon = statusConfig.icon;
+        const daysRemaining = getDaysRemaining(plan.endDate);
+        const isActive = plan.status.toLowerCase() === 'active';
+
+        return (
+          <div
+            key={plan.id || index}
+            className="group relative bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
+          >
+            {/* Status Badge */}
+            {isActive && (
+              <div className="absolute top-2 right-2 z-10">
+                <div className="px-1.5 py-0.5 bg-emerald-500 text-white text-xs font-medium rounded-full">
+                  ACTIVE
                 </div>
               </div>
+            )}
+
+            {/* Top Gradient Bar */}
+            <div className={`h-1 bg-gradient-to-r ${statusConfig.gradient}`}></div>
+
+            <div className="p-4">
+              {/* Compact Plan Header */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className={`w-8 h-8 ${statusConfig.bgColor} rounded-lg flex items-center justify-center`}>
+                  <PlanIcon className={`w-4 h-4 ${statusConfig.color}`} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base font-bold text-gray-800 capitalize">
+                    {plan.planId}
+                  </h3>
+                  <div className="flex items-center gap-1">
+                    <StatusIcon className={`w-2.5 h-2.5 ${statusConfig.color}`} />
+                    <span className={`text-xs font-medium capitalize ${statusConfig.color}`}>
+                      {plan.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Price - More Compact */}
+              {plan.price && (
+                <div className="mb-3 p-2 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <CreditCard className="w-3.5 h-3.5 text-gray-500" />
+                      <span className="text-xs text-gray-600">Price</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-base font-bold text-gray-800">
+                        {plan.currency} {plan.price}
+                      </span>
+                      <div className="text-xs text-gray-500">
+                        {plan.paymentStatus}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Compact Duration */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between p-1.5 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-gray-500" />
+                    <span className="text-xs text-gray-600">Duration</span>
+                  </div>
+                  <span className="text-xs text-gray-700">
+                    {formatDate(plan.startDate)} - {formatDate(plan.endDate)}
+                  </span>
+                </div>
+
+                {/* Days Remaining - Compact Version */}
+                {isActive && daysRemaining > 0 && (
+                  <div className={`mt-2 p-1.5 ${statusConfig.bgColor} rounded-lg`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-600">Days Left</span>
+                      <span className={`text-sm font-semibold ${statusConfig.color}`}>
+                        {daysRemaining}
+                      </span>
+                    </div>
+                    <div className="bg-white rounded-full h-1 overflow-hidden">
+                      <div
+                        className={`h-full bg-gradient-to-r ${statusConfig.gradient} transition-all duration-500`}
+                        style={{ width: `${Math.min((daysRemaining / 365) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Compact Action Button */}
+              <button
+                className={`w-full py-2 px-3 rounded-lg font-medium text-sm transition-all duration-200 ${
+                  isActive
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-sm hover:shadow-md'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+              >
+                {isActive ? 'Manage' : 'Renew'}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  ) : (
+    // Compact Empty State
+    <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl p-4 text-center border border-gray-200">
+      <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-3">
+        <Zap className="w-6 h-6 text-white" />
+      </div>
+      <h3 className="text-lg font-bold text-gray-800 mb-2">
+        Start Your Fitness Journey
+      </h3>
+      <p className="text-gray-600 mb-3 text-xs">
+        No active membership plans found.
+      </p>
+      <button className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300">
+        <span className="flex items-center gap-1.5">
+          <Zap className="w-3.5 h-3.5" />
+          Get Started
+        </span>
+      </button>
+    </div>
+  )}
+</div>
 
             </div>
           )}

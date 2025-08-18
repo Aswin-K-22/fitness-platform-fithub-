@@ -186,7 +186,7 @@ const { isAuthenticated: isUserAuthenticated } = useSelector((state: RootState) 
                 <Route path="/user/payment-success" element={<ProtectedRoute element={<PaymentSuccess />} allowedRole="user" />} />
                 <Route path="/user/payment-failed" element={<ProtectedRoute element={<PaymentFailed />} allowedRole="user" />} />
                 <Route path="/user/pt-plans" element={<ProtectedRoute element={<UserPTPlanList />} allowedRole="user" isPublic={true} />} />
-                                <Route path="/user/chat" element={<ProtectedRoute element={<UserTrainerChat />} allowedRole="user" />} />
+                <Route path="/user/chat" element={<ProtectedRoute element={<UserTrainerChat />} allowedRole="user" />} />
 
                 <Route path="/forbidden" element={<ForbiddenPage />} />
               </Route>
