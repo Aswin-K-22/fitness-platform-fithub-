@@ -1,5 +1,14 @@
 // backend/src/domain/constants/errorMessages.constant.ts
 export const ERRORMESSAGES = {
+  UNAUTHORIZED :{code : '999',message : 'UNAUTHORIZED.'},
+  CHAT_NOT_PARTICIPANT :{code :'001', message :'CHAT_NOT_PARTICIPANT'},
+  CONVERSATION_CREATION_FAILED :{code : '001',message :'CONVERSATION_CREATION_FAILED'},
+  MESSAGE_CREATION_FAILED :{code :'001',message :'MESSAGE_CREATION_FAILED'},
+  INVALID_INPUT_CHAT :{code :'001', message :'INVALID_INPUT_CHAT'},
+  CHAT_DUPLICATE_MESSAGE :{code :'CDM_001', message :' CHAT_DUPLICATE_MESSAGE'},
+  MESSAGE_NOT_FOUND :{code :'001', message :'MESSAGE_NOT_FOUND'},
+  UNAUTHORIZED_CONVERSATION_ACCESS : {code : '000',message: 'UNAUTHORIZED_CONVERSATION_ACCESS'},
+  SERVER_ERROR_CHAT : { code: 'Chat_001', message: 'SERVER_ERROR_CHAT' },
   ADMIN_NOT_AUTHENTICATED: { code: 'ADMIN_001', message: 'Admin not authenticated' },
   AUTH_MISSING_REFRESH_TOKEN: { code: 'AUTH_001', message: 'No refresh token provided' },
   AUTH_INVALID_REFRESH_TOKEN: { code: 'AUTH_002', message: 'Invalid refresh token' },
@@ -172,4 +181,25 @@ export const ERRORMESSAGES = {
         code: "FETCH_PT_PLANS_FAILED",
         message: "Failed to fetch user PT plans",
       },
+      CHAT_MISSING_REQUIRED_FIELDS :{
+        code: "000",
+        message: "CHAT_MISSING_REQUIRED_FIELDS",
+      },
+      CHAT_MISSING_REQUIRED_FIELDS1 :{
+        code: "001",
+        message: "CHAT_MISSING_REQUIRED_FIELDS",
+      },
+       CHAT_MISSING_REQUIRED_FIELDS2 :{
+        code: "002",
+        message: "CHAT_MISSING_REQUIRED_FIELDS",
+      },
+
+  CHAT_INVALID_PARTICIPANT_TYPE  :{
+        code: "001",
+        message: " CHAT_INVALID_PARTICIPANT_TYPE",
+      },
+      CHAT_NOT_FOUND :{
+        code :'003',
+        message : 'CHAT_NOT_FOUND'
+      }
 } as const;

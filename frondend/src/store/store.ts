@@ -5,7 +5,6 @@ import userAuthReducer from "./slices/userAuthSlice";
 import userNotificationsReducer from "./slices/userNotificationsSlice.ts";
 import trainerNotificationsReducer from "./slices/trainerNotificationsSlice.ts"
 
-
 export const store = configureStore({
   reducer: {
     adminAuth: adminAuthReducer,
@@ -13,6 +12,7 @@ export const store = configureStore({
     userAuth: userAuthReducer,
     userNotifications: userNotificationsReducer, 
     trainerNotifications: trainerNotificationsReducer,
+   
   },
 });
 

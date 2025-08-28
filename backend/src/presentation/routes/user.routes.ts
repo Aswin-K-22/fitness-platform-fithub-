@@ -7,6 +7,7 @@ import { IUserController } from '@/app/controllers/interfaces/user/IUserControll
 import { IUserAuthController } from '@/app/controllers/interfaces/user/IUserAuthController';
 import { IUserAuthMiddleware } from '@/app/middlewares/interfaces/user/IUserAuthMiddleware';
 import { IUserValidationMiddleware } from '@/app/middlewares/interfaces/user/IUserValidationMiddleware';
+import { ChatController } from '../controllers/chat/chatController';
 export class UserRoutes {
   public router: Router;
 
@@ -14,7 +15,8 @@ export class UserRoutes {
     private userAuthController: IUserAuthController,
     private userController: IUserController,
     private authMiddleware: IUserAuthMiddleware,
-    private userValidationMiddleware: IUserValidationMiddleware
+    private userValidationMiddleware: IUserValidationMiddleware,
+      private chatController: ChatController,
   ) {
     this.router = Router();
     this.setupRoutes();
@@ -87,6 +89,26 @@ this.router.get(
   '/user-pt-plans',
   this.authMiddleware.auth.bind(this.authMiddleware),
   this.userController.getUserPTPlans.bind(this.userController)
+);
+
+// GET /conversations/:id/messages?before=msg789&limit=20   // older messages
+// GET /conversations/:id/messages?after=msg123&limit=20    // newer messages
+// GET /conversations/:id/messages?limit=20                 // latest messages
+
+this.router.get(
+  '/chat/conversations/:id/messages',
+  this.authMiddleware.auth.bind(this.authMiddleware),
+  this.chatController.getConversationMessagesChatHistory.bind(this.chatController)
+);
+
+
+
+
+// Returns chat metadata: conversationId, unread count, last message per trainer
+this.router.get(
+  '/chat/conversations/summary',
+  this.authMiddleware.auth.bind(this.authMiddleware),
+  this.chatController.getChatSummary.bind(this.chatController)
 );
 
   }

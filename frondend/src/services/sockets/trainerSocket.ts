@@ -41,9 +41,9 @@ export function initTrainerSocket() {
     joinTrainerRoom();
 
     try {
-      console.log("[trainerSocket] Fetching notifications after connect...");
+     // console.log("[trainerSocket] Fetching notifications after connect...");
       const { notifications } = await getTrainerNotifications(1, 10);
-      console.log(`[trainerSocket] ${notifications.length} notifications fetched`);
+   //   console.log(`[trainerSocket] ${notifications.length} notifications fetched`);
       store.dispatch(setTrainerNotifications(notifications));
     } catch (err) {
       console.error("[trainerSocket] Failed to fetch notifications after connect", err);
@@ -94,10 +94,10 @@ export function initTrainerSocket() {
 function joinTrainerRoom() {
   const trainerId = store.getState().trainerAuth.trainer?.id; // 👈 from trainer auth state
   if (socket && trainerId) {
-    console.log(`[trainerSocket] Emitting 'joinTrainer' for trainerId=${trainerId}`);
+  //  console.log(`[trainerSocket] Emitting 'joinTrainer' for trainerId=${trainerId}`);
     socket.emit("joinTrainer", trainerId); // 👈 use separate namespace/event from users
   } else {
-    console.warn("[trainerSocket] Cannot join room — missing socket or trainerId");
+   // console.warn("[trainerSocket] Cannot join room — missing socket or trainerId");
   }
 }
 
@@ -109,10 +109,10 @@ export function connectTrainerSocket() {
     initTrainerSocket();
   }
   if (socket && !socket.connected) {
-    console.log("[trainerSocket] Connecting...");
+  //  console.log("[trainerSocket] Connecting...");
     socket.connect();
   } else {
-    console.log("[trainerSocket] Already connected");
+  //  console.log("[trainerSocket] Already connected");
   }
 }
 
@@ -121,11 +121,11 @@ export function connectTrainerSocket() {
  */
 export function disconnectTrainerSocket() {
   if (socket) {
-    console.log(`[trainerSocket] Disconnecting socket: ${socket.id}`);
+  //  console.log(`[trainerSocket] Disconnecting socket: ${socket.id}`);
     socket.disconnect();
     socket = null;
   } else {
-    console.log("[trainerSocket] No active socket to disconnect");
+   // console.log("[trainerSocket] No active socket to disconnect");
   }
 }
 

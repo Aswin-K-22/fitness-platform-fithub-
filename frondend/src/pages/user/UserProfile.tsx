@@ -684,10 +684,10 @@ setUserPTPlans(userPTPlansResponse);
                       </div>
 
                       {/* Action Button */}
-                      <button
-                        onClick={() => navigate("/user/chat")}
-                        className="w-full group/btn relative overflow-hidden bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 hover:from-purple-700 hover:via-blue-700 hover:to-cyan-700 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
-                      >
+                    <button
+  onClick={() => navigate("/user/chat", { state: { trainerId: trainerWithPlans.trainer.id } })}
+  className="w-full group/btn relative overflow-hidden bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 hover:from-purple-700 hover:via-blue-700 hover:to-cyan-700 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+>
                         <div className="absolute inset-0 bg-white/10 transform translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700"></div>
                         <div className="relative flex items-center justify-center space-x-3">
                           <svg className="w-6 h-6 group-hover/btn:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">

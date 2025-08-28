@@ -13,6 +13,7 @@ import type { IClientPlan } from "../../types/dtos/IClientPlanDTO";
 import type { FetchPTPlansResponse } from "../../types/pTPlan";
 import type { ITrainerNotification } from "../../store/slices/trainerNotificationsSlice";
 import type { IGetTrainerUsersPTPlansResponseDTO } from "../../types/dtos/ITrainerUsersPTPlansResponseDTO";
+import type { GetConversationMessagesResponseDTO, IGetChatSummaryResponseDTO } from "../../types/chat/chat.types";
 
 
 const apiClient = axios.create({
@@ -437,3 +438,32 @@ export const fetchTrainerUsersPTPlans = async (): Promise<IGetTrainerUsersPTPlan
     throw error;
   }
 };
+
+export const getChatSummary = async (): Promise<IGetChatSummaryResponseDTO> => {
+  try {
+    const response = await apiClient.get('/chat/conversations/summary');
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch chat summary:', error);
+    throw error;
+  }
+};
+
+/////////////////////////////////////////////////////////////////////////////////
+
+export const getConversationMessages = async (
+  conversationId: string,
+  params: { userId: string; before?: string; after?: string; limit: number }
+): Promise<GetConversationMessagesResponseDTO> => {
+  try {
+    const response = await apiClient.get(`/chat/conversations/${conversationId}/messages`, {
+      params, // { userId, before, after, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch conversation messages:", error);
+    throw error;
+  }
+};
+
+

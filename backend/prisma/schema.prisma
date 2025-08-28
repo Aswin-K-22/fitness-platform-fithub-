@@ -102,6 +102,7 @@ model Trainer {
   ptPlans         PTPlan[]               @relation
   trainerEarnings TrainerEarning[]       @relation
   gymAssignments  TrainerGymAssignment[] @relation
+ 
 }
 
 type Certification {
@@ -460,4 +461,63 @@ model TrainerEarning {
 enum EarningType {
   FixedSalary
   PTCommission
+}
+
+enum ChatParticipantType {
+  USER
+  TRAINER
+}
+
+
+model Conversation {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  title         String?           
+  isGroup       Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Denormalized last message for fast access
+  lastMessageId String?           @db.ObjectId @unique
+  lastMessage   Message?          @relation("LastMessage", fields: [lastMessageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  participants  ConversationUser[]
+  messages      Message[]
+}
+
+model ConversationUser {
+  id                    String           @id @default(auto()) @map("_id") @db.ObjectId
+  conversation          Conversation     @relation(fields: [conversationId], references: [id])
+  conversationId        String           @db.ObjectId
+  participantId         String           @db.ObjectId
+  participantRoleType   ChatParticipantType
+  lastReadAt            DateTime?        // Timestamp of last message read for this participant in this conversation
+
+  @@unique([conversationId, participantId, participantRoleType])
+}
+
+
+model Message {
+  id                String            @id @default(auto()) @map("_id") @db.ObjectId
+  conversation      Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId    String            @db.ObjectId
+  senderId          String            @db.ObjectId
+  senderType        ChatParticipantType
+  content           String
+  createdAt         DateTime          @default(now())
+
+  reads             MessageRead[]
+  lastMessageOf     Conversation?     @relation("LastMessage")
+}
+
+
+
+model MessageRead {
+  id                String            @id @default(auto()) @map("_id") @db.ObjectId
+  message           Message           @relation(fields: [messageId], references: [id])
+  messageId         String            @db.ObjectId
+  participantId     String            @db.ObjectId
+  participantType   ChatParticipantType
+  readAt            DateTime?
+
+  @@unique([messageId, participantId, participantType])
 }

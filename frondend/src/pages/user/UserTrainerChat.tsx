@@ -1,435 +1,77 @@
+// src/pages/user/UserTrainerChat.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  PaperAirplaneIcon, 
-  VideoCameraIcon, 
-  PhoneIcon, 
+import {
+  PaperAirplaneIcon,
+  VideoCameraIcon,
+  PhoneIcon,
   EllipsisVerticalIcon,
-
   CheckIcon,
   CheckBadgeIcon,
   MagnifyingGlassIcon,
-  Bars3Icon
+  Bars3Icon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon, BoltIcon } from '@heroicons/react/24/solid';
+import { useSelector,  } from 'react-redux';
+import { useLocation } from 'react-router-dom';
+import type { RootState,  } from '../../store/store';
+import { getChatSummary, getUserCurrentPTPlans, getConversationMessages } from '../../services/api/userApi';
+import { getUserChatSocket, sendUserMessage, joinUserConversation, emitUserTyping, markUserMessageRead } from '../../services/sockets/userChatSocket';
+import type { IUserTrainerWithPlansDTO } from '../../types/dtos/IUserCurrentPTPlanDTO';
+import type { IChatSummaryItemDTO, GetConversationMessagesResponseDTO } from '../../types/chat/chat.types';
+import type { ChatParticipantType, MessageDTO, MessageReadEvent, MessageSentAck, TypingEvent, UserStatusEvent } from '../../types/chat/chatSocket.types';
+import { debounce } from 'lodash';
 
-// DTOs
-interface IUserPurchaseDTO {
-  id: string | null;
-  status: string;
-  startDate: string;
-  endDate: string;
-  paymentId?: string | null;
-  price?: number | null;
-  currency: string;
-  paymentStatus?: string | null;
-  paymentDate?: string | null;
-  createdAt: string;
-  updatedAt: string;
+// Define IChatMessage interface to include client-side properties
+interface IChatMessage  {
+  read: boolean;
+  isPending?: boolean;
+   id: string;
+   conversationId: string | null;
+    senderId: string;
+    senderType: ChatParticipantType;
+    content: string;
+    createdAt: string;
 }
 
-interface IUserPlanWithPurchaseDTO {
-  plan: {
-    id: string | null;
-    title: string;
-    category: string;
-    mode: string;
-    description: string;
-    goal: string;
-    features: string[];
-    duration: number;
-    image: string | null;
-    trainerPrice: number;
-    totalPrice: number | null;
-    verifiedByAdmin: boolean;
-  };
-  purchase: IUserPurchaseDTO;
+// Extend IChatSummaryItemDTO with trainer and online status
+interface ExtendedChatSummaryItem extends IChatSummaryItemDTO {
+  trainer: IUserTrainerWithPlansDTO['trainer'];
+  isOnline: boolean;
 }
 
-interface IUserTrainerWithPlansDTO {
-  trainer: {
-    id: string | null;
-    name: string;
-    profilePic: string | null;
-    specialties: string[];
-    experienceLevel?: string | null;
-    bio?: string | null;
-  };
-  plans: IUserPlanWithPurchaseDTO[];
-  lastMessage?: IMessage;
-  unreadCount?: number;
-  isOnline?: boolean;
-}
-
-interface IMessage {
-  id: string;
-  sender: 'user' | 'trainer';
-  content: string;
-  timestamp: string;
-  status?: 'sent' | 'delivered' | 'read';
-  type?: 'text' | 'image' | 'workout';
-}
-
-// Dummy data for multiple trainers
-const dummyTrainers: IUserTrainerWithPlansDTO[] = [
-  {
-    trainer: {
-      id: '1',
-      name: 'Sarah Mitchell',
-      profilePic: 'https://images.unsplash.com/photo-1594736797933-d0c95d7a0fa0?w=150&h=150&fit=crop&crop=face',
-      specialties: ['HIIT Training', 'Nutrition Coaching', 'Weight Loss', 'Strength Building'],
-      experienceLevel: 'Expert (8+ years)',
-      bio: 'Certified personal trainer specializing in transformative fitness journeys.',
-    },
-    plans: [{
-      plan: {
-        id: '1',
-        title: 'Premium Transformation Package',
-        category: 'Weight Loss',
-        mode: 'Hybrid',
-        description: 'Complete body transformation with personalized workouts and nutrition',
-        goal: 'Lose 15-20 lbs in 12 weeks',
-        features: ['1-on-1 Sessions', 'Meal Planning', '24/7 Support', 'Progress Tracking'],
-        duration: 84,
-        image: null,
-        trainerPrice: 299,
-        totalPrice: 399,
-        verifiedByAdmin: true,
-      },
-      purchase: {
-        id: '1',
-        status: 'active',
-        startDate: '2024-01-15',
-        endDate: '2024-04-15',
-        paymentId: 'pay_123456',
-        price: 399,
-        currency: 'USD',
-        paymentStatus: 'completed',
-        paymentDate: '2024-01-15',
-        createdAt: '2024-01-15',
-        updatedAt: '2024-01-15',
-      },
-    }],
-    lastMessage: {
-      id: '5',
-      sender: 'trainer',
-      content: 'Great question! Yes, do a 5-minute light warm-up. I\'ll send you the workout plan in a moment.',
-      timestamp: '2:36 PM',
-      status: 'sent',
-    },
-    unreadCount: 0,
-    isOnline: true,
-  },
-  {
-    trainer: {
-      id: '2',
-      name: 'Mike Johnson',
-      profilePic: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      specialties: ['Strength Training', 'Powerlifting', 'Muscle Building'],
-      experienceLevel: 'Expert (10+ years)',
-      bio: 'Former competitive powerlifter, now helping others build strength and muscle.',
-    },
-    plans: [{
-      plan: {
-        id: '2',
-        title: 'Strength & Power Program',
-        category: 'Strength Building',
-        mode: 'In-Person',
-        description: 'Build serious strength with powerlifting techniques',
-        goal: 'Increase lifts by 30% in 16 weeks',
-        features: ['1-on-1 Sessions', 'Form Correction', 'Competition Prep'],
-        duration: 112,
-        image: null,
-        trainerPrice: 450,
-        totalPrice: 550,
-        verifiedByAdmin: true,
-      },
-      purchase: {
-        id: '2',
-        status: 'active',
-        startDate: '2024-02-01',
-        endDate: '2024-05-25',
-        paymentId: 'pay_789012',
-        price: 550,
-        currency: 'USD',
-        paymentStatus: 'completed',
-        paymentDate: '2024-02-01',
-        createdAt: '2024-02-01',
-        updatedAt: '2024-02-01',
-      },
-    }],
-    lastMessage: {
-      id: '1',
-      sender: 'trainer',
-      content: 'Hey! Ready for deadlift day? We\'re going for a new PR today! 💪',
-      timestamp: '1:45 PM',
-      status: 'read',
-    },
-    unreadCount: 3,
-    isOnline: true,
-  },
-  {
-    trainer: {
-      id: '3',
-      name: 'Emma Davis',
-      profilePic: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
-      specialties: ['Yoga', 'Flexibility', 'Mindfulness', 'Recovery'],
-      experienceLevel: 'Expert (6+ years)',
-      bio: 'Yoga instructor focused on mind-body connection and holistic wellness.',
-    },
-    plans: [{
-      plan: {
-        id: '3',
-        title: 'Mindful Movement Program',
-        category: 'Flexibility',
-        mode: 'Virtual',
-        description: 'Improve flexibility and mindfulness through yoga',
-        goal: 'Better flexibility and mental wellness',
-        features: ['Virtual Sessions', 'Meditation Guides', 'Flexibility Tracking'],
-        duration: 60,
-        image: null,
-        trainerPrice: 180,
-        totalPrice: 250,
-        verifiedByAdmin: true,
-      },
-      purchase: {
-        id: '3',
-        status: 'active',
-        startDate: '2024-01-20',
-        endDate: '2024-03-20',
-        paymentId: 'pay_345678',
-        price: 250,
-        currency: 'USD',
-        paymentStatus: 'completed',
-        paymentDate: '2024-01-20',
-        createdAt: '2024-01-20',
-        updatedAt: '2024-01-20',
-      },
-    }],
-    lastMessage: {
-      id: '1',
-      sender: 'user',
-      content: 'Thank you for the meditation session yesterday. I felt so relaxed!',
-      timestamp: 'Yesterday',
-      status: 'read',
-    },
-    unreadCount: 1,
-    isOnline: false,
-  },
-  {
-    trainer: {
-      id: '4',
-      name: 'Alex Chen',
-      profilePic: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      specialties: ['Cardio', 'Running', 'Marathon Training', 'Endurance'],
-      experienceLevel: 'Advanced (5+ years)',
-      bio: 'Marathon runner and cardio specialist helping you build endurance.',
-    },
-    plans: [{
-      plan: {
-        id: '4',
-        title: 'Marathon Training Plan',
-        category: 'Cardio',
-        mode: 'Hybrid',
-        description: 'Complete marathon training program',
-        goal: 'Complete a marathon in under 4 hours',
-        features: ['Running Plans', 'Pace Training', 'Nutrition Guidance'],
-        duration: 120,
-        image: null,
-        trainerPrice: 320,
-        totalPrice: 420,
-        verifiedByAdmin: true,
-      },
-      purchase: {
-        id: '4',
-        status: 'active',
-        startDate: '2024-01-10',
-        endDate: '2024-05-10',
-        paymentId: 'pay_901234',
-        price: 420,
-        currency: 'USD',
-        paymentStatus: 'completed',
-        paymentDate: '2024-01-10',
-        createdAt: '2024-01-10',
-        updatedAt: '2024-01-10',
-      },
-    }],
-    lastMessage: {
-      id: '1',
-      sender: 'trainer',
-      content: 'Great 5K run today! Your pace is improving consistently. Keep it up! 🏃‍♀️',
-      timestamp: 'Monday',
-      status: 'read',
-    },
-    unreadCount: 0,
-    isOnline: false,
-  },
-];
-
-// Sample messages for each trainer
-const messagesByTrainer: { [key: string]: IMessage[] } = {
-  '1': [
-    {
-      id: '1',
-      sender: 'trainer',
-      content: 'Hey! Ready for today\'s HIIT session? 💪 I\'ve prepared an intense 30-minute workout that will really challenge you!',
-      timestamp: '2:30 PM',
-      status: 'read',
-    },
-    {
-      id: '2',
-      sender: 'user',
-      content: 'Absolutely! I\'m pumped and ready to go. What equipment do I need today?',
-      timestamp: '2:32 PM',
-      status: 'read',
-    },
-    {
-      id: '3',
-      sender: 'trainer',
-      content: 'Just your yoga mat, a water bottle, and maybe a towel 😅 We\'ll be doing bodyweight exercises focusing on your core and cardio endurance.',
-      timestamp: '2:33 PM',
-      status: 'read',
-    },
-    {
-      id: '4',
-      sender: 'user',
-      content: 'Perfect! All set. Should I warm up before we start?',
-      timestamp: '2:35 PM',
-      status: 'delivered',
-    },
-    {
-      id: '5',
-      sender: 'trainer',
-      content: 'Great question! Yes, do a 5-minute light warm-up. I\'ll send you the workout plan in a moment.',
-      timestamp: '2:36 PM',
-      status: 'sent',
-    },
-  ],
-  '2': [
-    {
-      id: '1',
-      sender: 'trainer',
-      content: 'Hey! Ready for deadlift day? We\'re going for a new PR today! 💪',
-      timestamp: '1:45 PM',
-      status: 'read',
-    },
-    {
-      id: '2',
-      sender: 'user',
-      content: 'I\'m a bit nervous but excited! What weight are we targeting?',
-      timestamp: '1:47 PM',
-      status: 'read',
-    },
-    {
-      id: '3',
-      sender: 'trainer',
-      content: 'We\'ll start with your current max and work our way up. Remember, form is everything!',
-      timestamp: '1:48 PM',
-      status: 'sent',
-    },
-    {
-      id: '4',
-      sender: 'trainer',
-      content: 'Don\'t forget to bring your lifting belt and knee sleeves.',
-      timestamp: '1:49 PM',
-      status: 'sent',
-    },
-    {
-      id: '5',
-      sender: 'trainer',
-      content: 'See you at 3 PM sharp! 🏋️‍♂️',
-      timestamp: '1:50 PM',
-      status: 'sent',
-    },
-  ],
-  '3': [
-    {
-      id: '1',
-      sender: 'user',
-      content: 'Thank you for the meditation session yesterday. I felt so relaxed!',
-      timestamp: 'Yesterday',
-      status: 'read',
-    },
-    {
-      id: '2',
-      sender: 'trainer',
-      content: 'I\'m so glad to hear that! How did you sleep after the session?',
-      timestamp: 'Yesterday',
-      status: 'read',
-    },
-    {
-      id: '3',
-      sender: 'user',
-      content: 'Like a baby! Best sleep I\'ve had in weeks.',
-      timestamp: 'Yesterday',
-      status: 'read',
-    },
-    {
-      id: '4',
-      sender: 'trainer',
-      content: 'Perfect! Are you ready for today\'s flow sequence? We\'ll focus on hip flexibility.',
-      timestamp: '10:30 AM',
-      status: 'sent',
-    },
-  ],
-  '4': [
-    {
-      id: '1',
-      sender: 'trainer',
-      content: 'Great 5K run today! Your pace is improving consistently. Keep it up! 🏃‍♀️',
-      timestamp: 'Monday',
-      status: 'read',
-    },
-    {
-      id: '2',
-      sender: 'user',
-      content: 'Thanks! I really felt the difference in my breathing today.',
-      timestamp: 'Monday',
-      status: 'read',
-    },
-    {
-      id: '3',
-      sender: 'trainer',
-      content: 'That\'s the cardio training paying off! Ready for tomorrow\'s interval training?',
-      timestamp: 'Monday',
-      status: 'read',
-    },
-  ],
-};
-
-const MessageBubble: React.FC<{ message: IMessage; isTrainer: boolean; trainerPic?: string; trainerName?: string }> = ({ 
-  message, 
-  isTrainer, 
-  trainerPic, 
-  trainerName 
-}) => {
+// MessageBubble Component
+const MessageBubble: React.FC<{
+  message: IChatMessage;
+  isTrainer: boolean;
+  trainerPic?: string;
+  trainerName?: string;
+}> = ({ message, isTrainer, trainerPic, trainerName }) => {
   const getStatusIcon = () => {
-    if (message.sender === 'user') {
-      switch (message.status) {
-        case 'sent':
-          return <CheckIcon className="w-4 h-4 text-gray-400" />;
-        case 'delivered':
-          return (
-            <div className="flex">
-              <CheckIcon className="w-4 h-4 text-gray-400" />
-              <CheckIcon className="w-4 h-4 text-gray-400 -ml-2" />
-            </div>
-          );
-        case 'read':
-          return (
-            <div className="flex">
-              <CheckIcon className="w-4 h-4 text-blue-500" />
-              <CheckIcon className="w-4 h-4 text-blue-500 -ml-2" />
-            </div>
-          );
-        default:
-          return null;
+    if (message.senderType === 'USER') {
+      if (message.isPending) {
+        return <span className="text-xs text-gray-400">Sending...</span>;
       }
+      return message.read ? (
+        <div className="flex">
+          <CheckIcon className="w-4 h-4 text-blue-500" />
+          <CheckIcon className="w-4 h-4 text-blue-500 -ml-2" />
+        </div>
+      ) : (
+        <div className="flex">
+          <CheckIcon className="w-4 h-4 text-gray-400" />
+          <CheckIcon className="w-4 h-4 text-gray-400 -ml-2" />
+        </div>
+      );
     }
     return null;
   };
 
   return (
-    <div className={`flex ${isTrainer ? 'justify-start' : 'justify-end'} mb-4 animate-in slide-in-from-bottom-2 duration-300`}>
+    <div
+      className={`flex ${isTrainer ? 'justify-start' : 'justify-end'} mb-4 animate-in slide-in-from-bottom-2 duration-300 ${
+        message.isPending ? 'opacity-70' : ''
+      }`}
+    >
       <div className={`max-w-xs lg:max-w-md ${isTrainer ? 'order-2' : 'order-1'}`}>
         <div
           className={`px-4 py-3 rounded-2xl shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl ${
@@ -441,7 +83,9 @@ const MessageBubble: React.FC<{ message: IMessage; isTrainer: boolean; trainerPi
           <p className="text-sm leading-relaxed">{message.content}</p>
         </div>
         <div className={`flex items-center mt-1 space-x-1 ${isTrainer ? 'justify-start' : 'justify-end'}`}>
-          <span className="text-xs text-gray-500">{message.timestamp}</span>
+          <span className="text-xs text-gray-500">
+            {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
           {!isTrainer && getStatusIcon()}
         </div>
       </div>
@@ -458,9 +102,10 @@ const MessageBubble: React.FC<{ message: IMessage; isTrainer: boolean; trainerPi
   );
 };
 
-const TrainerListItem: React.FC<{ 
-  trainer: IUserTrainerWithPlansDTO; 
-  isActive: boolean; 
+// TrainerListItem Component
+const TrainerListItem: React.FC<{
+  trainer: ExtendedChatSummaryItem;
+  isActive: boolean;
   onClick: () => void;
 }> = ({ trainer, isActive, onClick }) => {
   return (
@@ -477,9 +122,10 @@ const TrainerListItem: React.FC<{
             className="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-md"
             alt={trainer.trainer.name}
           />
-          <div className={`absolute bottom-0 right-0 w-3 h-3 ${trainer.isOnline ? 'bg-green-400' : 'bg-gray-300'} rounded-full ring-2 ring-white`}></div>
+          <div
+            className={`absolute bottom-0 right-0 w-3 h-3 ${trainer.isOnline ? 'bg-green-400' : 'bg-gray-300'} rounded-full ring-2 ring-white`}
+          ></div>
         </div>
-        
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -492,20 +138,18 @@ const TrainerListItem: React.FC<{
               </span>
             )}
           </div>
-          
-          <p className="text-xs text-gray-500 truncate">
-            {trainer.trainer.specialties[0]}
-          </p>
-          
+          <p className="text-xs text-gray-500 truncate">{trainer.trainer.specialties[0]}</p>
           {trainer.lastMessage && (
             <p className="text-xs text-gray-600 truncate mt-1">
-              {trainer.lastMessage.sender === 'user' ? 'You: ' : ''}
-              {trainer.lastMessage.content}
+              {trainer.lastMessage.senderType === 'USER' ? 'You: ' : ''}{trainer.lastMessage.content}
             </p>
           )}
-          
           <span className="text-xs text-gray-400">
-            {trainer.lastMessage?.timestamp}
+            {trainer.lastMessage?.createdAt &&
+              new Date(trainer.lastMessage.createdAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
           </span>
         </div>
       </div>
@@ -513,15 +157,18 @@ const TrainerListItem: React.FC<{
   );
 };
 
-const MultiTrainerChat: React.FC = () => {
-  const [trainers] = useState<IUserTrainerWithPlansDTO[]>(dummyTrainers);
-  const [selectedTrainer, setSelectedTrainer] = useState<IUserTrainerWithPlansDTO | null>(trainers[0]);
-  const [messages, setMessages] = useState<IMessage[]>(messagesByTrainer['1'] || []);
+// Main Component
+const UserTrainerChat: React.FC = () => {
+  const user = useSelector((state: RootState) => state.userAuth.user);
+  const [trainers, setTrainers] = useState<ExtendedChatSummaryItem[]>([]);
+  const [selectedTrainer, setSelectedTrainer] = useState<ExtendedChatSummaryItem | null>(null);
+  const [messages, setMessages] = useState<IChatMessage[]>([]);
   const [messageInput, setMessageInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -531,54 +178,305 @@ const MultiTrainerChat: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleTrainerSelect = (trainer: IUserTrainerWithPlansDTO) => {
-    setSelectedTrainer(trainer);
-    setMessages(messagesByTrainer[trainer.trainer.id || '1'] || []);
-  };
+  // Fetch trainers and chat summaries
+  useEffect(() => {
+    const fetchTrainersAndSummaries = async () => {
+      try {
+        const [trainersData, summariesData] = await Promise.all([
+          getUserCurrentPTPlans(),
+          getChatSummary(),
+        ]);
 
-  const handleSendMessage = () => {
-    if (messageInput.trim() && selectedTrainer) {
-      const newMessage: IMessage = {
-        id: Date.now().toString(),
-        sender: 'user',
-        content: messageInput,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        status: 'sent',
+        const extendedTrainers: ExtendedChatSummaryItem[] = trainersData.map((trainer) => {
+          const summary = summariesData.data?.find(
+            (s) => s.participantId === trainer.trainer.id && s.participantRole === 'TRAINER'
+          );
+          return {
+            ...summary,
+            trainer: trainer.trainer,
+            isOnline: false, // Default, updated via socket
+            participantId: trainer.trainer.id!,
+            participantRole: 'TRAINER' as const,
+            conversationId: summary?.conversationId,
+            lastMessage: summary?.lastMessage,
+            unreadCount: summary?.unreadCount || 0,
+          };
+        });
+
+        setTrainers(extendedTrainers);
+
+        // Check if a trainerId was passed in the location state
+        const trainerId = location.state?.trainerId;
+        if (trainerId) {
+          const selected = extendedTrainers.find((t) => t.trainer.id === trainerId);
+          if (selected) {
+            setSelectedTrainer(selected);
+          } else {
+            setSelectedTrainer(extendedTrainers[0] || null);
+          }
+        } else if (extendedTrainers.length > 0) {
+          setSelectedTrainer(extendedTrainers[0]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch trainers or chat summaries:', error);
+      }
+    };
+    fetchTrainersAndSummaries();
+  }, [location.state]);
+
+  // Initialize WebSocket and handle events
+  useEffect(() => {
+    const socket = getUserChatSocket();
+  if (socket && user?.id && selectedTrainer?.conversationId) {
+    console.log(`[UserTrainerChat] Joining conversationId=${selectedTrainer.conversationId} for userId=${user.id}`);
+    joinUserConversation(selectedTrainer.conversationId);
+
+    socket.on('joinedConversation', ({ conversationId }) => {
+      console.log(`[UserTrainerChat] Successfully joined conversationId=${conversationId}`);
+    });
+
+    socket.on('error', (error) => {
+      console.error(`[UserTrainerChat] Socket error for conversationId=${selectedTrainer.conversationId}:`, error);
+    });
+
+
+
+    socket.on('conversationCreated', ({ conversationId }: { conversationId: string }) => {
+      console.log(`[UserTrainerChat] New conversation created: conversationId=${conversationId}`);
+      setSelectedTrainer((prev) =>
+        prev ? { ...prev, conversationId } : prev
+      );
+      joinUserConversation(conversationId);
+      setTrainers((prev) =>
+        prev.map((t) =>
+          t.trainer.id === selectedTrainer.trainer.id
+            ? { ...t, conversationId }
+            : t
+        )
+      );
+    });
+
+      // Handle message sent acknowledgment
+ socket.on('messageSent', (ack: MessageSentAck) => {
+  if (ack.success && ack.tempId && ack.message) {
+    setMessages((prev) =>
+      prev.map(msg =>
+        msg.id === ack.tempId
+          ? {
+              ...ack.message, // properties from MessageDTO
+              read: true,     // or appropriate value
+              isPending: false,
+              conversationId: ack.message?.conversationId || null,
+            } as IChatMessage // explicit casting, optional if shape matches
+          : msg
+      )
+        );
+        // Update last message in trainer list
+        setTrainers((prev) =>
+          prev.map((t) =>
+            t.conversationId === ack.message?.conversationId
+              ? { ...t, lastMessage: ack.message, unreadCount: 0 }
+              : t
+          )
+        );
+      } else {
+        console.error('Message send failed:', ack.error);
+        // Remove optimistic message on failure
+        setMessages((prev) => prev.filter((msg) => msg.id !== ack.tempId));
+      }
+    });
+    
+
+      // Handle new messages
+      socket.on('newMessage', (newMessage: MessageDTO) => {
+        console.log(`[UserTrainerChat] Received newMessage for conversationId=${newMessage.conversationId}:`, newMessage);
+
+        if (
+          newMessage.senderId === selectedTrainer?.trainer.id &&
+          newMessage.conversationId === selectedTrainer?.conversationId
+        ) {
+          setMessages((prev) => [
+            ...prev,
+            { ...newMessage, read: false, isPending: false },
+          ]);
+          markUserMessageRead(newMessage.conversationId, newMessage.id);
+        }
+        // Update unread count in trainer list
+        setTrainers((prev) =>
+          prev.map((t) =>
+            t.conversationId === newMessage.conversationId && t.trainer.id !== selectedTrainer?.trainer.id
+              ? { ...t, unreadCount: t.unreadCount + 1, lastMessage: newMessage }
+              : t
+          )
+        );
+      });
+
+      // Handle message read acknowledgment
+      socket.on('messageRead', (data: MessageReadEvent) => {
+        if (data.conversationId === selectedTrainer?.conversationId) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === data.messageId ? { ...msg, read: true } : msg
+            )
+          );
+        }
+      });
+
+      // Handle typing events
+    socket.on('conversation:typing', (data: TypingEvent) => {
+      console.log(`[UserTrainerChat] Received typing event:`, data);
+      if (
+        data.conversationId === selectedTrainer?.conversationId &&
+        data.senderType === 'TRAINER'
+      ) {
+        setIsTyping(data.isTyping);
+        if (data.isTyping) {
+          setTimeout(() => setIsTyping(false), 2000);
+        }
+      }
+    });
+
+
+      // Handle user status (online/offline)
+  socket.on('userStatus', (data: UserStatusEvent) => {
+      console.log(`[UserTrainerChat] Received userStatus event: userId=${data.userId}, status=${data.status}`);
+      setTrainers((prev) =>
+        prev.map((t) => {
+          if (t.trainer.id === data.userId) {
+            console.log(`[UserTrainerChat] Updating isOnline for trainerId=${t.trainer.id} to ${data.status === 'online'}`);
+            return { ...t, isOnline: data.status === 'online' };
+          }
+          return t;
+        })
+      );
+    });
+
+      return () => {
+        socket.off('joinedConversation');
+      socket.off('error');
+      socket.off('conversationCreated');
+        socket.off('newMessage');
+        socket.off('messageRead');
+        socket.off('conversation:typing');
+        socket.off('userStatus');
       };
-      setMessages(prev => [...prev, newMessage]);
-      setMessageInput('');
-
-      // Update the messages in the messagesByTrainer object
-      messagesByTrainer[selectedTrainer.trainer.id || '1'] = [...messages, newMessage];
-
-      // Simulate message status updates
-      setTimeout(() => {
-        setMessages(prev => prev.map(msg => 
-          msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
-        ));
-      }, 1000);
-
-      setTimeout(() => {
-        setMessages(prev => prev.map(msg => 
-          msg.id === newMessage.id ? { ...msg, status: 'read' } : msg
-        ));
-      }, 2000);
-
-      // Simulate trainer typing
-      setTimeout(() => {
-        setIsTyping(true);
-        setTimeout(() => {
-          setIsTyping(false);
-        }, 2000);
-      }, 1500);
     }
+  }, [selectedTrainer, user]);
+
+  // Fetch messages for selected trainer
+  useEffect(() => {
+    if (selectedTrainer?.conversationId && user?.id) {
+      const fetchMessages = async () => {
+        try {
+          const response: GetConversationMessagesResponseDTO = await getConversationMessages(
+            selectedTrainer.conversationId!,
+            { userId: user.id, limit: 50 }
+          );
+          if (response.success && response.data?.messages) {
+            const messagesWithStatus: IChatMessage[] = response.data.messages.map((msg) => ({
+              ...msg,
+              read: msg.senderType === 'TRAINER' ? true : false, // Assume trainer messages are read
+              isPending: false,
+            }));
+            setMessages(messagesWithStatus);
+            // Mark unread messages as read
+            const unreadMessages = messagesWithStatus.filter(
+              (msg) => msg.senderType === 'TRAINER' && !msg.read
+            );
+            if (unreadMessages.length > 0) {
+              markUserMessageRead(selectedTrainer.conversationId!);
+              setTrainers((prev) =>
+                prev.map((t) =>
+                  t.conversationId === selectedTrainer.conversationId
+                    ? { ...t, unreadCount: 0 }
+                    : t
+                )
+              );
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch messages:', error);
+        }
+      };
+      fetchMessages();
+    } else {
+      setMessages([]);
+    }
+  }, [selectedTrainer, user]);
+
+  // Emit typing event
+useEffect(() => {
+  if (selectedTrainer?.conversationId && messageInput.trim()) {
+    const convId = selectedTrainer.conversationId;
+    const debouncedEmitTyping = debounce(() => {
+      console.log(`[UserTrainerChat] Emitting typing event for conversationId=${convId}, isTyping=true`);
+      emitUserTyping(convId, true);
+    }, 300);
+
+    debouncedEmitTyping();
+
+    const timeout = setTimeout(() => {
+      console.log(`[UserTrainerChat] Emitting typing event for conversationId=${convId}, isTyping=false`);
+      emitUserTyping(convId, false);
+    }, 2000);
+
+    return () => {
+      debouncedEmitTyping.cancel();
+      clearTimeout(timeout);
+    };
+  }
+}, [messageInput, selectedTrainer?.conversationId]);
+
+
+
+  const handleTrainerSelect = (trainer: ExtendedChatSummaryItem) => {
+    setSelectedTrainer(trainer);
+    setMessages([]);
   };
 
-  const filteredTrainers = trainers.filter(trainer =>
-    trainer.trainer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    trainer.trainer.specialties.some(specialty => 
-      specialty.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+// pages/user/UserTrainerChat.tsx
+const handleSendMessage = async () => {
+  if (!messageInput.trim() || !user || !selectedTrainer || !selectedTrainer.trainer.id) return;
+
+  const tempId = `pending-${user.id}-${selectedTrainer.trainer.id}-${Date.now()}`;
+  const newMessage: IChatMessage = {
+    id: tempId,
+    conversationId: selectedTrainer.conversationId || null,
+    senderId: user.id,
+    senderType: 'USER',
+    content: messageInput,
+    createdAt: new Date().toISOString(),
+    read: false,
+    isPending: true,
+  };
+
+  // Optimistic UI update
+  setMessages((prev) => [...prev, newMessage]);
+  setMessageInput('');
+
+  try {
+    sendUserMessage({
+      conversationId: selectedTrainer.conversationId || null,
+      content: messageInput,
+      tempId,
+      receiverId: selectedTrainer.trainer.id,
+      isGroup: false,
+    });
+    // Note: Do not update trainers list here; wait for conversationCreated event
+  } catch (error) {
+    console.error('Failed to send message:', error);
+    setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+  }
+};
+
+
+
+  const filteredTrainers = trainers.filter(
+    (trainer) =>
+      trainer.trainer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      trainer.trainer.specialties.some((specialty) =>
+        specialty.toLowerCase().includes(searchQuery.toLowerCase())
+      )
   );
 
   return (
@@ -590,11 +488,12 @@ const MultiTrainerChat: React.FC = () => {
       </div>
 
       {/* Sidebar - Trainer List */}
-      <div className={`relative bg-white/90 backdrop-blur-xl border-r border-gray-200 shadow-xl transition-all duration-300 ${
-        isSidebarOpen ? 'w-80' : 'w-0'
-      } overflow-hidden`}>
+      <div
+        className={`relative bg-white/90 backdrop-blur-xl border-r border-gray-200 shadow-xl transition-all duration-300 ${
+          isSidebarOpen ? 'w-80' : 'w-0'
+        } overflow-hidden`}
+      >
         <div className="h-full flex flex-col">
-          {/* Sidebar Header */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">Trainers</h2>
@@ -605,8 +504,6 @@ const MultiTrainerChat: React.FC = () => {
                 <Bars3Icon className="w-5 h-5 text-gray-600" />
               </button>
             </div>
-            
-            {/* Search */}
             <div className="relative">
               <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
@@ -618,8 +515,6 @@ const MultiTrainerChat: React.FC = () => {
               />
             </div>
           </div>
-
-          {/* Trainer List */}
           <div className="flex-1 overflow-y-auto">
             {filteredTrainers.map((trainer) => (
               <TrainerListItem
@@ -637,7 +532,6 @@ const MultiTrainerChat: React.FC = () => {
       <div className="flex-1 flex flex-col relative">
         {selectedTrainer ? (
           <>
-            {/* Chat Header */}
             <header className="bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg">
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center space-x-4">
@@ -647,7 +541,6 @@ const MultiTrainerChat: React.FC = () => {
                   >
                     <Bars3Icon className="w-6 h-6 text-gray-600" />
                   </button>
-                  
                   <div className="flex items-center space-x-3">
                     <div className="relative">
                       <img
@@ -655,24 +548,28 @@ const MultiTrainerChat: React.FC = () => {
                         className="w-12 h-12 rounded-full object-cover ring-3 ring-gradient-to-r from-blue-400 to-purple-500 shadow-lg"
                         alt={selectedTrainer.trainer.name}
                       />
-                      <div className={`absolute bottom-0 right-0 w-4 h-4 ${selectedTrainer.isOnline ? 'bg-green-400' : 'bg-gray-300'} rounded-full ring-2 ring-white shadow-md`}></div>
+                      <div
+                        className={`absolute bottom-0 right-0 w-4 h-4 ${
+                          selectedTrainer.isOnline ? 'bg-green-400' : 'bg-gray-300'
+                        } rounded-full ring-2 ring-white shadow-md`}
+                      ></div>
                     </div>
-                    
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
                         <h1 className="text-lg font-bold text-gray-900">{selectedTrainer.trainer.name}</h1>
                         <CheckBadgeIcon className="w-5 h-5 text-blue-500" />
                       </div>
                       <div className="flex items-center space-x-2">
-                        <div className={`w-2 h-2 ${selectedTrainer.isOnline ? 'bg-green-400 animate-pulse' : 'bg-gray-300'} rounded-full`}></div>
+                        <div
+                          className={`w-2 h-2 ${selectedTrainer.isOnline ? 'bg-green-400 animate-pulse' : 'bg-gray-300'} rounded-full`}
+                        ></div>
                         <span className="text-sm text-gray-600">
-                          {selectedTrainer.isOnline ? 'Online' : 'Offline'} • {selectedTrainer.trainer.experienceLevel}
+                          {selectedTrainer.isOnline ? 'Online' : 'Offline'} • {selectedTrainer.trainer.experienceLevel || 'N/A'}
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
-
                 <div className="flex items-center space-x-2">
                   <button className="p-3 rounded-full bg-gradient-to-r from-green-400 to-green-500 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
                     <PhoneIcon className="w-5 h-5" />
@@ -685,8 +582,6 @@ const MultiTrainerChat: React.FC = () => {
                   </button>
                 </div>
               </div>
-
-              {/* Trainer Specialties */}
               <div className="px-4 pb-4">
                 <div className="flex flex-wrap gap-2">
                   {selectedTrainer.trainer.specialties.slice(0, 3).map((specialty, index) => (
@@ -705,10 +600,7 @@ const MultiTrainerChat: React.FC = () => {
                 </div>
               </div>
             </header>
-
-            {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {/* Welcome Message */}
               <div className="text-center mb-6">
                 <div className="inline-flex items-center space-x-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full shadow-md">
                   <HeartIcon className="w-4 h-4 text-red-500" />
@@ -716,18 +608,15 @@ const MultiTrainerChat: React.FC = () => {
                   <BoltIcon className="w-4 h-4 text-yellow-500" />
                 </div>
               </div>
-
               {messages.map((message) => (
                 <MessageBubble
                   key={message.id}
                   message={message}
-                  isTrainer={message.sender === 'trainer'}
+                  isTrainer={message.senderType === 'TRAINER'}
                   trainerPic={selectedTrainer.trainer.profilePic || ''}
                   trainerName={selectedTrainer.trainer.name}
                 />
               ))}
-
-              {/* Typing Indicator */}
               {isTyping && (
                 <div className="flex justify-start mb-4">
                   <div className="flex items-center space-x-3">
@@ -746,11 +635,8 @@ const MultiTrainerChat: React.FC = () => {
                   </div>
                 </div>
               )}
-
               <div ref={messagesEndRef} />
             </div>
-
-            {/* Message Input */}
             <div className="bg-white/80 backdrop-blur-xl border-t border-white/20 p-4">
               <div className="flex items-center space-x-3">
                 <div className="flex-1 relative">
@@ -763,7 +649,6 @@ const MultiTrainerChat: React.FC = () => {
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   />
                 </div>
-                
                 <button
                   onClick={handleSendMessage}
                   disabled={!messageInput.trim()}
@@ -772,8 +657,6 @@ const MultiTrainerChat: React.FC = () => {
                   <PaperAirplaneIcon className="w-5 h-5 rotate-45" />
                 </button>
               </div>
-              
-              {/* Quick Actions */}
               <div className="flex items-center justify-center mt-3 space-x-4">
                 <button className="text-xs text-gray-500 hover:text-blue-600 transition-colors duration-200">
                   📅 Schedule Session
@@ -788,7 +671,6 @@ const MultiTrainerChat: React.FC = () => {
             </div>
           </>
         ) : (
-          /* No Trainer Selected State */
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
@@ -808,16 +690,11 @@ const MultiTrainerChat: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-10 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-10 lg:hidden" onClick={() => setIsSidebarOpen(false)} />
       )}
     </div>
   );
 };
 
-export default MultiTrainerChat;
+export default UserTrainerChat;

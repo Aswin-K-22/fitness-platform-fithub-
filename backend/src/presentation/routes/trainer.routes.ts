@@ -1,9 +1,6 @@
 //src/presentation/rotes/trainer.rotes.ts
 
 import { Router } from 'express';
-import { TrainerAuthController } from '../controllers/trainer/auth.controller';
-import { TrainerController } from '../controllers/trainer/trainer.controller';
-import { TrainerAuthMiddleware } from '../middlewares/trainer/trainerAuth.middleware';
 import { validateMiddleware } from '../middlewares/trainer/trainer.validate.middleware';
 import { refreshTokenMiddleware } from '../middlewares/trainer/trainerRefreshToken.middleware';
 import { ITrainerValidationMiddleware } from '@/app/middlewares/interfaces/trainer/ITrainerValidationMiddleware';
@@ -11,6 +8,7 @@ import { upload } from '@/infra/config/multerS3';
 import { ITrainerAuthController } from '@/app/controllers/interfaces/trainer/ITrainerAuthController';
 import { ITrainerController } from '@/app/controllers/interfaces/trainer/ITrainerController';
 import { ITrainerAuthMiddleware } from '@/app/middlewares/interfaces/trainer/ITrainerAuthMiddleware';
+import { ChatController } from '../controllers/chat/chatController';
 
 export class TrainerRoutes {
   public router: Router;
@@ -19,7 +17,8 @@ export class TrainerRoutes {
     private trainerAuthController: ITrainerAuthController,
     private trainerController: ITrainerController,
     private trainerAuthMiddleware: ITrainerAuthMiddleware,
-   private trainerValidationMiddleware: ITrainerValidationMiddleware
+   private trainerValidationMiddleware: ITrainerValidationMiddleware,
+     private chatController: ChatController,
 
   ) {
     this.router = Router();
@@ -139,6 +138,23 @@ this.router.get(
       this.trainerController.getUsersForTrainerPlans.bind(this.trainerController)
 );
 
+// GET /conversations/:id/messages?before=msg789&limit=20   // older messages
+// GET /conversations/:id/messages?after=msg123&limit=20    // newer messages
+// GET /conversations/:id/messages?limit=20                 // latest messages
+
+this.router.get(
+  '/chat/conversations/:id/messages',
+  this.trainerAuthMiddleware.auth.bind(this.trainerAuthMiddleware),
+  this.chatController.getConversationMessagesChatHistory.bind(this.chatController)
+);
+
+
+// trainer.routes.ts
+this.router.get(
+  '/chat/conversations/summary',
+  this.trainerAuthMiddleware.auth.bind(this.trainerAuthMiddleware),
+  this.chatController.getChatSummary.bind(this.chatController)
+);
     
   }
 }

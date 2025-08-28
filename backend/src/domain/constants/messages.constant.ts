@@ -1,5 +1,8 @@
 // src/domain/constants/messages.constant.ts
 export const MESSAGES = {
+  CONVERSATION_ALREADY_CREATED :"Conversation already exists",
+  CONVERSATION_CREATED_SUCCESSFULLY :'Conversation created successfully',
+  CONVERSATION_JOINED : 'CONVERSATION_JOINED',
   MEMBERSHIP_PURCHASE_SUCCESS: 'Membership purchased successfully',
   USER_LOGIN_SUCCESS: 'User logged in successfully',
   TRAINER_APPROVED: 'Trainer approved successfully',
@@ -29,6 +32,11 @@ export const MESSAGES = {
   TRAINER_PROFILE_UPDATED:'TRAINER_PROFILE_UPDATED',
   PTPLAN_ADMIN_PRICE_UPDATED:'PTPLAN_ADMIN_PRICE_UPDATED',
   PTPLAN_VERIFIED :'PTPLAN_VERIFIED', 
-  MEMBERSHIP_FETCHED : "Membership plans retrieved successfully "
+  MEMBERSHIP_FETCHED : "Membership plans retrieved successfully ",
+  CHAT_HISTORY_FETCHED : 'CHAT_HISTORY_FETCHED',
+  MESSAGES_MARKED_AS_READ : 'MESSAGES_MARKED_AS_REA',
+  MESSAGE_SENT: 'MESSAGE_SEND',
+  MESSAGE_MARKED_READ :'MESSAGE_MARKED_READ'
+
   
 };

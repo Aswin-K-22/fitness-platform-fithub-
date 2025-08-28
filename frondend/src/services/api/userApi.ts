@@ -16,7 +16,8 @@ import type { IMembershipPlansResponseDTO } from "../../types/dtos/IMembershipPl
 import type { FetchPTPlansResponse } from "../../types/pTPlan";
 import type { MembershipDTO } from "../../types/dtos/IGetUserCurrentPlansResponseDTO";
 import type { INotification } from "../../types/INotification";
-import type { IUserCurrentPTPlanDTO } from "../../types/dtos/IUserCurrentPTPlanDTO";
+import type { IUserTrainerWithPlansDTO} from "../../types/dtos/IUserCurrentPTPlanDTO";
+import type { IGetChatSummaryResponseDTO, GetConversationMessagesResponseDTO } from "../../types/chat/chat.types";
 
 
 
@@ -269,7 +270,7 @@ export const verifyPTPayment = async (data: {
   return res.data; // { success, message, data?, error? }
 };
 
-export const getUserCurrentPTPlans = async (): Promise<IUserCurrentPTPlanDTO[]> => {
+export const getUserCurrentPTPlans = async (): Promise<IUserTrainerWithPlansDTO[]> => {
   try {
     const response = await apiClient.get('/user-pt-plans');
     return response.data.data.data ?? [];
@@ -280,5 +281,29 @@ export const getUserCurrentPTPlans = async (): Promise<IUserCurrentPTPlanDTO[]> 
 };
 
 
+export const getChatSummary = async (): Promise<IGetChatSummaryResponseDTO> => {
+  try {
+    const response = await apiClient.get('/chat/conversations/summary');
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch chat summary:', error);
+    throw error;
+  }
+};
+
 /////////////////////////////////////////////////////////////////////////////////
 
+export const getConversationMessages = async (
+  conversationId: string,
+  params: { userId: string; before?: string; after?: string; limit: number }
+): Promise<GetConversationMessagesResponseDTO> => {
+  try {
+    const response = await apiClient.get(`/chat/conversations/${conversationId}/messages`, {
+      params, // { userId, before, after, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch conversation messages:", error);
+    throw error;
+  }
+};

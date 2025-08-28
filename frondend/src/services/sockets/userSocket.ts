@@ -14,11 +14,11 @@ let socket: Socket | null = null;
  */
 export function initUserSocket() {
   if (socket) {
-    console.log("[userSocket] initUserSocket() called but socket already exists");
+   // console.log("[userSocket] initUserSocket() called but socket already exists");
     return socket;
   }
 
-  console.log("[userSocket] Creating new Socket.io connection...");
+  //console.log("[userSocket] Creating new Socket.io connection...");
 
   socket = io(`${SOCKET_URL}/user`, {
     transports: ["websocket"],
@@ -37,9 +37,9 @@ export function initUserSocket() {
     joinUserRoom();
 
     try {
-      console.log("[userSocket] Fetching notifications after connect...");
+     // console.log("[userSocket] Fetching notifications after connect...");
       const { notifications } = await getNotifications(1, 10);
-      console.log(`[userSocket] ${notifications.length} notifications fetched`);
+    //  console.log(`[userSocket] ${notifications.length} notifications fetched`);
       store.dispatch(setUserNotifications(notifications));
     } catch (err) {
       console.error("[userSocket] Failed to fetch notifications after connect", err);
@@ -69,7 +69,7 @@ export function initUserSocket() {
    * Business events
    */
   socket.on("notification", (notif) => {
-    console.log("📩 [userSocket] Notification received:", notif);
+   // console.log("📩 [userSocket] Notification received:", notif);
     store.dispatch(addUserNotification(notif));
   });
 
@@ -92,10 +92,10 @@ socket.on('notificationRead', ({ notificationId }) => {
 function joinUserRoom() {
   const userId = store.getState().userAuth.user?.id;
   if (socket && userId) {
-    console.log(`[userSocket] Emitting 'join' for userId=${userId}`);
+    //console.log(`[userSocket] Emitting 'join' for userId=${userId}`);
     socket.emit("join", userId);
   } else {
-    console.warn("[userSocket] Cannot join room — missing socket or userId");
+   // console.warn("[userSocket] Cannot join room — missing socket or userId");
   }
 }
 
@@ -107,10 +107,10 @@ export function connectUserSocket() {
     initUserSocket();
   }
   if (socket && !socket.connected) {
-    console.log("[userSocket] Connecting...");
+    //console.log("[userSocket] Connecting...");
     socket.connect();
   } else {
-    console.log("[userSocket] Already connected");
+    //console.log("[userSocket] Already connected");
   }
 }
 
@@ -119,7 +119,7 @@ export function connectUserSocket() {
  */
 export function disconnectUserSocket() {
   if (socket) {
-    console.log(`[userSocket] Disconnecting socket: ${socket.id}`);
+    //console.log(`[userSocket] Disconnecting socket: ${socket.id}`);
     socket.disconnect();
     socket = null;
   } else {

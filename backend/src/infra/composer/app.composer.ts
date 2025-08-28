@@ -109,12 +109,29 @@ import { GetUserCurrentPTPlansUseCase } from '@/app/useCases/user/GetUserCurrent
 import { GetTrainerNotificationsUseCase } from '@/app/useCases/trainer/GetNotificationsUseCase';
 import { MarkTrainerNotificationReadUseCase } from '@/app/useCases/trainer/MarkTrainerNotificationReadUseCase';
 import { GetTrainerUsersPTPlansUseCase } from '@/app/useCases/trainer/GetTrainerCurrentUsersPTPlansUseCase';
+import { ChatService } from '../providers/chat.service';
+import { SendMessageUseCase } from '@/app/useCases/chat/SendMessageUseCase';
+import { MarkMessageReadUseCase } from '@/app/useCases/chat/MarkMessageReadUseCase';
+import { ChatController } from '@/presentation/controllers/chat/chatController';
+import { ConversationRepository } from '../repositories/conversation.repository';
+import { ConversationUserRepository } from '../repositories/conversationUser.repository';
+import { MessageRepository } from '../repositories/message.repository';
+import { MessageReadRepository } from '../repositories/messageRead.repository';
+import { CreateConversationUseCase } from '@/app/useCases/chat/CreateConversationUseCase';
+import { GetUserConversationsUseCase } from '@/app/useCases/chat/GetUserConversationsUseCase';
+import { JoinConversationUseCase } from '@/app/useCases/chat/joinConversation.usecase';
+import { GetConversationMessagesUseCase } from '@/app/useCases/chat/GetConversationMessagesUseCase';
+import { GetChatSummaryUseCase } from '@/app/useCases/chat/GetChatSummaryUseCase';
 
 
 export function composeApp() {
 
   const userNamespace = io.of('/user');
 const trainerNamespace = io.of('/trainer');
+
+// --- New Chat Namespaces
+const userChatNamespace = io.of('/chat/user');
+const trainerChatNamespace = io.of('/chat/trainer');
 
   // --- Repositories
   const usersRepository = new UsersRepository(prisma);
@@ -126,6 +143,10 @@ const trainerNamespace = io.of('/trainer');
   const notificationsRepository = new NotificationsRepository(prisma);
   const ptPlanRepository = new PTPlanRepository(prisma);
   const ptPlanPurchasesRepository = new PTPlanPurchasesRepository(prisma);
+  const conversationsRepository = new ConversationRepository(prisma);
+  const conversationUsersRepository = new ConversationUserRepository(prisma);
+  const messagesRepository = new MessageRepository(prisma);
+  const messageReadsRepository = new MessageReadRepository(prisma);
 
 
   // --- Providers
@@ -136,6 +157,64 @@ const trainerNamespace = io.of('/trainer');
   const googleAuthService = new GoogleAuthService();
   const userNotificationService = new NotificationService(userNamespace, notificationsRepository, tokenService, "user");
 const trainerNotificationService = new NotificationService(trainerNamespace, notificationsRepository, tokenService, "trainer");
+
+// --- Chat Services
+const getChatSummaryUseCase = new GetChatSummaryUseCase(
+  conversationUsersRepository,
+  messagesRepository
+);
+
+const getConversationMessagesUseCase = new GetConversationMessagesUseCase(
+  messagesRepository,
+  conversationUsersRepository
+);
+  const createConversationUseCase = new CreateConversationUseCase(
+    conversationsRepository,
+    conversationUsersRepository
+  );
+
+  const getUserConversationsUseCase = new GetUserConversationsUseCase(
+    conversationsRepository
+  );
+
+  const joinConversationUseCase = new JoinConversationUseCase(
+    conversationUsersRepository,
+  );
+
+  const markMessageReadUseCase = new MarkMessageReadUseCase(
+    conversationsRepository,
+    conversationUsersRepository,
+    messagesRepository,
+    messageReadsRepository
+  );
+
+  const sendMessageUseCase = new SendMessageUseCase(
+    messagesRepository,
+    conversationsRepository
+  );
+
+  const userChatService = new ChatService(
+    userChatNamespace,
+    tokenService,
+    'user',
+    markMessageReadUseCase,
+    sendMessageUseCase,
+    getUserConversationsUseCase,
+    joinConversationUseCase,
+    createConversationUseCase
+  );
+
+  const trainerChatService = new ChatService(
+    trainerChatNamespace,
+    tokenService,
+    'trainer',
+    markMessageReadUseCase,
+    sendMessageUseCase,
+    getUserConversationsUseCase,
+    joinConversationUseCase,
+    createConversationUseCase
+  );
+
 
   const s3Service = new S3Service();
 
@@ -247,6 +326,11 @@ const  getTrainerNotificationsUseCase = new GetTrainerNotificationsUseCase(notif
   const adminAuthMiddleware = new AdminAuthMiddleware(usersRepository, tokenService);
   const adminValidationMiddleware = new AdminValidationMiddleware();
 
+  //chat service
+
+
+
+
   // --- Controllers
   const userAuthController = new UserAuthController(
     createUserUseCase,
@@ -324,10 +408,21 @@ getUserCurrentPTPlansUseCase
     verifyPTPlanUseCase,
     updatePTPlanAdminPriceUseCase
   );
+ const userChatController = new ChatController(
+  "user",
+  getConversationMessagesUseCase,
+  getChatSummaryUseCase
+);
+const trainerChatController = new ChatController(
+  "trainer",
+  getConversationMessagesUseCase,
+  getChatSummaryUseCase
+);
+
 
   // --- Routes
-  const userRoutes = new UserRoutes(userAuthController, userController, authMiddleware, userValidationMiddleware);
-  const trainerRoutes = new TrainerRoutes(trainerAuthController, trainerController, trainerAuthMiddleware, trainerValidationMiddleware);
+  const userRoutes = new UserRoutes(userAuthController, userController, authMiddleware, userValidationMiddleware,userChatController);
+  const trainerRoutes = new TrainerRoutes(trainerAuthController, trainerController, trainerAuthMiddleware, trainerValidationMiddleware, trainerChatController );
   const adminRoutes = new AdminRoutes(adminAuthController, adminController, adminAuthMiddleware, adminValidationMiddleware);
 
   return {
@@ -336,5 +431,7 @@ getUserCurrentPTPlansUseCase
     adminRoutes,
      userNotificationService,
     trainerNotificationService,
+     userChatService,
+  trainerChatService,
   };
 }

@@ -1,3 +1,4 @@
+//src/store/slice/userAuthSlice.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import { login as userLogin , logout as userLogout  , getUser } from "../../services/api/userApi";

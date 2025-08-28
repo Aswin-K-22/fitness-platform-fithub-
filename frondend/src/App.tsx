@@ -13,7 +13,16 @@ import type { AppDispatch, RootState } from "./store/store";
 
 import { initUserSocket, connectUserSocket, disconnectUserSocket } from "./services/sockets/userSocket";
 import { connectTrainerSocket, disconnectTrainerSocket, initTrainerSocket } from "./services/sockets/trainerSocket";
-
+import {
+  initUserChatSocket,
+  connectUserChatSocket,
+  disconnectUserChatSocket,
+} from "./services/sockets/userChatSocket";
+import {
+  initTrainerChatSocket,
+  connectTrainerChatSocket,
+  disconnectTrainerChatSocket,
+} from "./services/sockets/trainerChatSocket";
 // Lazy-loaded components
 const HomePage = lazy(() => import("./pages/user/HomePage"));
 const ForbiddenPage = lazy(() => import("./pages/auth/ForbiddenPage"));
@@ -146,15 +155,30 @@ const { isAuthenticated: isUserAuthenticated } = useSelector((state: RootState) 
 
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
     if (isUserAuthenticated) {
       initUserSocket();
       connectUserSocket();
+      initUserChatSocket();
+      connectUserChatSocket();
     } else {
       disconnectUserSocket();
+      disconnectUserChatSocket();
     }
   }, [isUserAuthenticated]);
 
+  useEffect(() => {
+    if (isTrainerAuthenticated) {
+      initTrainerSocket();
+      connectTrainerSocket();
+      initTrainerChatSocket();
+      connectTrainerChatSocket();
+    } else {
+      disconnectTrainerSocket();
+      disconnectTrainerChatSocket();
+    }
+  }, [isTrainerAuthenticated]);
+  
 
    useEffect(() => {
     if (isTrainerAuthenticated) {

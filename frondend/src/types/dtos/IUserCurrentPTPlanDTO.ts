@@ -1,3 +1,4 @@
+//src/types/dtos/IUserCurrentPTPlanDTO.ts
 // Purchase info
 export interface IUserPurchaseDTO {
   id: string | null;

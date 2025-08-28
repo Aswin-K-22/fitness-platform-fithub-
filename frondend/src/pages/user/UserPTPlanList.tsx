@@ -1,3 +1,4 @@
+//src/pages/user/UserPTPlanList.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
@@ -55,9 +56,14 @@ const UserPTPlanList: React.FC = () => {
           setTotalPages(response.pagination.totalPages);
           setTotalPlans(response.pagination.total);
 
-           const userActivePlans = await getUserCurrentPTPlans();
-        const activeIds = new Set(userActivePlans.map((plan) => plan.plan.id));
-        setActivePlanIds(activeIds);
+           if (isAuthenticated && user) {
+            const userActivePlans = await getUserCurrentPTPlans();
+            const activeIds = new Set(userActivePlans.map((plan) => plan.plan.id));
+            setActivePlanIds(activeIds);
+          } else {
+            // Clear activePlanIds if user is not authenticated
+            setActivePlanIds(new Set());
+          }
         } catch (error) {
           toast.error("Failed to load plans");
           console.error("Failed to fetch PT plans:", error);
@@ -487,8 +493,7 @@ const UserPTPlanList: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                 <button
-  onClick={() => handlePay(plan)}
+                 <button onClick={() => handlePay(plan)}
   className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg ${
     !plan.isActive || activePlanIds.has(plan.id) ? "opacity-50 cursor-not-allowed hover:none" : ""
   }`}
