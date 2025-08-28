@@ -1,4 +1,4 @@
-// src/pages/user/UserTrainerChat.tsx
+//src/pages/user/UserTrainerChat.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   PaperAirplaneIcon,
@@ -11,9 +11,9 @@ import {
   Bars3Icon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon, BoltIcon } from '@heroicons/react/24/solid';
-import { useSelector,  } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
-import type { RootState,  } from '../../store/store';
+import type { RootState } from '../../store/store';
 import { getChatSummary, getUserCurrentPTPlans, getConversationMessages } from '../../services/api/userApi';
 import { getUserChatSocket, sendUserMessage, joinUserConversation, emitUserTyping, markUserMessageRead } from '../../services/sockets/userChatSocket';
 import type { IUserTrainerWithPlansDTO } from '../../types/dtos/IUserCurrentPTPlanDTO';
@@ -22,15 +22,15 @@ import type { ChatParticipantType, MessageDTO, MessageReadEvent, MessageSentAck,
 import { debounce } from 'lodash';
 
 // Define IChatMessage interface to include client-side properties
-interface IChatMessage  {
+interface IChatMessage {
   read: boolean;
   isPending?: boolean;
-   id: string;
-   conversationId: string | null;
-    senderId: string;
-    senderType: ChatParticipantType;
-    content: string;
-    createdAt: string;
+  id: string;
+  conversationId: string | null;
+  senderId: string;
+  senderType: ChatParticipantType;
+  content: string;
+  createdAt: string;
 }
 
 // Extend IChatSummaryItemDTO with trainer and online status
@@ -107,7 +107,8 @@ const TrainerListItem: React.FC<{
   trainer: ExtendedChatSummaryItem;
   isActive: boolean;
   onClick: () => void;
-}> = ({ trainer, isActive, onClick }) => {
+  isTyping: boolean;
+}> = ({ trainer, isActive, onClick, isTyping }) => {
   return (
     <div
       onClick={onClick}
@@ -139,10 +140,18 @@ const TrainerListItem: React.FC<{
             )}
           </div>
           <p className="text-xs text-gray-500 truncate">{trainer.trainer.specialties[0]}</p>
-          {trainer.lastMessage && (
-            <p className="text-xs text-gray-600 truncate mt-1">
-              {trainer.lastMessage.senderType === 'USER' ? 'You: ' : ''}{trainer.lastMessage.content}
-            </p>
+          {trainer.conversationId && isTyping ? (
+            <div className="flex items-center space-x-1 mt-1">
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+          ) : (
+            trainer.lastMessage && (
+              <p className="text-xs text-gray-600 truncate mt-1">
+                {trainer.lastMessage.senderType === 'USER' ? 'You: ' : ''}{trainer.lastMessage.content}
+              </p>
+            )
           )}
           <span className="text-xs text-gray-400">
             {trainer.lastMessage?.createdAt &&
@@ -165,10 +174,12 @@ const UserTrainerChat: React.FC = () => {
   const [messages, setMessages] = useState<IChatMessage[]>([]);
   const [messageInput, setMessageInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [typingStatuses, setTypingStatuses] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const lastInputRef = useRef<string>('');
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -194,7 +205,7 @@ const UserTrainerChat: React.FC = () => {
           return {
             ...summary,
             trainer: trainer.trainer,
-            isOnline: false, // Default, updated via socket
+            isOnline: false,
             participantId: trainer.trainer.id!,
             participantRole: 'TRAINER' as const,
             conversationId: summary?.conversationId,
@@ -205,7 +216,6 @@ const UserTrainerChat: React.FC = () => {
 
         setTrainers(extendedTrainers);
 
-        // Check if a trainerId was passed in the location state
         const trainerId = location.state?.trainerId;
         if (trainerId) {
           const selected = extendedTrainers.find((t) => t.trainer.id === trainerId);
@@ -227,70 +237,66 @@ const UserTrainerChat: React.FC = () => {
   // Initialize WebSocket and handle events
   useEffect(() => {
     const socket = getUserChatSocket();
-  if (socket && user?.id && selectedTrainer?.conversationId) {
-    console.log(`[UserTrainerChat] Joining conversationId=${selectedTrainer.conversationId} for userId=${user.id}`);
-    joinUserConversation(selectedTrainer.conversationId);
+    if (socket && user?.id) {
+      trainers.forEach((trainer) => {
+        if (trainer.conversationId) {
+          console.log(`[UserTrainerChat] Joining conversationId=${trainer.conversationId} for userId=${user.id}`);
+          joinUserConversation(trainer.conversationId);
+        }
+      });
 
-    socket.on('joinedConversation', ({ conversationId }) => {
-      console.log(`[UserTrainerChat] Successfully joined conversationId=${conversationId}`);
-    });
+      socket.on('joinedConversation', ({ conversationId }) => {
+        console.log(`[UserTrainerChat] Successfully joined conversationId=${conversationId}`);
+      });
 
-    socket.on('error', (error) => {
-      console.error(`[UserTrainerChat] Socket error for conversationId=${selectedTrainer.conversationId}:`, error);
-    });
+      socket.on('error', (error) => {
+        console.error(`[UserTrainerChat] Socket error:`, error);
+      });
 
-
-
-    socket.on('conversationCreated', ({ conversationId }: { conversationId: string }) => {
-      console.log(`[UserTrainerChat] New conversation created: conversationId=${conversationId}`);
-      setSelectedTrainer((prev) =>
-        prev ? { ...prev, conversationId } : prev
-      );
-      joinUserConversation(conversationId);
-      setTrainers((prev) =>
-        prev.map((t) =>
-          t.trainer.id === selectedTrainer.trainer.id
-            ? { ...t, conversationId }
-            : t
-        )
-      );
-    });
-
-      // Handle message sent acknowledgment
- socket.on('messageSent', (ack: MessageSentAck) => {
-  if (ack.success && ack.tempId && ack.message) {
-    setMessages((prev) =>
-      prev.map(msg =>
-        msg.id === ack.tempId
-          ? {
-              ...ack.message, // properties from MessageDTO
-              read: true,     // or appropriate value
-              isPending: false,
-              conversationId: ack.message?.conversationId || null,
-            } as IChatMessage // explicit casting, optional if shape matches
-          : msg
-      )
+      socket.on('conversationCreated', ({ conversationId }: { conversationId: string }) => {
+        console.log(`[UserTrainerChat] New conversation created: conversationId=${conversationId}`);
+        setSelectedTrainer((prev) =>
+          prev ? { ...prev, conversationId } : prev
         );
-        // Update last message in trainer list
+        joinUserConversation(conversationId);
         setTrainers((prev) =>
           prev.map((t) =>
-            t.conversationId === ack.message?.conversationId
-              ? { ...t, lastMessage: ack.message, unreadCount: 0 }
+            t.trainer.id === selectedTrainer?.trainer.id
+              ? { ...t, conversationId }
               : t
           )
         );
-      } else {
-        console.error('Message send failed:', ack.error);
-        // Remove optimistic message on failure
-        setMessages((prev) => prev.filter((msg) => msg.id !== ack.tempId));
-      }
-    });
-    
+      });
 
-      // Handle new messages
+      socket.on('messageSent', (ack: MessageSentAck) => {
+        if (ack.success && ack.tempId && ack.message) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === ack.tempId
+                ? {
+                    ...ack.message,
+                    read: true,
+                    isPending: false,
+                    conversationId: ack.message?.conversationId || null,
+                  } as IChatMessage
+                : msg
+            )
+          );
+          setTrainers((prev) =>
+            prev.map((t) =>
+              t.conversationId === ack.message?.conversationId
+                ? { ...t, lastMessage: ack.message, unreadCount: 0 }
+                : t
+            )
+          );
+        } else {
+          console.error('Message send failed:', ack.error);
+          setMessages((prev) => prev.filter((msg) => msg.id !== ack.tempId));
+        }
+      });
+
       socket.on('newMessage', (newMessage: MessageDTO) => {
         console.log(`[UserTrainerChat] Received newMessage for conversationId=${newMessage.conversationId}:`, newMessage);
-
         if (
           newMessage.senderId === selectedTrainer?.trainer.id &&
           newMessage.conversationId === selectedTrainer?.conversationId
@@ -301,7 +307,6 @@ const UserTrainerChat: React.FC = () => {
           ]);
           markUserMessageRead(newMessage.conversationId, newMessage.id);
         }
-        // Update unread count in trainer list
         setTrainers((prev) =>
           prev.map((t) =>
             t.conversationId === newMessage.conversationId && t.trainer.id !== selectedTrainer?.trainer.id
@@ -311,7 +316,6 @@ const UserTrainerChat: React.FC = () => {
         );
       });
 
-      // Handle message read acknowledgment
       socket.on('messageRead', (data: MessageReadEvent) => {
         if (data.conversationId === selectedTrainer?.conversationId) {
           setMessages((prev) =>
@@ -322,46 +326,45 @@ const UserTrainerChat: React.FC = () => {
         }
       });
 
-      // Handle typing events
-    socket.on('conversation:typing', (data: TypingEvent) => {
-      console.log(`[UserTrainerChat] Received typing event:`, data);
-      if (
-        data.conversationId === selectedTrainer?.conversationId &&
-        data.senderType === 'TRAINER'
-      ) {
-        setIsTyping(data.isTyping);
-        if (data.isTyping) {
-          setTimeout(() => setIsTyping(false), 2000);
-        }
-      }
-    });
-
-
-      // Handle user status (online/offline)
-  socket.on('userStatus', (data: UserStatusEvent) => {
-      console.log(`[UserTrainerChat] Received userStatus event: userId=${data.userId}, status=${data.status}`);
-      setTrainers((prev) =>
-        prev.map((t) => {
-          if (t.trainer.id === data.userId) {
-            console.log(`[UserTrainerChat] Updating isOnline for trainerId=${t.trainer.id} to ${data.status === 'online'}`);
-            return { ...t, isOnline: data.status === 'online' };
+      socket.on('conversation:typing', (data: TypingEvent) => {
+        console.log(`[UserTrainerChat] Received typing event:`, data);
+        if (data.senderType === 'TRAINER') {
+          setTypingStatuses((prev) => ({
+            ...prev,
+            [data.conversationId]: data.isTyping,
+          }));
+          if (data.conversationId === selectedTrainer?.conversationId) {
+            setIsTyping(data.isTyping);
           }
-          return t;
-        })
-      );
-    });
+        }
+      });
+
+      socket.on('userStatus', (data: UserStatusEvent) => {
+        console.log(`[UserTrainerChat] Received userStatus event: userId=${data.userId}, status=${data.status}`);
+        setTrainers((prev) =>
+          prev.map((t) => {
+            if (t.trainer.id === data.userId) {
+              console.log(`[UserTrainerChat] Updating isOnline for trainerId=${t.trainer.id} to ${data.status === 'online'}`);
+              return { ...t, isOnline: data.status === 'online' };
+            }
+            return t;
+          })
+        );
+      });
 
       return () => {
         socket.off('joinedConversation');
-      socket.off('error');
-      socket.off('conversationCreated');
+        socket.off('error');
+        socket.off('conversationCreated');
+        socket.off('messageSent');
         socket.off('newMessage');
         socket.off('messageRead');
         socket.off('conversation:typing');
         socket.off('userStatus');
+        setTypingStatuses({});
       };
     }
-  }, [selectedTrainer, user]);
+  }, [trainers, user, selectedTrainer]);
 
   // Fetch messages for selected trainer
   useEffect(() => {
@@ -375,11 +378,10 @@ const UserTrainerChat: React.FC = () => {
           if (response.success && response.data?.messages) {
             const messagesWithStatus: IChatMessage[] = response.data.messages.map((msg) => ({
               ...msg,
-              read: msg.senderType === 'TRAINER' ? true : false, // Assume trainer messages are read
+              read: msg.senderType === 'TRAINER' ? true : false,
               isPending: false,
             }));
             setMessages(messagesWithStatus);
-            // Mark unread messages as read
             const unreadMessages = messagesWithStatus.filter(
               (msg) => msg.senderType === 'TRAINER' && !msg.read
             );
@@ -405,71 +407,67 @@ const UserTrainerChat: React.FC = () => {
   }, [selectedTrainer, user]);
 
   // Emit typing event
-useEffect(() => {
-  if (selectedTrainer?.conversationId && messageInput.trim()) {
-    const convId = selectedTrainer.conversationId;
-    const debouncedEmitTyping = debounce(() => {
-      console.log(`[UserTrainerChat] Emitting typing event for conversationId=${convId}, isTyping=true`);
-      emitUserTyping(convId, true);
-    }, 300);
+  useEffect(() => {
+    if (selectedTrainer?.conversationId) {
+      const convId = selectedTrainer.conversationId;
+      const debouncedEmitTyping = debounce(
+        (isTyping: boolean) => {
+          console.log(`[UserTrainerChat] Emitting typing event for conversationId=${convId}, isTyping=${isTyping}`);
+          emitUserTyping(convId, isTyping);
+        },
+        300,
+        { leading: true, trailing: true }
+      );
 
-    debouncedEmitTyping();
+      const isTypingNow = messageInput.trim().length > 0;
+      if (isTypingNow !== (lastInputRef.current.trim().length > 0)) {
+        debouncedEmitTyping(isTypingNow);
+      }
+      lastInputRef.current = messageInput;
 
-    const timeout = setTimeout(() => {
-      console.log(`[UserTrainerChat] Emitting typing event for conversationId=${convId}, isTyping=false`);
-      emitUserTyping(convId, false);
-    }, 2000);
-
-    return () => {
-      debouncedEmitTyping.cancel();
-      clearTimeout(timeout);
-    };
-  }
-}, [messageInput, selectedTrainer?.conversationId]);
-
-
+      return () => {
+        debouncedEmitTyping.cancel();
+      };
+    }
+  }, [messageInput, selectedTrainer?.conversationId]);
 
   const handleTrainerSelect = (trainer: ExtendedChatSummaryItem) => {
     setSelectedTrainer(trainer);
     setMessages([]);
+    setIsTyping(false); // Reset typing status when switching trainers
   };
 
-// pages/user/UserTrainerChat.tsx
-const handleSendMessage = async () => {
-  if (!messageInput.trim() || !user || !selectedTrainer || !selectedTrainer.trainer.id) return;
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !user || !selectedTrainer || !selectedTrainer.trainer.id) return;
 
-  const tempId = `pending-${user.id}-${selectedTrainer.trainer.id}-${Date.now()}`;
-  const newMessage: IChatMessage = {
-    id: tempId,
-    conversationId: selectedTrainer.conversationId || null,
-    senderId: user.id,
-    senderType: 'USER',
-    content: messageInput,
-    createdAt: new Date().toISOString(),
-    read: false,
-    isPending: true,
-  };
-
-  // Optimistic UI update
-  setMessages((prev) => [...prev, newMessage]);
-  setMessageInput('');
-
-  try {
-    sendUserMessage({
+    const tempId = `pending-${user.id}-${selectedTrainer.trainer.id}-${Date.now()}`;
+    const newMessage: IChatMessage = {
+      id: tempId,
       conversationId: selectedTrainer.conversationId || null,
+      senderId: user.id,
+      senderType: 'USER',
       content: messageInput,
-      tempId,
-      receiverId: selectedTrainer.trainer.id,
-      isGroup: false,
-    });
-    // Note: Do not update trainers list here; wait for conversationCreated event
-  } catch (error) {
-    console.error('Failed to send message:', error);
-    setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
-  }
-};
+      createdAt: new Date().toISOString(),
+      read: false,
+      isPending: true,
+    };
 
+    setMessages((prev) => [...prev, newMessage]);
+    setMessageInput('');
 
+    try {
+      sendUserMessage({
+        conversationId: selectedTrainer.conversationId || null,
+        content: messageInput,
+        tempId,
+        receiverId: selectedTrainer.trainer.id,
+        isGroup: false,
+      });
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+    }
+  };
 
   const filteredTrainers = trainers.filter(
     (trainer) =>
@@ -481,13 +479,11 @@ const handleSendMessage = async () => {
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex">
-      {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-blue-200/30 to-transparent rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-200/30 to-transparent rounded-full blur-3xl"></div>
       </div>
 
-      {/* Sidebar - Trainer List */}
       <div
         className={`relative bg-white/90 backdrop-blur-xl border-r border-gray-200 shadow-xl transition-all duration-300 ${
           isSidebarOpen ? 'w-80' : 'w-0'
@@ -522,13 +518,13 @@ const handleSendMessage = async () => {
                 trainer={trainer}
                 isActive={selectedTrainer?.trainer.id === trainer.trainer.id}
                 onClick={() => handleTrainerSelect(trainer)}
+                isTyping={trainer.conversationId ? typingStatuses[trainer.conversationId] || false : false}
               />
             ))}
           </div>
         </div>
       </div>
 
-      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative">
         {selectedTrainer ? (
           <>

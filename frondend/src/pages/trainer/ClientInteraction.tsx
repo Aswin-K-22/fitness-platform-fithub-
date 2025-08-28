@@ -1,6 +1,4 @@
-//src/pages/trianer/ClientInteraction.tsx
-
-
+//src/pages/trainer/ClientINteraction.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   PaperAirplaneIcon,
@@ -23,19 +21,20 @@ import {
   trainerTyping,
 } from '../../services/sockets/trainerChatSocket';
 import type { ITrainerUserWithPlansDTO } from '../../types/dtos/ITrainerUsersPTPlansResponseDTO';
-import type {  GetConversationMessagesResponseDTO } from '../../types/chat/chat.types';
-import type { MessageDTO, ChatParticipantType, MessageSentAck } from '../../types/chat/chatSocket.types';
+import type { GetConversationMessagesResponseDTO } from '../../types/chat/chat.types';
+import type { MessageDTO, ChatParticipantType, MessageSentAck, MessageReadEvent } from '../../types/chat/chatSocket.types';
 import { debounce } from 'lodash';
 
-// Extend MessageDTO to include isPending only
-interface IChatMessage  {
-    id: string;
+// Extend MessageDTO to include client-side properties
+interface IChatMessage {
+  id: string;
   conversationId: string | null;
   senderId: string;
   senderType: ChatParticipantType;
   content: string;
   createdAt: string;
   isPending?: boolean;
+  read?: boolean;
 }
 
 // Extend IChatSummaryItemDTO to include client and isOnline
@@ -43,7 +42,7 @@ interface IExtendedChatSummaryItemDTO {
   participantId: string;
   client: ITrainerUserWithPlansDTO['user'];
   isOnline: boolean;
-  conversationId?: string; // Made optional since not all clients have conversations
+  conversationId?: string;
   lastMessage?: {
     id: string;
     content: string;
@@ -102,7 +101,8 @@ const ClientListItem: React.FC<{
   client: IExtendedChatSummaryItemDTO;
   isActive: boolean;
   onClick: () => void;
-}> = ({ client, isActive, onClick }) => {
+  isTyping: boolean;
+}> = ({ client, isActive, onClick, isTyping }) => {
   return (
     <div
       onClick={onClick}
@@ -134,10 +134,18 @@ const ClientListItem: React.FC<{
             )}
           </div>
           <p className="text-xs text-gray-500 truncate">Client</p>
-          {client.lastMessage && (
-            <p className="text-xs text-gray-600 truncate mt-1">
-              {client.lastMessage.senderType === 'TRAINER' ? 'You: ' : ''}{client.lastMessage.content}
-            </p>
+          {client.conversationId && isTyping ? (
+            <div className="flex items-center space-x-1 mt-1">
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+          ) : (
+            client.lastMessage && (
+              <p className="text-xs text-gray-600 truncate mt-1">
+                {client.lastMessage.senderType === 'TRAINER' ? 'You: ' : ''}{client.lastMessage.content}
+              </p>
+            )
           )}
           <span className="text-xs text-gray-400">
             {client.lastMessage?.createdAt &&
@@ -157,22 +165,16 @@ const ClientInteraction: React.FC = () => {
   const [messages, setMessages] = useState<IChatMessage[]>([]);
   const [messageInput, setMessageInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [typingStatuses, setTypingStatuses] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const lastInputRef = useRef<string>('');
 
-  
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  const debouncedTyping = debounce((conversationId: string, isTyping: boolean) => {
-  console.log(`[ClientInteraction] Emitting typing event: conversationId=${conversationId}, isTyping=${isTyping}`);
-  trainerTyping(conversationId, isTyping);
-}, 300);
-
-
 
   useEffect(() => {
     scrollToBottom();
@@ -187,13 +189,12 @@ const ClientInteraction: React.FC = () => {
           getChatSummary(),
         ]);
 
-        // Map all PT plan clients to the extended chat summary format
         const mergedClients = clientData.data?.map((client) => {
           const chatSummaryItem = chatSummary.data?.find((s) => s.participantId === client.user.id);
           return {
             participantId: client.user.id,
             client: client.user,
-            isOnline: false, // Default, updated via socket
+            isOnline: false,
             conversationId: chatSummaryItem?.conversationId,
             lastMessage: chatSummaryItem?.lastMessage,
             unreadCount: chatSummaryItem?.unreadCount || 0,
@@ -202,7 +203,6 @@ const ClientInteraction: React.FC = () => {
 
         setClients(mergedClients);
 
-        // Check if a clientId was passed in the location state
         const clientId = location.state?.clientId;
         if (clientId) {
           const selected = mergedClients.find((c) => c.participantId === clientId);
@@ -223,104 +223,126 @@ const ClientInteraction: React.FC = () => {
   }, [location.state]);
 
   // Initialize WebSocket and handle events
-// Initialize WebSocket and handle events
-useEffect(() => {
-  const socket = getTrainerChatSocket();
-  if (socket && trainer?.id && selectedClient?.conversationId) {
-    console.log(`[ClientInteraction] Joining conversationId=${selectedClient.conversationId} for trainerId=${trainer.id}`);
-    joinTrainerConversation(selectedClient.conversationId);
+  useEffect(() => {
+    const socket = getTrainerChatSocket();
+    if (socket && trainer?.id) {
+      clients.forEach((client) => {
+        if (client.conversationId) {
+          console.log(`[ClientInteraction] Joining conversationId=${client.conversationId} for trainerId=${trainer.id}`);
+          joinTrainerConversation(client.conversationId);
+        }
+      });
 
-    socket.on('joinedConversation', ({ conversationId }) => {
-      console.log(`[ClientInteraction] Successfully joined conversationId=${conversationId}`);
-    });
+      socket.on('joinedConversation', ({ conversationId }) => {
+        console.log(`[ClientInteraction] Successfully joined conversationId=${conversationId}`);
+      });
 
-    socket.on('error', (error) => {
-      console.error(`[ClientInteraction] Socket error for conversationId=${selectedClient.conversationId}:`, error);
-    });
+      socket.on('error', (error) => {
+        console.error(`[ClientInteraction] Socket error:`, error);
+      });
 
-    socket.on('conversationCreated', ({ conversationId }: { conversationId: string }) => {
-      console.log(`[ClientInteraction] New conversation created: conversationId=${conversationId}`);
-      setSelectedClient((prev) =>
-        prev ? { ...prev, conversationId } : prev
-      );
-      joinTrainerConversation(conversationId);
-      setClients((prev) =>
-        prev.map((c) =>
-          c.participantId === selectedClient.participantId
-            ? { ...c, conversationId }
-            : c
-        )
-      );
-    });
-
-    // Add this new handler for messageSent acknowledgment
-    socket.on('messageSent', (ack: MessageSentAck) => {
-      if (ack.success && ack.tempId && ack.message) {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === ack.tempId
-              ? { ...ack.message, isPending: false } as IChatMessage
-              : msg
-          )
+      socket.on('conversationCreated', ({ conversationId }: { conversationId: string }) => {
+        console.log(`[ClientInteraction] New conversation created: conversationId=${conversationId}`);
+        setSelectedClient((prev) =>
+          prev ? { ...prev, conversationId } : prev
         );
-        // Update last message in client list
+        joinTrainerConversation(conversationId);
         setClients((prev) =>
           prev.map((c) =>
-            c.conversationId === ack.message?.conversationId
-              ? { ...c, lastMessage: ack.message, unreadCount: 0 }
+            c.participantId === selectedClient?.participantId
+              ? { ...c, conversationId }
               : c
           )
         );
-      } else {
-        console.error('Message send failed:', ack.error);
-        // Remove optimistic message on failure
-        setMessages((prev) => prev.filter((msg) => msg.id !== ack.tempId));
-      }
-    });
+      });
 
-    socket.on('newMessage', (newMessage: MessageDTO) => {
-      console.log(`[ClientInteraction] Received newMessage:`, newMessage);
-      if (
-        newMessage.senderId === selectedClient.participantId &&
-        newMessage.conversationId === selectedClient.conversationId
-      ) {
-        setMessages((prev) => [
-          ...prev.filter((m) => !m.isPending || m.id !== newMessage.id),
-          { ...newMessage, isPending: false },
-        ]);
-      }
-    });
-
-    socket.on('conversation:typing', (data: { conversationId: string; isTyping: boolean; senderType: ChatParticipantType }) => {
-      console.log(`[ClientInteraction] Received typing event:`, data);
-      if (data.conversationId === selectedClient.conversationId && data.senderType === 'USER') {
-        setIsTyping(data.isTyping);
-        if (data.isTyping) {
-          setTimeout(() => setIsTyping(false), 2000);
+      socket.on('messageSent', (ack: MessageSentAck) => {
+        if (ack.success && ack.tempId && ack.message) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === ack.tempId
+                ? { ...ack.message, isPending: false, read: false } as IChatMessage
+                : msg
+            )
+          );
+          setClients((prev) =>
+            prev.map((c) =>
+              c.conversationId === ack.message?.conversationId
+                ? { ...c, lastMessage: ack.message, unreadCount: 0 }
+                : c
+            )
+          );
+        } else {
+          console.error('Message send failed:', ack.error);
+          setMessages((prev) => prev.filter((msg) => msg.id !== ack.tempId));
         }
-      }
-    });
+      });
 
-    socket.on('userStatus', (data: { userId: string; status: 'online' | 'offline' }) => {
-      console.log(`[ClientInteraction] Received userStatus:`, data);
-      setClients((prev) =>
-        prev.map((c) =>
-          c.participantId === data.userId ? { ...c, isOnline: data.status === 'online' } : c
-        )
-      );
-    });
+      socket.on('newMessage', (newMessage: MessageDTO) => {
+        console.log(`[ClientInteraction] Received newMessage:`, newMessage);
+        if (
+          newMessage.senderId === selectedClient?.participantId &&
+          newMessage.conversationId === selectedClient?.conversationId
+        ) {
+          setMessages((prev) => [
+            ...prev.filter((m) => !m.isPending || m.id !== newMessage.id),
+            { ...newMessage, isPending: false, read: false },
+          ]);
+          setClients((prev) =>
+            prev.map((c) =>
+              c.conversationId === newMessage.conversationId && c.participantId !== selectedClient?.participantId
+                ? { ...c, unreadCount: (c.unreadCount || 0) + 1, lastMessage: newMessage }
+                : c
+            )
+          );
+        }
+      });
 
-    return () => {
-      socket.off('joinedConversation');
-      socket.off('error');
-      socket.off('conversationCreated');
-      socket.off('messageSent'); // Clean up the new handler
-      socket.off('newMessage');
-      socket.off('conversation:typing');
-      socket.off('userStatus');
-    };
-  }
-}, [selectedClient, trainer]);
+      socket.on('messageRead', (data: MessageReadEvent) => {
+        if (data.conversationId === selectedClient?.conversationId) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === data.messageId ? { ...msg, read: true } : msg
+            )
+          );
+        }
+      });
+
+      socket.on('conversation:typing', (data: { conversationId: string; isTyping: boolean; senderType: ChatParticipantType }) => {
+        console.log(`[ClientInteraction] Received typing event:`, data);
+        if (data.senderType === 'USER') {
+          setTypingStatuses((prev) => ({
+            ...prev,
+            [data.conversationId]: data.isTyping,
+          }));
+          if (data.conversationId === selectedClient?.conversationId) {
+            setIsTyping(data.isTyping);
+          }
+        }
+      });
+
+      socket.on('userStatus', (data: { userId: string; status: 'online' | 'offline' }) => {
+        console.log(`[ClientInteraction] Received userStatus:`, data);
+        setClients((prev) =>
+          prev.map((c) =>
+            c.participantId === data.userId ? { ...c, isOnline: data.status === 'online' } : c
+          )
+        );
+      });
+
+      return () => {
+        socket.off('joinedConversation');
+        socket.off('error');
+        socket.off('conversationCreated');
+        socket.off('messageSent');
+        socket.off('newMessage');
+        socket.off('messageRead');
+        socket.off('conversation:typing');
+        socket.off('userStatus');
+        setTypingStatuses({});
+      };
+    }
+  }, [clients, trainer, selectedClient]);
 
   // Fetch messages for selected client
   useEffect(() => {
@@ -339,6 +361,7 @@ useEffect(() => {
               response.data.messages.map((msg) => ({
                 ...msg,
                 isPending: false,
+                read: msg.senderType === 'USER' ? true : false,
               }))
             );
           }
@@ -348,49 +371,72 @@ useEffect(() => {
       };
       fetchMessages();
     } else {
-      // Clear messages if no conversation exists
       setMessages([]);
     }
   }, [selectedClient, trainer]);
 
+  // Emit typing event
+  useEffect(() => {
+    if (selectedClient?.conversationId) {
+      const convId = selectedClient.conversationId;
+      const debouncedEmitTyping = debounce(
+        (isTyping: boolean) => {
+          console.log(`[ClientInteraction] Emitting typing event for conversationId=${convId}, isTyping=${isTyping}`);
+          trainerTyping(convId, isTyping);
+        },
+        300,
+        { leading: true, trailing: true }
+      );
+
+      const isTypingNow = messageInput.trim().length > 0;
+      if (isTypingNow !== (lastInputRef.current.trim().length > 0)) {
+        debouncedEmitTyping(isTypingNow);
+      }
+      lastInputRef.current = messageInput;
+
+      return () => {
+        debouncedEmitTyping.cancel();
+      };
+    }
+  }, [messageInput, selectedClient?.conversationId]);
+
   const handleClientSelect = (client: IExtendedChatSummaryItemDTO) => {
     setSelectedClient(client);
     setMessages([]);
+    setIsTyping(false); // Reset typing status when switching clients
   };
 
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !trainer || !selectedClient) return;
 
-const handleSendMessage = async () => {
-  if (!messageInput.trim() || !trainer || !selectedClient) return;
-
-  const tempId = `pending-${trainer.id}-${selectedClient.participantId}-${Date.now()}`;
-  const newMessage: IChatMessage = {
-    id: tempId,
-    conversationId: selectedClient.conversationId || null,
-    senderId: trainer.id,
-    senderType: 'TRAINER',
-    content: messageInput,
-    createdAt: new Date().toISOString(),
-    isPending: true,
-  };
-
-  // Optimistic UI update
-  setMessages((prev) => [...prev, newMessage]);
-  setMessageInput('');
-
-  try {
-    sendTrainerMessage({
+    const tempId = `pending-${trainer.id}-${selectedClient.participantId}-${Date.now()}`;
+    const newMessage: IChatMessage = {
+      id: tempId,
       conversationId: selectedClient.conversationId || null,
+      senderId: trainer.id,
+      senderType: 'TRAINER',
       content: messageInput,
-      tempId,
-      receiverId: selectedClient.participantId,
-      isGroup: false,
-    });
-    // Note: Do not update clients list here; wait for conversationCreated event
-  } catch (error) {
-    console.error('Failed to send message:', error);
-    setMessages((prev) => prev.filter((m) => m.id !== tempId));
-  }
-};
+      createdAt: new Date().toISOString(),
+      isPending: true,
+      read: false,
+    };
+
+    setMessages((prev) => [...prev, newMessage]);
+    setMessageInput('');
+
+    try {
+      sendTrainerMessage({
+        conversationId: selectedClient.conversationId || null,
+        content: messageInput,
+        tempId,
+        receiverId: selectedClient.participantId,
+        isGroup: false,
+      });
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+    }
+  };
 
   const filteredClients = clients.filter(
     (client) =>
@@ -400,13 +446,11 @@ const handleSendMessage = async () => {
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex">
-      {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-blue-200/30 to-transparent rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-200/30 to-transparent rounded-full blur-3xl"></div>
       </div>
 
-      {/* Sidebar - Client List */}
       <div
         className={`relative bg-white/90 backdrop-blur-xl border-r border-gray-200 shadow-xl transition-all duration-300 ${
           isSidebarOpen ? 'w-80' : 'w-0'
@@ -441,13 +485,13 @@ const handleSendMessage = async () => {
                 client={client}
                 isActive={selectedClient?.participantId === client.participantId}
                 onClick={() => handleClientSelect(client)}
+                isTyping={client.conversationId ? typingStatuses[client.conversationId] || false : false}
               />
             ))}
           </div>
         </div>
       </div>
 
-      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative">
         {selectedClient ? (
           <>
@@ -542,19 +586,14 @@ const handleSendMessage = async () => {
             <div className="bg-white/80 backdrop-blur-xl border-t border-white/20 p-4">
               <div className="flex items-center space-x-3">
                 <div className="flex-1 relative">
-                 <input
-  type="text"
-  placeholder="Type your message..."
-  className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-lg transition-all duration-200 placeholder-gray-500"
-  value={messageInput}
-  onChange={(e) => {
-    setMessageInput(e.target.value);
-    if (selectedClient?.conversationId) {
-      debouncedTyping(selectedClient.conversationId, e.target.value.length > 0);
-    }
-  }}
-  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-/>
+                  <input
+                    type="text"
+                    placeholder="Type your message..."
+                    className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-lg transition-all duration-200 placeholder-gray-500"
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  />
                 </div>
                 <button
                   onClick={handleSendMessage}
